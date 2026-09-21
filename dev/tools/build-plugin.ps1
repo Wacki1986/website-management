@@ -32,12 +32,21 @@ $zip = Join-Path $target "mediagrafik-monitor-$version.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 
 # ZIP musí obsahovat složku `mediagrafik-monitor/` v kořeni — WordPress
-# podle ní pozná, kam plugin patří.
-$staging = Join-Path ([System.IO.Path]::GetTempPath()) "mg-monitor-build-$([guid]::NewGuid().ToString('N'))"
-New-Item -ItemType Directory -Force (Join-Path $staging 'mediagrafik-monitor') | Out-Null
-Copy-Item -Path (Join-Path $source '*') -Destination (Join-Path $staging 'mediagrafik-monitor') -Recurse
-Compress-Archive -Path (Join-Path $staging 'mediagrafik-monitor') -DestinationPath $zip
-Remove-Item $staging -Recurse -Force
+# podle ní pozná, kam plugin patří. Záznamy se skládají ručně, protože
+# Compress-Archive ve Windows PowerShellu 5.1 píše cesty se zpětným
+# lomítkem: Linux na serveru je pak nebere jako složky a WordPress plugin
+# rozbalí o úroveň hlouběji („Plugin neexistuje").
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$sourceFull = (Get-Item $source).FullName
+$archive = [System.IO.Compression.ZipFile]::Open($zip, 'Create')
+try {
+    Get-ChildItem -Path $sourceFull -Recurse -File | ForEach-Object {
+        $relative = $_.FullName.Substring($sourceFull.Length).TrimStart('\', '/') -replace '\\', '/'
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $_.FullName, "mediagrafik-monitor/$relative", 'Optimal') | Out-Null
+    }
+} finally {
+    $archive.Dispose()
+}
 
 # Changelog z readme.txt (blok == Changelog ==).
 $readme = Get-Content (Join-Path $source 'readme.txt') -Raw
