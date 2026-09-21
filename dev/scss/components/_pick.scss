@@ -1,0 +1,76 @@
+// Výběr webů a kontrolní seznam (Nový klient).
+
+.form__control--error { border-color: var(--color-status-error); }
+
+// Výběr webů, které se mají klientovi přiřadit.
+.pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.pick__item {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-xlarge);
+  background: var(--color-surface-card-solid);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+.pick__item--active {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+// Kontrolní seznam povinných údajů.
+.task-list__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-label);
+  color: var(--color-text-subtle);
+}
+
+.task-list__item:last-child { border-bottom: 0; }
+
+.task-list__mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--border-radius-pill);
+  background: var(--color-border-strong);
+  display: grid;
+  place-items: center;
+}
+
+.task-list__mark::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: #fff;
+  -webkit-mask: var(--icon-minus) center / contain no-repeat;
+  mask: var(--icon-minus) center / contain no-repeat;
+}
+
+.task-list__item--done { color: var(--color-text-primary); }
+
+.task-list__item--done .task-list__mark { background: var(--color-status-ok); }
+
+.task-list__item--done .task-list__mark::before {
+  -webkit-mask: var(--icon-check) center / contain no-repeat;
+  mask: var(--icon-check) center / contain no-repeat;
+}
+
+.alert--ok {
+  border-color: var(--color-status-ok-halo);
+  background: var(--color-status-ok-soft);
+}

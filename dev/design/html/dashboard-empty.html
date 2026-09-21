@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Dashboard (prázdný stav)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item sidebar__item--active" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">5</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <div class="app__content">
+
+      <div class="hero-grid">
+        <section class="hero">
+          <div class="hero__top">
+            <div class="hero__label"><span class="dot dot--error" style="width:8px;height:8px"></span>Vyžaduje zásah</div>
+            <div class="hero__timestamp">9. 9. 08:35 · poslední kontrola</div>
+          </div>
+          <div class="hero__body">
+            <div class="hero__item">
+              <span class="avatar" style="width:34px;height:34px;font-size:var(--font-size-caption);background:#8A6A1E">HZ</span>
+              <div style="min-width:140px;flex:1">
+                <div class="hero__item-title u-truncate">Hotel Zlatý Lev</div>
+                <div class="hero__item-note">hotelzlatylev.cz · certifikát vypršel 8. 9., prohlížeč hlásí varování</div>
+              </div>
+              <div style="text-align:right;flex:none">
+                <div style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold);color:var(--color-status-error-on-inverse)">19 h</div>
+                <div class="hero__timestamp">neplatné SSL</div>
+              </div>
+              <a class="btn btn--inverse btn--sm" href="detail-webu-prehled.html">Řešit</a>
+            </div>
+            <div class="hero__item">
+              <span class="avatar" style="width:34px;height:34px;font-size:var(--font-size-caption);background:#7C3A1D">KD</span>
+              <div style="min-width:140px;flex:1">
+                <div class="hero__item-title u-truncate">Kavárna Dobrá</div>
+                <div class="hero__item-note">kavarnadobra.cz · HTTP 503, 3 kontroly po sobě selhaly</div>
+              </div>
+              <div style="text-align:right;flex:none">
+                <div style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold);color:var(--color-status-error-on-inverse)">23 min</div>
+                <div class="hero__timestamp">mimo provoz</div>
+              </div>
+              <a class="btn btn--inverse btn--sm" href="detail-webu-prehled.html">Řešit</a>
+            </div>
+          </div>
+          <div class="hero__footer">
+            <span>Dalších 3 webů vyžaduje pozornost (zastaralé WP / PHP)</span>
+            <a href="weby.html">Zobrazit →</a>
+          </div>
+        </section>
+
+        <div class="metric-list">
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Monitorované weby</div><div class="metric-row__sub">7 v pořádku · 5 s odchylkou</div></div>
+            <div class="metric-row__value">12</div>
+          </div>
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Vyžaduje pozornost</div><div class="metric-row__sub">zastaralé WP / PHP</div></div>
+            <div class="metric-row__value metric-row__value--warning">3</div>
+          </div>
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Čekající aktualizace</div><div class="metric-row__sub">na 8 webech · 3 bezpečnostní</div></div>
+            <div class="metric-row__value">38</div>
+          </div>
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Aktivní alerty</div><div class="metric-row__sub">2 nové dnes · 1 ignorovaný</div></div>
+            <div class="metric-row__value">5</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="card card--scroll-x">
+        <div class="card__header card__header--filters">
+          <div style="min-width:0;margin-right:auto">
+            <div class="card__title">Vyžaduje řešení</div>
+            <div class="text-caption">Weby s problémem nebo vyžadující pozornost · v pořádku běžících 7 najdete v sekci Weby</div>
+          </div>
+          <div class="search"><span class="icon icon--sm" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span><span>Hledat web nebo klienta…</span></div>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat vše</button>
+        </div>
+
+        <div class="card__header card__header--filters">
+              <div class="segmented">
+                <button class="segmented__item segmented__item--active" type="button">Vše<span class="segmented__count">5</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-error)"></span>Problém<span class="segmented__count">2</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-warning)"></span>Pozornost<span class="segmented__count">3</span></button>
+              </div>
+          <div class="form__control form__control--select form__control--inline">Klient <b>· všichni</b><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+          <a class="u-ml-auto" href="weby.html" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)">Zobrazit všech 12 webů →</a>
+        </div>
+
+        <div class="empty">
+          <span class="icon icon--lg empty__icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span>
+          <div class="empty__title">Zatím tu není žádný web</div>
+          <div style="margin-top:14px"><button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-plus) center/contain no-repeat;mask:var(--icon-plus) center/contain no-repeat"></span>Přidat web</button></div>
+        </div>
+
+        <div class="card__footer card__footer--muted">
+          <span>5 webů vyžaduje řešení · 7 v pořádku</span>
+          <a class="u-ml-auto" href="alerty.html">Otevřít alerty →</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Na server jde obsah `www/`. Všechno ostatní žije v `dev/` a na server se
+# nedostane už tím, kde to leží.
+
+# Přístupy k FTP v čitelné podobě — jednou commitnuté heslo zůstane
+# v historii natrvalo.
+.vscode/sftp.json
+
+# Konfigurace — přístupy k databázi a `app_key`, kterým jsou šifrované
+# API klíče webů. V gitu je jen vzor (`config/env.sample.php`).
+/www/config/env.php
+
+# Úložiště patří serveru: logy, relace, uložené e-maily, ZIP pluginu
+# k distribuci, instalační token.
+/www/storage/install-token.txt
+/www/storage/monitor.lock
+/www/storage/logs/*
+/www/storage/sessions/*
+/www/storage/plugin/*
+/www/storage/avatars/*
+!/www/storage/**/.gitkeep
+
+# Jediný generovaný soubor. JS a ikony leží ve www/assets rovnou.
+/www/assets/css/
+
+# Závislosti
+/vendor/
+/node_modules/
+
+# Systémové
+.DS_Store
+Thumbs.db
+*.log

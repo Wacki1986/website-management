@@ -1,0 +1,26 @@
+// Správa webů — vstupní bod stylů.
+// Build: sass scss/main.scss dist/app.css --style=compressed
+
+@use "abstracts/tokens";
+@use "abstracts/icons";
+@use "abstracts/mixins";
+@use "base/reset";
+@use "base/typography";
+@use "layout/app-shell";
+@use "layout/sidebar";
+@use "layout/page-header";
+@use "components/button";
+@use "components/card";
+@use "components/table";
+@use "components/status";
+@use "components/form";
+@use "components/metric";
+@use "components/feedback";
+@use "components/uptime";
+@use "components/input";
+@use "components/list";
+@use "components/settings";
+@use "components/pick";
+@use "components/hero";
+@use "components/email";
+@use "utilities/helpers";

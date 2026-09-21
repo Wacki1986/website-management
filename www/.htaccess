@@ -1,0 +1,116 @@
+# Správa webů — .htaccess.
+#
+# Veřejné je POUZE /assets/ (a favicon/robots/sw.js), všechno ostatní
+# obsluhuje index.php. Nový adresář v projektu tedy nemůže omylem uniknout.
+#
+# Aplikace zná API klíče ke všem klientským webům — před přihlášení patří
+# ještě jedna vrstva. Odkomentujte JEDNU z variant níže a doplňte hodnoty.
+
+# ---------------------------------------------------------------------
+# Vrstva NAD aplikací — varianta A: omezení na IP adresy
+# (doplňkově funguje i `allowed_ips` v config/env.php — aplikační vrstva
+# s hezkou 403; tahle je serverová a zabere dřív). Nefunguje s upozorněními
+# na telefon z mobilní sítě — kdo chce push, volí variantu B.
+# ---------------------------------------------------------------------
+# <RequireAny>
+#     Require ip 89.103.12.44
+#     Require ip 10.0.0.0/8
+# </RequireAny>
+
+# ---------------------------------------------------------------------
+# Vrstva NAD aplikací — varianta B: HTTP Basic autentizace
+#
+# Postup včetně toho, co po zapnutí ověřit, je v dev/docs/00-provoz.md.
+# Soubor .htpasswd vygeneruje `php dev/tools/generate-htpasswd.php` —
+# nahrajte ho MIMO web root (o úroveň výš), ne do www!
+#
+# Odkomentujte VŠECHNO až po </RequireAny> a doplňte cestu k .htpasswd.
+# Výjimky nejsou volitelné: bez nich se tiše rozbije cron, sledování
+# otevření reportů, aktualizace pluginu na webech klientů a instalace
+# na plochu. Nic z toho, co pouštějí ven, není tajné — každý strojový
+# vstup si volajícího ověřuje vlastním tokenem.
+# ---------------------------------------------------------------------
+# AuthType Basic
+# AuthName "sprava_webu"
+# AuthUserFile /home/UZIVATEL/.htpasswd-sprava-webu
+#
+# # Service worker: prohlížeč si ho stahuje sám při kontrole aktualizace
+# # a přihlašovací údaje k tomu přiložit nemusí.
+# SetEnvIf Request_URI "(^|/)sw\.js$"                       SPRAVA_BEZ_HESLA=1
+#
+# # Manifest, ikony a offline stránka — bez nich selže instalace na plochu
+# # a s ní i upozornění na telefon.
+# SetEnvIf Request_URI "(^|/)assets/manifest\.webmanifest$" SPRAVA_BEZ_HESLA=1
+# SetEnvIf Request_URI "(^|/)assets/offline\.html$"         SPRAVA_BEZ_HESLA=1
+# SetEnvIf Request_URI "(^|/)assets/favicons/"              SPRAVA_BEZ_HESLA=1
+#
+# # Hostingový cron přes wget — chráněný vlastním tokenem v adrese.
+# SetEnvIf Request_URI "(^|/)system/monitor-cron$"          SPRAVA_BEZ_HESLA=1
+#
+# # Sledovací obrázek v klientských reportech — stahuje ho poštovní klient
+# # klienta, heslo nemá kam vzít. Neznámý token vrací tentýž prázdný GIF.
+# SetEnvIf Request_URI "(^|/)r/[a-f0-9]{32}\.gif$"          SPRAVA_BEZ_HESLA=1
+# SetEnvIf Request_URI "(^|/)assets/img/logo-mediagrafik\.svg$" SPRAVA_BEZ_HESLA=1
+#
+# # Distribuce pluginu MEDIAGRAFIK Monitor — WordPress na webech klientů
+# # si sem sahá pro informace o aktualizaci a pro ZIP.
+# SetEnvIf Request_URI "(^|/)plugin/mediagrafik-monitor/"   SPRAVA_BEZ_HESLA=1
+#
+# # Heslo, NEBO jedna z výjimek výš. `<Files>` by nestačilo: adresy jako
+# # /system/monitor-cron žádný soubor na disku nemají. Druhý řádek
+# # s REDIRECT_ je pojistka pro servery, které přepis provedou jako
+# # vnitřní přesměrování.
+# <RequireAny>
+#     Require valid-user
+#     Require env SPRAVA_BEZ_HESLA
+#     Require env REDIRECT_SPRAVA_BEZ_HESLA
+# </RequireAny>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # HTTPS je povinné.
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # Veřejné cesty: statické assety a soubory, které musí ležet v kořeni.
+    # `zalozeni-spravce.php` tu normálně neexistuje (404) — nahrává se jen
+    # jednorázově při nasazení a sám se maže. `sw.js` musí ven jako soubor
+    # v kořeni: scope service workeru je daný jeho umístěním.
+    RewriteRule ^assets/ - [L]
+    RewriteRule ^(favicon\.ico|robots\.txt|sw\.js|zalozeni-spravce\.php)$ - [L]
+
+    # Všechno ostatní řeší aplikace (včetně /app/…, /config/…, /storage/…).
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Druhá vrstva pro případ, že mod_rewrite chybí, ale .htaccess se čte.
+<IfModule !mod_rewrite.c>
+    <FilesMatch "\.(php|log|sql|md|yml|yaml|ini|sh|ps1|bak|json|lock|eml)$">
+        Require all denied
+    </FilesMatch>
+    <Files "index.php">
+        Require all granted
+    </Files>
+</IfModule>
+
+Options -Indexes
+DirectoryIndex index.php
+
+# Apache `.webmanifest` nezná a vydal by ho jako octet-stream.
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff2|svg|png|jpg|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Service worker je `.js`, takže by ho pravidlo výš zamklo v cache na rok.
+    # Musí být AŽ ZA ním — Apache slučuje pravidla v pořadí, v jakém stojí.
+    <Files "sw.js">
+        Header set Cache-Control "no-cache"
+    </Files>
+</IfModule>

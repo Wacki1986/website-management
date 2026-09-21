@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Detail webu / Pluginy</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb">
+        <a href="weby.html">Weby</a><span>/</span><span>Kavárna Dobrá</span>
+      </div>
+
+      <div class="page-header__top">
+        <div>
+          <div class="page-header__title">Kavárna Dobrá</div>
+          <div class="page-header__meta">
+            <span class="status status--error"><span class="status__dot"></span>Nedostupný · HTTP 503</span>
+            <a href="https://kavarnadobra.cz">kavarnadobra.cz</a>
+            <span>Kavárna Dobrá s.r.o.</span>
+            <span>kontrola každých 15 min</span>
+          </div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-external) center/contain no-repeat;mask:var(--icon-external) center/contain no-repeat"></span>wp-admin</button>
+          <button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat teď</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <a class="tabs__item" href="detail-webu-prehled.html">Přehled</a>
+        <a class="tabs__item tabs__item--active" href="detail-webu-pluginy.html">Pluginy <span class="badge badge--warning">4 neakt.</span></a>
+        <a class="tabs__item" href="detail-webu-obsah.html">Obsah</a>
+        <a class="tabs__item" href="detail-webu-zabezpeceni.html">Zabezpečení <span class="badge badge--warning">3 chybí</span></a>
+        <a class="tabs__item" href="detail-webu-servis.html">Servis <span class="badge">za 12 dní</span></a>
+        <a class="tabs__item" href="detail-webu-reporty.html">Reporty</a>
+        <a class="tabs__item" href="detail-webu-nastaveni.html">Nastavení</a>
+      </nav>
+    </header>
+
+    <div class="app__content">
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric__label">Pluginů celkem</div>
+          <div class="metric__value">23</div>
+          <div class="metric__note">19 aktivních · 4 neaktivní</div>
+        </div>
+        <div class="metric">
+          <div class="metric__label">Čekající aktualizace</div>
+          <div class="metric__value metric__value--warning">9</div>
+          <div class="metric__note">2 bezpečnostní</div>
+        </div>
+        <div class="metric metric--error">
+          <div class="metric__label">Neaktivní pluginy</div>
+          <div class="metric__value metric__value--error">4</div>
+          <div class="metric__note">riziko – doporučeno smazat</div>
+        </div>
+        <div class="metric">
+          <div class="metric__label">Poslední aktualizace</div>
+          <div class="metric__value">6. 9.</div>
+          <div class="metric__note">WooCommerce 9.3.0</div>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="card__header">
+          <h2 class="card__title">Pluginy</h2>
+          <div class="search"><span class="icon icon--sm" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span><span>Hledat plugin…</span></div>
+          <div class="u-ml-auto"><button class="btn btn--primary btn--sm" type="button">Aktualizovat vybrané (5)</button></div>
+        </div>
+
+        <div class="table table--plugins">
+          <div class="table__head">
+            <div><button class="checkbox checkbox--indeterminate" type="button" role="checkbox" aria-checked="mixed"><span class="checkbox__mark"></span></button></div>
+            <div>Plugin</div><div>Stav</div><div>Verze</div><div>Dostupná</div><div class="table__cell table__cell--right">Akce</div>
+          </div>
+            <div class="table__row">
+              <div class="table__cell"><button class="checkbox" type="button" aria-checked="false" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">WooCommerce</div>
+                <div class="table__secondary u-truncate">Automattic</div>
+              </div>
+              <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Aktivní</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">9.3.0</div>
+              <div class="table__cell table__cell--mono u-hide-mobile">—</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Detail</a></div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><button class="checkbox checkbox--checked" type="button" aria-checked="true" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">Elementor</div>
+                <div class="table__secondary u-truncate">Elementor.com</div>
+              </div>
+              <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Aktivní</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">3.23.1</div>
+              <div class="table__cell table__cell--mono u-hide-mobile" style="color:var(--color-status-warning-text)">3.24.0</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Aktualizovat</a></div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><button class="checkbox checkbox--checked" type="button" aria-checked="true" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">Yoast SEO</div>
+                <div class="table__secondary u-truncate">Team Yoast</div>
+              </div>
+              <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Aktivní</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">22.8</div>
+              <div class="table__cell table__cell--mono u-hide-mobile" style="color:var(--color-status-warning-text)">23.1</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Aktualizovat</a></div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><button class="checkbox" type="button" aria-checked="false" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">UpdraftPlus</div>
+                <div class="table__secondary u-truncate">UpdraftPlus.Com</div>
+              </div>
+              <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Aktivní</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">1.24.6</div>
+              <div class="table__cell table__cell--mono u-hide-mobile">—</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Detail</a></div>
+            </div>
+            <div class="table__row table__row--error">
+              <div class="table__cell"><button class="checkbox checkbox--checked" type="button" aria-checked="true" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">Contact Form 7</div>
+                <div class="table__secondary u-truncate">Takayuki Miyoshi</div>
+              </div>
+              <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Neaktivní · riziko</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">5.9.3</div>
+              <div class="table__cell table__cell--mono u-hide-mobile" style="color:var(--color-status-warning-text)">6.0</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Aktualizovat</a></div>
+            </div>
+            <div class="table__row table__row--error">
+              <div class="table__cell"><button class="checkbox" type="button" aria-checked="false" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">WP Super Cache</div>
+                <div class="table__secondary u-truncate">Automattic</div>
+              </div>
+              <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Neaktivní · riziko</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">1.9.4</div>
+              <div class="table__cell table__cell--mono u-hide-mobile">—</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Smazat</a></div>
+            </div>
+            <div class="table__row table__row--error">
+              <div class="table__cell"><button class="checkbox checkbox--checked" type="button" aria-checked="true" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">Slider Revolution</div>
+                <div class="table__secondary u-truncate">ThemePunch</div>
+              </div>
+              <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Neaktivní · riziko</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">6.6.14</div>
+              <div class="table__cell table__cell--mono u-hide-mobile" style="color:var(--color-status-warning-text)">6.7.20</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Aktualizovat</a></div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><button class="checkbox checkbox--checked" type="button" aria-checked="true" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">Wordfence Security</div>
+                <div class="table__secondary u-truncate">Defiant</div>
+              </div>
+              <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Aktivní</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">7.11.6</div>
+              <div class="table__cell table__cell--mono u-hide-mobile" style="color:var(--color-status-warning-text)">8.0.1</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Aktualizovat</a></div>
+            </div>
+            <div class="table__row table__row--error">
+              <div class="table__cell"><button class="checkbox" type="button" aria-checked="false" role="checkbox"><span class="checkbox__mark"></span></button></div>
+              <div class="table__cell">
+                <div class="table__primary u-truncate">Duplicate Post</div>
+                <div class="table__secondary u-truncate">Yoast</div>
+              </div>
+              <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Neaktivní · riziko</span></div>
+              <div class="table__cell table__cell--mono u-hide-mobile">4.5</div>
+              <div class="table__cell table__cell--mono u-hide-mobile">—</div>
+              <div class="table__cell table__cell--right u-hide-mobile"><a href="#">Smazat</a></div>
+            </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

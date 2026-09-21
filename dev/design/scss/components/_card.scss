@@ -1,0 +1,132 @@
+.card {
+  @include card-surface;
+  overflow: hidden;
+
+  &--small-shadow { box-shadow: var(--shadow-card-small); }
+  &--padded { padding: var(--spacing-xxlarge); }
+  &--note {
+    background: var(--color-brand-soft);
+    border-color: var(--color-brand-border);
+    box-shadow: none;
+    padding: var(--spacing-xlarge) var(--spacing-xxlarge);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-medium);
+    flex-wrap: wrap;
+    padding: var(--spacing-large) var(--spacing-xxlarge);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  &__title {
+    font-size: var(--font-size-title);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-heading);
+  }
+
+  &__note {
+    font-size: var(--font-size-label);
+    color: var(--color-text-subtle);
+    margin-top: 2px;
+  }
+
+  &__body { padding: var(--spacing-xxlarge); }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-medium);
+    flex-wrap: wrap;
+    padding: var(--spacing-large) var(--spacing-xxlarge);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+}
+
+// Karta se skóre / stavem — barvu určuje modifikátor.
+.score-card {
+  border-radius: var(--border-radius-card);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-card);
+  box-shadow: var(--shadow-card-small);
+  padding: var(--spacing-xlarge) var(--spacing-xxlarge);
+
+  &__label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-caps);
+    text-transform: uppercase;
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--border-radius-pill);
+  }
+
+  &__value {
+    font-size: var(--font-size-heading-small);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-heading);
+    margin-top: 10px;
+  }
+
+  &__note {
+    font-size: var(--font-size-body);
+    color: var(--color-text-subtle);
+    line-height: var(--line-height-relaxed);
+    margin-top: var(--spacing-xxsmall);
+  }
+
+  &--ok {
+    background: var(--color-status-ok-soft);
+    border-color: var(--color-status-ok-halo);
+    .score-card__label { color: var(--color-status-ok-text); }
+    .score-card__dot {
+      background: var(--color-status-ok);
+      box-shadow: 0 0 0 4px var(--color-status-ok-halo);
+    }
+  }
+
+  &--warning {
+    background: var(--color-status-warning-soft);
+    border-color: var(--color-status-warning-halo);
+    .score-card__label { color: var(--color-status-warning-text); }
+    .score-card__dot {
+      background: var(--color-status-warning);
+      box-shadow: 0 0 0 4px var(--color-status-warning-halo);
+    }
+  }
+
+  &--error {
+    background: var(--color-status-error-soft);
+    border-color: var(--color-status-error-border);
+    .score-card__label { color: var(--color-status-error-text); }
+    .score-card__dot {
+      background: var(--color-status-error);
+      box-shadow: 0 0 0 4px var(--color-status-error-halo);
+    }
+  }
+}
+
+// doplněno: bílá varianta score-card (klidový stav) a destruktivní blok
+.score-card--quiet {
+  background: var(--color-surface-card);
+  border-color: var(--color-border-default);
+  box-shadow: var(--shadow-card-small);
+}
+
+.card--danger {
+  background: var(--color-status-error-surface);
+  border-color: var(--color-status-error-border);
+  padding: var(--spacing-xlarge) var(--spacing-xxlarge);
+  box-shadow: none;
+}

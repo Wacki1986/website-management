@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Detail webu / Reporty</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb">
+        <a href="weby.html">Weby</a><span>/</span><span>Kavárna Dobrá</span>
+      </div>
+
+      <div class="page-header__top">
+        <div>
+          <div class="page-header__title">Kavárna Dobrá</div>
+          <div class="page-header__meta">
+            <span class="status status--error"><span class="status__dot"></span>Nedostupný · HTTP 503</span>
+            <a href="https://kavarnadobra.cz">kavarnadobra.cz</a>
+            <span>Kavárna Dobrá s.r.o.</span>
+            <span>kontrola každých 15 min</span>
+          </div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-external) center/contain no-repeat;mask:var(--icon-external) center/contain no-repeat"></span>wp-admin</button>
+          <button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat teď</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <a class="tabs__item" href="detail-webu-prehled.html">Přehled</a>
+        <a class="tabs__item" href="detail-webu-pluginy.html">Pluginy <span class="badge badge--warning">4 neakt.</span></a>
+        <a class="tabs__item" href="detail-webu-obsah.html">Obsah</a>
+        <a class="tabs__item" href="detail-webu-zabezpeceni.html">Zabezpečení <span class="badge badge--warning">3 chybí</span></a>
+        <a class="tabs__item" href="detail-webu-servis.html">Servis <span class="badge">za 12 dní</span></a>
+        <a class="tabs__item tabs__item--active" href="detail-webu-reporty.html">Reporty</a>
+        <a class="tabs__item" href="detail-webu-nastaveni.html">Nastavení</a>
+      </nav>
+    </header>
+
+    <div class="app__content">
+
+      <section class="card">
+        <div class="card__header">
+          <div>
+            <h2 class="card__title">Odeslané reporty</h2>
+            <div class="card__note">Měsíčně, 1. den v měsíci → info@kavarnadobra.cz</div>
+          </div>
+          <button class="btn btn--primary btn--sm" type="button">Odeslat report teď</button>
+        </div>
+
+        <div class="table table--reports">
+          <div class="table__row">
+            <div class="table__cell table__cell--mono">1. 9. 2026</div>
+            <div class="table__cell">
+              <div class="table__primary">Srpen 2026</div>
+              <div class="table__secondary u-truncate">uptime 99,4 % · 12 aktualizací · 1 výpadek</div>
+            </div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Odesláno</span></div>
+            <div class="table__cell text-subtle" style="font-size:var(--font-size-label)">otevřen 1. 9. 09:12</div>
+            <div class="table__cell table__cell--right"><a href="#">Náhled</a></div>
+          </div>
+          <div class="table__row">
+            <div class="table__cell table__cell--mono">1. 8. 2026</div>
+            <div class="table__cell">
+              <div class="table__primary">Červenec 2026</div>
+              <div class="table__secondary u-truncate">uptime 100 % · 8 aktualizací</div>
+            </div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Odesláno</span></div>
+            <div class="table__cell text-subtle" style="font-size:var(--font-size-label)">otevřen 2. 8. 07:40</div>
+            <div class="table__cell table__cell--right"><a href="#">Náhled</a></div>
+          </div>
+          <div class="table__row">
+            <div class="table__cell table__cell--mono">1. 7. 2026</div>
+            <div class="table__cell">
+              <div class="table__primary">Červen 2026</div>
+              <div class="table__secondary u-truncate">uptime 99,9 % · 15 aktualizací</div>
+            </div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Odesláno</span></div>
+            <div class="table__cell text-subtle" style="font-size:var(--font-size-label)">neotevřen</div>
+            <div class="table__cell table__cell--right"><a href="#">Náhled</a></div>
+          </div>
+          <div class="table__row">
+            <div class="table__cell table__cell--mono">1. 6. 2026</div>
+            <div class="table__cell">
+              <div class="table__primary">Květen 2026</div>
+              <div class="table__secondary u-truncate">odeslání selhalo – neplatná adresa</div>
+            </div>
+            <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Selhalo</span></div>
+            <div class="table__cell text-subtle" style="font-size:var(--font-size-label)">—</div>
+            <div class="table__cell table__cell--right"><a href="#">Náhled</a></div>
+          </div>
+          <div class="table__row">
+            <div class="table__cell table__cell--mono">1. 5. 2026</div>
+            <div class="table__cell">
+              <div class="table__primary">Duben 2026</div>
+              <div class="table__secondary u-truncate">uptime 99,7 % · 9 aktualizací</div>
+            </div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Odesláno</span></div>
+            <div class="table__cell text-subtle" style="font-size:var(--font-size-label)">otevřen 3. 5. 18:02</div>
+            <div class="table__cell table__cell--right"><a href="#">Náhled</a></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

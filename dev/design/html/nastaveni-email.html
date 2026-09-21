@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Nastavení / Odchozí pošta</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item sidebar__item--active" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header page-header--list">
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Nastavení aplikace</h1>
+          <div class="page-header__meta">Platí pro všechny weby, pokud u konkrétního webu nenastavíte jinak</div>
+        </div>
+        <div class="page-header__actions">
+          <span class="text-subtle" style="font-size:var(--font-size-label)">Vše uloženo</span>
+          <button class="btn btn--ghost" type="button">Zrušit změny</button>
+          <button class="btn btn--secondary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span>Uložit nastavení</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <a class="tabs__item" href="nastaveni-monitoring.html">Monitoring</a>
+        <a class="tabs__item" href="nastaveni-alerty.html">Alerty a prahy</a>
+        <a class="tabs__item tabs__item--active" href="nastaveni-email.html">Odchozí pošta</a>
+        <a class="tabs__item" href="nastaveni-uzivatele.html">Uživatelé</a>
+      </nav>
+    </header>
+
+    <div class="app__content">
+
+      <div class="split split--settings">
+
+        <section class="card card--padded">
+          <div class="form">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <div class="card__title">Odchozí pošta (SMTP)</div>
+                <div class="card__note">Přes tento účet odcházejí alerty i klientské reporty.</div>
+              </div>
+              <span class="pill pill--ok"><span class="dot dot--ok" style="width:8px;height:8px;box-shadow:none"></span>Připojení ověřeno</span>
+            </div>
+
+            <div class="form__row">
+              <div class="form__field">
+                <label class="form__label form__label--caps">Server</label>
+                <input class="form__control form__control--mono" type="text" value="smtp.wedos.net">
+              </div>
+              <div class="form__field">
+                <label class="form__label form__label--caps">Port</label>
+                <input class="form__control form__control--mono" type="text" value="587">
+              </div>
+              <div class="form__field">
+                <label class="form__label form__label--caps">Uživatel</label>
+                <input class="form__control form__control--mono" type="text" value="monitor@mediagrafik.cz">
+              </div>
+              <div class="form__field">
+                <label class="form__label form__label--caps">Heslo</label>
+                <input class="form__control form__control--mono" type="text" value="••••••••••••">
+              </div>
+              <div class="form__field">
+                <label class="form__label form__label--caps">Jméno odesílatele</label>
+                <input class="form__control" type="text" value="MEDIAGRAFIK · správa webů">
+              </div>
+              <div class="form__field">
+                <label class="form__label form__label--caps">Adresa odesílatele</label>
+                <input class="form__control form__control--mono" type="text" value="monitor@mediagrafik.cz">
+              </div>
+            </div>
+
+            <div class="form__field">
+              <span class="form__label form__label--caps">Šifrování</span>
+              <div class="segmented" style="max-width:340px">
+                <button class="segmented__item segmented__item--active" type="button">STARTTLS</button>
+                <button class="segmented__item" type="button">SSL / TLS</button>
+                <button class="segmented__item" type="button">Žádné</button>
+              </div>
+            </div>
+
+            <div class="card__footer" style="padding:14px 0 0">
+              <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>Odeslat testovací e-mail</button>
+              <span class="text-subtle" style="font-size:var(--font-size-label)">Poslední test 8. 9. v 14:02 — doručeno za 2 s</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="split__aside">
+          <div class="card card--small-shadow card--padded">
+            <div style="font-weight:var(--font-weight-semibold)">Doručitelnost</div>
+            <div class="text-subtle" style="font-size:var(--font-size-label);margin-top:6px;line-height:var(--line-height-relaxed);text-wrap:pretty">Používejte adresu na vlastní doméně s nastaveným SPF a DKIM. Bez toho klientům reporty padají do spamu — a vy o tom nevíte.</div>
+          </div>
+          <div class="card card--small-shadow">
+            <div class="summary-list">
+              <div class="summary-list__row"><span class="summary-list__label">Verze aplikace</span><span class="summary-list__value">1.4.2</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Monitor</span><span class="summary-list__value">běží · poslední cyklus 08:30</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Databáze</span><span class="summary-list__value">1,2 GB · záloha 03:00</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Kontrol dnes</span><span class="summary-list__value">2 976</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,85 @@
+// app/_auth.scss — přihlášení, zapomenuté heslo, chybové stránky bez
+// přihlášení. Návrh tyhle obrazovky nemá; skládají se z karty design
+// systému na podkladu stránky.
+
+.auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--gradient-page, var(--color-background-page));
+
+  @media (max-width: 768px) {
+    // Na telefonu se formulář lepí nahoru: s klávesnicí by centrovaný obsah
+    // odskočil a políčko, do kterého se píše, by uteklo pod ni.
+    align-items: flex-start;
+    padding: 28px 16px 40px;
+  }
+
+  &__box {
+    width: 420px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xlarge);
+  }
+
+  &__brand {
+    position: relative;
+    align-self: flex-start;
+    display: block;
+    padding: 0 8px 14px 0;
+
+    &:hover { text-decoration: none; }
+  }
+
+  &__logo {
+    width: 172px;
+    height: auto;
+    display: block;
+  }
+
+  &__badge {
+    top: auto;
+    bottom: -4px;
+    right: auto;
+    left: 0;
+  }
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    font-size: var(--font-size-heading);
+  }
+
+  // Zůstat přihlášen · Zapomenuté heslo — jedna řada nad tlačítkem.
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .form__field { flex: 1; }
+
+    a {
+      margin-left: auto;
+      font-size: var(--font-size-label);
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+  }
+
+  &__foot {
+    font-size: var(--font-size-label);
+    text-align: center;
+  }
+}
+
+[data-theme="dark"] .auth__logo {
+  filter: brightness(0) invert(1);
+}

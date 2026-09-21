@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Odběry web pushe — „na která zařízení posílat upozornění".
+ *
+ * Tabulka je převzatá z klientské aplikace (tam je součástí baseline), aby
+ * se dal beze změny převzít i model `PushSubscriptions`. Endpoint od push
+ * služby je dlouhý a do indexu se nevejde, proto se unikátnost hlídá přes
+ * jeho SHA-256 v `endpoint_hash`.
+ *
+ * Cizí klíč s CASCADE je tu záměrně: odběr bez účtu nemá komu pípat. Účty
+ * se sice ve správě nemažou (jen pozastavují), ale kdyby se to někdy
+ * změnilo, nemá po nich zůstat mrtvý řádek.
+ */
+return function (PDO $pdo): void {
+    $pdo->exec(<<<'SQL'
+        CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+          `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+          `user_id` int(10) unsigned NOT NULL,
+          `endpoint_hash` char(64) NOT NULL,
+          `endpoint` text NOT NULL,
+          `p256dh` varchar(255) NOT NULL,
+          `auth` varchar(255) NOT NULL,
+          `user_agent` varchar(255) DEFAULT NULL,
+          `failed_count` tinyint(3) unsigned NOT NULL DEFAULT 0,
+          `created_at` datetime NOT NULL,
+          `last_success_at` datetime DEFAULT NULL,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uq_push_endpoint` (`endpoint_hash`),
+          KEY `idx_push_user` (`user_id`),
+          CONSTRAINT `fk_push_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+        SQL);
+};

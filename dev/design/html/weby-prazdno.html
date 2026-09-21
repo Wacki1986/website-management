@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Weby (prázdný filtr)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">5</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header page-header--list">
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Weby</h1>
+          <div class="page-header__meta">13 monitorovaných webů · 2 s problémem · 2 servisy po termínu</div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat vše</button>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-plus) center/contain no-repeat;mask:var(--icon-plus) center/contain no-repeat"></span>Přidat web</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <section class="card card--scroll-x">
+        <div class="card__header card__header--filters">
+          <div class="search" style="max-width:320px"><span class="icon icon--sm" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span><span>Hledat web nebo klienta…</span></div>
+              <div class="segmented">
+                <button class="segmented__item" type="button">Vše<span class="segmented__count">13</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-error)"></span>Problém<span class="segmented__count">2</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-warning)"></span>Pozornost<span class="segmented__count">3</span></button>
+                <button class="segmented__item segmented__item--active" type="button"><span class="segmented__dot" style="background:var(--color-status-ok)"></span>V pořádku<span class="segmented__count">8</span></button>
+              </div>
+          <div class="row u-ml-auto">
+            <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Seskupit podle klienta</button>
+            <div class="text-subtle" style="font-size:var(--font-size-label)">Řadit: <b>Stav</b></div>
+          </div>
+        </div>
+
+        <div class="table table--sites">
+          <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP / PHP</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div>Report</div><div></div></div>
+
+          <div class="empty">
+            <span class="icon icon--lg empty__icon" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span>
+            <div class="empty__title">Žádný web neodpovídá filtru</div>
+            <div class="empty__text">Zkuste zrušit filtr stavu nebo hledat podle jiného jména.</div>
+            <div style="margin-top:14px"><button class="btn btn--secondary btn--sm" type="button">Zrušit filtr</button></div>
+          </div>
+        </div>
+
+        <div class="card__footer card__footer--muted">
+          <span>Zobrazeno 0 z 13 webů</span>
+          <a class="u-ml-auto" href="dashboard.html">Zpět na dashboard</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,203 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xlarge);
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-large);
+
+    &--single { grid-template-columns: minmax(0, 1fr); }
+
+    @media (max-width: 768px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+  }
+
+  &__control {
+    width: 100%;
+    padding: 11px 13px;
+    background: var(--color-surface-card-solid);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--border-radius-large);
+    color: var(--color-text-primary);
+
+    &::placeholder { color: var(--color-text-faint); }
+    &:focus-visible { @include focus-ring; }
+  }
+
+  &__hint {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-subtle);
+  }
+
+  &__error {
+    font-size: var(--font-size-caption);
+    color: var(--color-status-error-text);
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: var(--spacing-large);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+}
+
+// Segmentovaný přepínač (frekvence servisu apod.).
+.segmented {
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  background: var(--color-surface-muted);
+  border-radius: var(--border-radius-large);
+  flex-wrap: wrap;
+
+  &__item {
+    flex: 1;
+    min-width: 88px;
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    border-radius: var(--border-radius-medium);
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-subtle);
+    cursor: pointer;
+
+    &--active {
+      background: var(--color-surface-card-solid);
+      color: var(--color-text-primary);
+      box-shadow: var(--shadow-subtle);
+    }
+  }
+}
+
+// Volba typu (karty s ikonou).
+.choice {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  &__item {
+    text-align: left;
+    padding: var(--spacing-medium) var(--spacing-large);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--border-radius-large);
+    background: var(--color-surface-card-solid);
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    &--active {
+      border-color: var(--color-brand);
+      background: var(--color-brand-soft);
+    }
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__note {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-subtle);
+    line-height: var(--line-height-body);
+    margin-top: var(--spacing-xxsmall);
+  }
+}
+
+.toggle {
+  width: 40px;
+  height: 23px;
+  flex: none;
+  position: relative;
+  border: 0;
+  padding: 0;
+  border-radius: var(--border-radius-pill);
+  background: var(--color-border-strong);
+  cursor: pointer;
+  transition: background var(--transition-fast) var(--easing-standard);
+
+  &__knob {
+    position: absolute;
+    top: 2.5px;
+    left: 2.5px;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--border-radius-pill);
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: left var(--transition-fast) var(--easing-standard);
+  }
+
+  &--on {
+    background: var(--color-brand);
+
+    .toggle__knob { left: 19.5px; }
+  }
+}
+
+// doplněno: statické zobrazení selectu a monospace hodnoty
+.form__control--select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-medium);
+  border-color: var(--color-border-strong);
+}
+
+.form__control--mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+}
+
+// Hodnota pole v režimu čtení (detail klienta).
+.form__value {
+  padding: 4px 0 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-body-large);
+  font-weight: var(--font-weight-semibold);
+  min-height: 42px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.form__value--empty { color: var(--color-text-faint); }
+
+.form__label-optional {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-faint);
+}
+
+.form__row--full { grid-template-columns: minmax(0, 1fr); }
+
+.table--client-sites { --table-columns: minmax(0, 1.6fr) 150px 130px 110px 80px; }
+
+@media (max-width: 768px) {
+  .table--client-sites { --table-columns: minmax(0, 1fr) 80px; }
+}

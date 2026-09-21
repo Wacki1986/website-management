@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core\Monitor;
+
+/**
+ * Konce bezpečnostní podpory PHP.
+ *
+ * Ručně udržovaná tabulka (php.net/supported-versions) — jedna úprava
+ * ročně, když vyjde nová verze. Živé stahování z php.net by přidalo externí
+ * volání do cronu kvůli údaji, který se mění jednou za rok.
+ */
+final class PhpSupport
+{
+    /** @var array<string, string> minor verze => poslední den bezpečnostní podpory */
+    public const TABLE = [
+        '7.0' => '2019-01-10',
+        '7.1' => '2019-12-01',
+        '7.2' => '2020-11-30',
+        '7.3' => '2021-12-06',
+        '7.4' => '2022-11-28',
+        '8.0' => '2023-11-26',
+        '8.1' => '2025-12-31',
+        '8.2' => '2026-12-31',
+        '8.3' => '2027-12-31',
+        '8.4' => '2028-12-31',
+        '8.5' => '2029-12-31',
+    ];
+
+    /** Doporučená verze do textů („Doporučen přechod na 8.3"). */
+    public const RECOMMENDED = '8.3';
+
+    /** `8.1.29` → `8.1`. */
+    public static function minor(string $version): string
+    {
+        return preg_match('/^(\d+\.\d+)/', $version, $m) === 1 ? $m[1] : $version;
+    }
+
+    /** Poslední den podpory, nebo null pro neznámou (novější) verzi. */
+    public static function endOfLife(string $version): ?string
+    {
+        return self::TABLE[self::minor($version)] ?? null;
+    }
+
+    public static function isEol(string $version, ?int $now = null): bool
+    {
+        $end = self::endOfLife($version);
+
+        if ($end === null) {
+            // Verze mimo tabulku: buď starší než 7.0 (dávno bez podpory),
+            // nebo novější než tabulka zná (podporovaná).
+            return version_compare(self::minor($version), '7.0', '<');
+        }
+
+        return strtotime($end . ' 23:59:59') < ($now ?? time());
+    }
+
+    /** Kolik dní podpory zbývá (záporné = po konci); null = neznámé. */
+    public static function daysLeft(string $version, ?int $now = null): ?int
+    {
+        $end = self::endOfLife($version);
+
+        if ($end === null) {
+            return null;
+        }
+
+        return (int) floor((strtotime($end . ' 23:59:59') - ($now ?? time())) / 86400);
+    }
+}

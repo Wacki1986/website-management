@@ -1,0 +1,12 @@
+# Konfigurace OpenSSL jen pro testy: vlastnoručně podepsaný certifikát
+# (SslChecker::parse). Windows bez souboru klíč ani CSR nevyrobí.
+openssl_conf = default
+
+[default]
+
+[req]
+distinguished_name = req_dn
+prompt = no
+
+[req_dn]
+CN = test.cz

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Detail webu / Nastavení</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb">
+        <a href="weby.html">Weby</a><span>/</span><span>Kavárna Dobrá</span>
+      </div>
+
+      <div class="page-header__top">
+        <div>
+          <div class="page-header__title">Kavárna Dobrá</div>
+          <div class="page-header__meta">
+            <span class="status status--error"><span class="status__dot"></span>Nedostupný · HTTP 503</span>
+            <a href="https://kavarnadobra.cz">kavarnadobra.cz</a>
+            <span>Kavárna Dobrá s.r.o.</span>
+            <span>kontrola každých 15 min</span>
+          </div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-external) center/contain no-repeat;mask:var(--icon-external) center/contain no-repeat"></span>wp-admin</button>
+          <button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat teď</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <a class="tabs__item" href="detail-webu-prehled.html">Přehled</a>
+        <a class="tabs__item" href="detail-webu-pluginy.html">Pluginy <span class="badge badge--warning">4 neakt.</span></a>
+        <a class="tabs__item" href="detail-webu-obsah.html">Obsah</a>
+        <a class="tabs__item" href="detail-webu-zabezpeceni.html">Zabezpečení <span class="badge badge--warning">3 chybí</span></a>
+        <a class="tabs__item" href="detail-webu-servis.html">Servis <span class="badge">za 12 dní</span></a>
+        <a class="tabs__item" href="detail-webu-reporty.html">Reporty</a>
+        <a class="tabs__item tabs__item--active" href="detail-webu-nastaveni.html">Nastavení</a>
+      </nav>
+    </header>
+
+    <div class="app__content">
+
+      <div class="split split--settings">
+
+        <div class="stack">
+
+          <section class="card card--padded">
+            <div class="form">
+              <div>
+                <div class="card__title">Připojení</div>
+                <div class="card__note">Plugin MEDIAGRAFIK Monitor na straně webu ověřuje požadavky tímto klíčem.</div>
+              </div>
+
+              <div class="form__field">
+                <span class="form__label">API klíč</span>
+                <div class="row" style="flex-wrap:wrap">
+                  <div class="form__control form__control--mono" style="flex:1;min-width:220px">mg_live_••••••••••••••••••••4f7a</div>
+                  <button class="btn btn--secondary" type="button">Zkopírovat</button>
+                  <button class="btn btn--ghost" type="button">Vygenerovat nový</button>
+                </div>
+              </div>
+
+              <div class="form__row">
+                <div class="form__field">
+                  <span class="form__label">Přiřazený klient</span>
+                  <div class="form__control form__control--select">Kavárna Dobrá s.r.o.<span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+                </div>
+                <div class="form__field">
+                  <span class="form__label">Frekvence kontrol</span>
+                  <div class="form__control form__control--select">každých 15 min<span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+                </div>
+              </div>
+
+              <div class="row"><button class="btn btn--primary" type="button">Uložit změny</button><button class="btn btn--ghost" type="button">Zrušit</button></div>
+            </div>
+          </section>
+
+          <section class="card card--padded">
+            <div class="form">
+              <div class="row" style="justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div class="card__title">Klientské reporty</div>
+                  <div class="card__note">Aktivní · 1. den v měsíci, poslední odeslán 1. 9. 2026</div>
+                </div>
+                <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+              </div>
+
+              <div class="form__field">
+                <span class="form__label">Jak často</span>
+                <div class="segmented">
+                  <button class="segmented__item" type="button">Týdně</button>
+                  <button class="segmented__item segmented__item--active" type="button">Měsíčně</button>
+                  <button class="segmented__item" type="button">Čtvrtletně</button>
+                  <button class="segmented__item" type="button">Jen ručně</button>
+                </div>
+                <div class="form__hint">Odchází automaticky 1. dne v měsíci v 06:00.</div>
+              </div>
+
+              <div class="form__row">
+                <div class="form__field">
+                  <span class="form__label">Den odeslání</span>
+                  <div class="form__control form__control--select">1. den v měsíci<span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+                </div>
+                <div class="form__field">
+                  <span class="form__label">Čas odeslání</span>
+                  <div class="form__control form__control--select">06:00<span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+                </div>
+              </div>
+
+              <div class="form__field">
+                <span class="form__label">Komu chodí</span>
+                <div class="pill-group">
+                  <span class="pill pill--muted"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>info@kavarnadobra.cz<span class="pill__note">klient</span><button class="pill__remove" type="button" aria-label="Odebrat"></button></span>
+                  <span class="pill pill--muted"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>studio@mediagrafik.cz<span class="pill__note">kopie</span></span>
+                  <button class="pill pill--add" type="button"><span class="icon icon--sm" style="-webkit-mask:var(--icon-plus) center/contain no-repeat;mask:var(--icon-plus) center/contain no-repeat"></span>Přidat adresu</button>
+                </div>
+                <div class="form__hint">Výchozí adresa se bere z karty klienta (Kavárna Dobrá s.r.o.).</div>
+              </div>
+
+              <div class="card__footer" style="padding:14px 0 0">
+                <div class="text-subtle" style="font-size:var(--font-size-label)">Nejbližší odeslání 1. 10. 2026 v 06:00</div>
+                <div class="row u-ml-auto"><button class="btn btn--secondary btn--sm" type="button">Náhled reportu</button><button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>Odeslat teď</button></div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <aside class="split__aside">
+          <div class="card card--small-shadow">
+            <div class="summary-list">
+              <div class="summary-list__row" style="align-items:center">
+                <div>
+                  <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-body)">Hlídat dostupnost</div>
+                  <div class="text-caption">alert po 3 neúspěšných kontrolách</div>
+                </div>
+                <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+              </div>
+              <div class="summary-list__row" style="align-items:center">
+                <div>
+                  <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-body)">Hlídat aktualizace</div>
+                  <div class="text-caption">denní souhrn v 07:00</div>
+                </div>
+                <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+              </div>
+              <div class="summary-list__row" style="align-items:center">
+                <div>
+                  <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-body)">Hlídat platnost SSL</div>
+                  <div class="text-caption">upozornit 30 dní předem</div>
+                </div>
+                <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--danger">
+            <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)">Odebrat web z monitoringu</div>
+            <div class="text-caption" style="margin-top:4px">Historie kontrol a reportů zůstane 12 měsíců v archivu.</div>
+            <div style="margin-top:12px"><button class="btn btn--danger btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-trash) center/contain no-repeat;mask:var(--icon-trash) center/contain no-repeat"></span>Odebrat web</button></div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

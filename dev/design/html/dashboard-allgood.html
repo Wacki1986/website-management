@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Dashboard (vše v pořádku)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item sidebar__item--active" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <div class="app__content">
+
+      <div class="hero-grid">
+        <section class="hero">
+          <div class="hero__top">
+            <div class="hero__label hero__label--ok"><span class="dot dot--ok" style="width:8px;height:8px"></span>Vše pod kontrolou</div>
+            <div class="hero__timestamp">9. 9. 08:35 · poslední kontrola</div>
+          </div>
+          <div class="hero__body">
+            <div class="hero__calm">Žádný web nehlásí problém. Poslední incident byl 22. 8. – 18minutový výpadek u Kavárny Dobrá.</div>
+          </div>
+          <div class="hero__footer">
+            <span>Všech 12 webů běží, 10 aktualizací čeká na schválení</span>
+            <a href="weby.html">Zobrazit →</a>
+          </div>
+        </section>
+
+        <div class="metric-list">
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Monitorované weby</div><div class="metric-row__sub">12 v pořádku · 0 s odchylkou</div></div>
+            <div class="metric-row__value">12</div>
+          </div>
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Vyžaduje pozornost</div><div class="metric-row__sub">zastaralé WP / PHP</div></div>
+            <div class="metric-row__value metric-row__value--warning">0</div>
+          </div>
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Čekající aktualizace</div><div class="metric-row__sub">na 8 webech · 3 bezpečnostní</div></div>
+            <div class="metric-row__value">10</div>
+          </div>
+          <div class="metric-row">
+            <div style="min-width:0"><div class="metric-row__label">Aktivní alerty</div><div class="metric-row__sub">žádné aktivní alerty</div></div>
+            <div class="metric-row__value">0</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="card card--scroll-x">
+        <div class="card__header card__header--filters">
+          <div style="min-width:0;margin-right:auto">
+            <div class="card__title">Vyžaduje řešení</div>
+            <div class="text-caption">Weby s problémem nebo vyžadující pozornost · v pořádku běžících 12 najdete v sekci Weby</div>
+          </div>
+          <div class="search"><span class="icon icon--sm" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span><span>Hledat web nebo klienta…</span></div>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat vše</button>
+        </div>
+
+        <div class="card__header card__header--filters">
+              <div class="segmented">
+                <button class="segmented__item segmented__item--active" type="button">Vše<span class="segmented__count">0</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-error)"></span>Problém<span class="segmented__count">0</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-warning)"></span>Pozornost<span class="segmented__count">0</span></button>
+              </div>
+          <div class="form__control form__control--select form__control--inline">Klient <b>· všichni</b><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+          <a class="u-ml-auto" href="weby.html" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)">Zobrazit všech 12 webů →</a>
+        </div>
+
+        <div class="empty">
+          <span class="icon icon--lg empty__icon" style="-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span>
+          <div class="empty__title">Nic k řešení</div>
+          <div class="empty__text">Žádný web nehlásí problém ani nevyžaduje pozornost. Kompletní seznam najdete v sekci Weby.</div>
+        </div>
+
+        <div class="card__footer card__footer--muted">
+          <span>0 weby vyžadují řešení · 12 v pořádku</span>
+          <a class="u-ml-auto" href="alerty.html">Otevřít alerty →</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

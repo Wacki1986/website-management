@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Detail klienta</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item sidebar__item--active" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb"><a href="klienti.html">Klienti</a><span>/</span><span>Zlatý Lev a.s.</span></div>
+
+      <div class="page-header__top">
+        <div class="row" style="flex-wrap:nowrap;gap:16px;min-width:0">
+          <span class="avatar" style="width:54px;height:54px;font-size:var(--font-size-caption);background:#8A6A1E">ZL</span>
+          <div style="min-width:0">
+            <h1 class="page-header__title">Zlatý Lev a.s.</h1>
+            <div class="page-header__meta"><span>Pavel Hrubý · marketing manager</span><span>2 weby v péči</span><span>spolupráce od 11/2021</span></div>
+          </div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>Napsat e-mail</button>
+          <button class="btn btn--primary" type="button">Upravit údaje</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <div class="split split--settings">
+
+        <div class="stack">
+
+          <section class="card card--padded">
+            <div class="form">
+              <div class="row" style="justify-content:space-between;align-items:baseline">
+                <div class="card__title">Údaje klienta</div>
+                <div class="text-caption">Uloženo</div>
+              </div>
+
+              <div class="form__row">
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">Firma</label>
+                  <div class="form__value">Zlatý Lev a.s.</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Jméno</label>
+                  <div class="form__value">Pavel</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Příjmení</label>
+                  <div class="form__value">Hrubý</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Role<span class="form__label-optional"> · nepovinné</span></label>
+                  <div class="form__value">marketing manager</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Telefon</label>
+                  <div class="form__value">+420 602 774 903</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">E-mail</label>
+                  <div class="form__value">marketing@hotelzlatylev.cz</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">IČO</label>
+                  <div class="form__value">25604418</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">DIČ<span class="form__label-optional"> · nepovinné</span></label>
+                  <div class="form__value">CZ25604418</div>
+                </div>
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">Adresa</label>
+                  <div class="form__value">Zámecká 1, 460 01 Liberec</div>
+                </div>
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">Fakturace<span class="form__label-optional"> · nepovinné</span></label>
+                  <div class="form__value">Paušál 4 900 Kč / měsíc</div>
+                </div>
+              </div>
+
+              <div class="form__field">
+                <label class="form__label form__label--caps">Interní poznámka<span class="form__label-optional"> · nevidí ji klient</span></label>
+                <div class="text-secondary" style="line-height:var(--line-height-relaxed);padding:6px 0">Dva weby, rezervační systém je kritický — výpadky hlásit telefonicky, nečekat na e-mail. Fakturace jde přes účtárnu, splatnost 30 dní.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card card--scroll-x">
+            <div class="card__header">
+              <div>
+                <h2 class="card__title">Weby klienta</h2>
+                <div class="card__note">Reporty a servis se nastavují u konkrétního webu</div>
+              </div>
+              <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-plus) center/contain no-repeat;mask:var(--icon-plus) center/contain no-repeat"></span>Přiřadit web</button>
+            </div>
+
+            <div class="table table--client-sites">
+              <div class="table__head"><div>Web</div><div>Stav</div><div>Servis</div><div>Report</div><div></div></div>
+
+              <a class="table__row table__row--link table__row--error" href="detail-webu-prehled.html">
+                <div class="table__cell row" style="flex-wrap:nowrap;gap:11px"><span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#8A6A1E">HZ</span><div style="min-width:0"><div class="table__primary u-truncate" style="font-size:var(--font-size-label)">Hotel Zlatý Lev</div><div class="table__secondary u-truncate" style="margin-top:0">hotelzlatylev.cz</div></div></div>
+                <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>SSL vypršel</span></div>
+                <div class="table__cell u-truncate text-warning" style="font-size:var(--font-size-label)">po termínu 5 d</div>
+                <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)">měsíčně</div>
+                <div class="table__cell table__cell--right"><span style="color:var(--color-brand);font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Otevřít</span></div>
+              </a>
+              <a class="table__row table__row--link" href="detail-webu-prehled.html">
+                <div class="table__cell row" style="flex-wrap:nowrap;gap:11px"><span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#8A6A1E">RZ</span><div style="min-width:0"><div class="table__primary u-truncate" style="font-size:var(--font-size-label)">Rezervace Zlatý Lev</div><div class="table__secondary u-truncate" style="margin-top:0">rezervace.hotelzlatylev.cz</div></div></div>
+                <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+                <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)">za 24 dní</div>
+                <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)">čtvrtletně</div>
+                <div class="table__cell table__cell--right"><span style="color:var(--color-brand);font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Otevřít</span></div>
+              </a>
+            </div>
+          </section>
+
+        </div>
+
+        <aside class="split__aside">
+          <div class="card card--small-shadow">
+            <div class="summary-list">
+              <div class="summary-list__row"><span class="summary-list__label">Weby v péči</span><span class="summary-list__value">2</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Fakturace</span><span class="summary-list__value">Paušál 4 900 Kč / měsíc</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Spolupráce od</span><span class="summary-list__value">11/2021</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Poslední report</span><span class="summary-list__value">1. 9. 2026</span></div>
+            </div>
+          </div>
+
+          <div class="card card--small-shadow">
+            <div class="card__header"><span class="card__title" style="font-size:var(--font-size-body-large)">Poslední komunikace</span></div>
+            <div class="check-list">
+              <div class="check-list__item">
+                <span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>
+                <div>
+                  <div style="font-size:var(--font-size-label)">Odeslán měsíční report za srpen</div>
+                  <div class="check-list__text">1. 9. 2026 · otevřen 1. 9. 09:12</div>
+                </div>
+              </div>
+              <div class="check-list__item">
+                <span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span>
+                <div>
+                  <div style="font-size:var(--font-size-label)">Telefonicky nahlášen výpadek rezervací</div>
+                  <div class="check-list__text">22. 8. 2026 · 09:40</div>
+                </div>
+              </div>
+              <div class="check-list__item">
+                <span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>
+                <div>
+                  <div style="font-size:var(--font-size-label)">Střední servis — aktualizace a čištění databáze</div>
+                  <div class="check-list__text">4. 8. 2026 · 1 h 50 min</div>
+                </div>
+              </div>
+              <div class="check-list__item">
+                <span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>
+                <div>
+                  <div style="font-size:var(--font-size-label)">Nabídka na přechod PHP 8.2 odeslána</div>
+                  <div class="check-list__text">18. 7. 2026</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--danger">
+            <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)">Odebrat klienta</div>
+            <div class="text-caption" style="margin-top:4px">Weby zůstanou v monitoringu bez přiřazeného klienta.</div>
+            <div style="margin-top:12px"><button class="btn btn--danger btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-trash) center/contain no-repeat;mask:var(--icon-trash) center/contain no-repeat"></span>Odebrat klienta</button></div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Detail webu / Přehled</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb">
+        <a href="weby.html">Weby</a><span>/</span><span>Kavárna Dobrá</span>
+      </div>
+
+      <div class="page-header__top">
+        <div>
+          <div class="page-header__title">Kavárna Dobrá</div>
+          <div class="page-header__meta">
+            <span class="status status--error"><span class="status__dot"></span>Nedostupný · HTTP 503</span>
+            <a href="https://kavarnadobra.cz">kavarnadobra.cz</a>
+            <span>Kavárna Dobrá s.r.o.</span>
+            <span>kontrola každých 15 min</span>
+          </div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-external) center/contain no-repeat;mask:var(--icon-external) center/contain no-repeat"></span>wp-admin</button>
+          <button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat teď</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <a class="tabs__item tabs__item--active" href="detail-webu-prehled.html">Přehled</a>
+        <a class="tabs__item" href="detail-webu-pluginy.html">Pluginy <span class="badge badge--warning">4 neakt.</span></a>
+        <a class="tabs__item" href="detail-webu-obsah.html">Obsah</a>
+        <a class="tabs__item" href="detail-webu-zabezpeceni.html">Zabezpečení <span class="badge badge--warning">3 chybí</span></a>
+        <a class="tabs__item" href="detail-webu-servis.html">Servis <span class="badge">za 12 dní</span></a>
+        <a class="tabs__item" href="detail-webu-reporty.html">Reporty</a>
+        <a class="tabs__item" href="detail-webu-nastaveni.html">Nastavení</a>
+      </nav>
+    </header>
+
+    <div class="app__content">
+
+
+      <div class="split">
+        <div class="stack">
+
+      <div class="metric-grid">
+        <div class="metric metric--compact">
+          <div class="metric__label">WordPress</div>
+          <div class="metric__value">7.0.3</div>
+          <div class="metric__note"><span class="badge badge--warning">→ 7.1</span></div>
+        </div>
+        <div class="metric metric--compact metric--error">
+          <div class="metric__label">PHP</div>
+          <div class="metric__value metric__value--error">7.4.33</div>
+          <div class="metric__note"><span class="badge badge--error">konec podpory</span></div>
+        </div>
+        <div class="metric metric--compact">
+          <div class="metric__label">Databáze</div>
+          <div class="metric__value">MariaDB 10.6</div>
+          <div class="metric__note">312 MB</div>
+        </div>
+        <div class="metric metric--compact">
+          <div class="metric__label">Šablona</div>
+          <div class="metric__value">Astra</div>
+          <div class="metric__note">4.8.2 · child theme</div>
+        </div>
+      </div>
+
+        <section class="card card--padded">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="metric__label">Uptime · posledních 30 dní</div>
+              <div class="row" style="gap:12px;align-items:baseline;margin-top:4px">
+                <div class="metric__value metric__value--error">97,2 %</div>
+                <div class="text-subtle">2 výpadky · 20 h 9 min</div>
+              </div>
+            </div>
+            <div class="row" style="gap:18px" class="text-subtle">
+              <span class="text-subtle"><b>640 ms</b> ø odezva</span>
+              <span class="text-subtle"><b>2 880</b> kontrol</span>
+            </div>
+          </div>
+          <div class="uptime">
+            <div class="uptime__grid">
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day uptime__day--warning"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day uptime__day--error"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day"></span>
+              <span class="uptime__day uptime__day--error"></span>
+              <span class="uptime__day uptime__day--error"></span>
+            </div>
+            <div class="uptime__axis"><span>10. 8.</span><span>25. 8.</span><span>dnes</span></div>
+            <div class="uptime__legend">
+              <span class="uptime__legend-item"><span class="uptime__swatch uptime__swatch--ok"></span>100 %</span>
+              <span class="uptime__legend-item"><span class="uptime__swatch uptime__swatch--warning"></span>výpadek do 30 min</span>
+              <span class="uptime__legend-item"><span class="uptime__swatch uptime__swatch--error"></span>výpadek nad 30 min</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card__header"><h2 class="card__title">Historie změn</h2><a href="#">Zobrazit vše</a></div>
+          <div class="table table--history">
+            <div class="table__row">
+              <div class="table__cell"><span class="dot dot--error"></span></div>
+              <div class="table__cell">Web nedostupný – HTTP 503, alert odeslán</div>
+              <div class="table__cell caps u-hide-mobile">alert</div>
+              <div class="table__cell table__cell--right text-subtle">9. 9. 08:12</div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><span class="dot dot--ok"></span></div>
+              <div class="table__cell">WooCommerce aktualizován 9.2.1 → 9.3.0</div>
+              <div class="table__cell caps u-hide-mobile">plugin</div>
+              <div class="table__cell table__cell--right text-subtle">6. 9. 14:30</div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><span class="dot dot--ok"></span></div>
+              <div class="table__cell">Měsíční report odeslán klientovi</div>
+              <div class="table__cell caps u-hide-mobile">report</div>
+              <div class="table__cell table__cell--right text-subtle">1. 9. 06:00</div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><span class="dot dot--warning"></span></div>
+              <div class="table__cell">PHP 7.4 označeno jako bez bezpečnostní podpory</div>
+              <div class="table__cell caps u-hide-mobile">systém</div>
+              <div class="table__cell table__cell--right text-subtle">28. 8. 09:05</div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><span class="dot dot--warning"></span></div>
+              <div class="table__cell">Výpadek 18 min – údržba hostingu</div>
+              <div class="table__cell caps u-hide-mobile">uptime</div>
+              <div class="table__cell table__cell--right text-subtle">22. 8. 03:41</div>
+            </div>
+            <div class="table__row">
+              <div class="table__cell"><span class="dot dot--ok"></span></div>
+              <div class="table__cell">Plugin Contact Form 7 deaktivován klientem</div>
+              <div class="table__cell caps u-hide-mobile">plugin</div>
+              <div class="table__cell table__cell--right text-subtle">14. 8. 11:20</div>
+            </div>
+          </div>
+        </section>
+        </div>
+
+        <aside class="split__aside">
+          <div class="alert alert--inverse">
+            <div class="alert__label"><span class="alert__dot"></span>Aktivní alert · 23 min</div>
+            <div class="alert__title">Web nedostupný – HTTP 503</div>
+            <div class="alert__body">Od 9. 9. 08:12. Poslední 3 kontroly selhaly. Server odpovídá, WordPress vrací chybu služby.</div>
+            <div class="alert__actions"><button class="btn btn--inverse btn--sm" type="button">Označit vyřešeno</button><button class="btn btn--ghost-inverse btn--sm" type="button">Ignorovat</button></div>
+          </div>
+          <div class="card card--small-shadow">
+            <div class="summary-list">
+              <div class="summary-list__row"><span class="summary-list__label">Pluginy</span><span class="summary-list__value">23 · 4 neaktivní</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Čekající aktualizace</span><span class="summary-list__value" style="color:var(--color-status-warning-text)">9</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">SSL certifikát</span><span class="summary-list__value">do 12. 11. 2026</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Zálohy</span><span class="summary-list__value">denně · 03:00</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Hosting</span><span class="summary-list__value">Wedos · NoLimit</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Poslední kontrola</span><span class="summary-list__value">08:35:12</span></div>
+            </div>
+          </div>
+          <div class="card card--note">
+            <div class="row" style="justify-content:space-between">
+              <span style="font-weight:var(--font-weight-semibold)">Klientský report</span>
+              <a href="#">Náhled</a>
+            </div>
+            <div class="text-subtle" style="margin-top:5px">Měsíčně → info@kavarnadobra.cz<br>Poslední odeslán 1. 9. 2026</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

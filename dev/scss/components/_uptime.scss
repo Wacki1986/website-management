@@ -1,0 +1,67 @@
+// Pásek dostupnosti za 30 dní. Výška sloupce nese délku výpadku, barva jeho závažnost.
+.uptime {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  margin-top: var(--spacing-xlarge);
+}
+
+.uptime__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--uptime-columns, 30), minmax(0, 1fr));
+  gap: 4px;
+  height: 48px;
+  align-items: end;
+}
+
+.uptime__day {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--color-status-ok);
+  box-shadow: 0 3px 8px var(--color-status-ok-halo);
+}
+
+.uptime__day--warning {
+  height: 68%;
+  background: var(--color-status-warning);
+  box-shadow: 0 3px 8px var(--color-status-warning-halo);
+}
+
+.uptime__day--error {
+  height: 38%;
+  background: var(--color-status-error);
+  box-shadow: 0 3px 8px var(--color-status-error-halo);
+}
+
+.uptime__axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-faint);
+}
+
+.uptime__legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-subtle);
+}
+
+.uptime__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.uptime__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.uptime__swatch--ok { background: var(--color-status-ok); }
+.uptime__swatch--warning { background: var(--color-status-warning); }
+.uptime__swatch--error { background: var(--color-status-error); }

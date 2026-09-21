@@ -1,0 +1,38 @@
+// Správa webů — vstupní bod stylů.
+//
+// Prvních 25 partialů je design systém z handoff balíčku (`dev/design/scss`),
+// přenesený 1:1 a bez úprav — po nové předávce designu se přepíšou celé.
+// Doplňky aplikace (přihlášení, toasty, formulářové drobnosti) jsou v `app/`
+// a do balíčku designu se nikdy nepíšou.
+//
+// Build: pwsh dev/tools/build.ps1  →  www/assets/css/app.css
+// (vstup se jmenuje app.scss kvůli Live Sass Compile — výstup pojmenuje podle zdroje)
+
+@use "abstracts/tokens";
+@use "abstracts/icons";
+@use "abstracts/mixins";
+@use "base/reset";
+@use "base/typography";
+@use "layout/app-shell";
+@use "layout/sidebar";
+@use "layout/page-header";
+@use "components/button";
+@use "components/card";
+@use "components/table";
+@use "components/status";
+@use "components/form";
+@use "components/metric";
+@use "components/feedback";
+@use "components/uptime";
+@use "components/input";
+@use "components/list";
+@use "components/settings";
+@use "components/pick";
+@use "components/hero";
+@use "components/email";
+@use "utilities/helpers";
+
+// Doplňky aplikace — mimo design balíček.
+@use "app/auth";
+@use "app/toast";
+@use "app/extras";

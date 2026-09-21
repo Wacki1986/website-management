@@ -1,0 +1,38 @@
+@use "../abstracts/mixins" as *;
+
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  letter-spacing: var(--letter-spacing-heading);
+  line-height: var(--line-height-heading);
+  font-weight: var(--font-weight-semibold);
+}
+
+h1 { font-size: var(--font-size-heading); }
+h2 { font-size: var(--font-size-title); }
+h3 { font-size: var(--font-size-body-large); }
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.text-mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-label);
+}
+
+.text-subtle { color: var(--color-text-subtle); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-caption {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-subtle);
+  line-height: var(--line-height-body);
+}
+
+.caps {
+  @include caps-label;
+}

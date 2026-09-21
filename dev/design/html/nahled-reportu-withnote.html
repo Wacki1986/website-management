@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Náhled reportu (s poznámkou)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item sidebar__item--active" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb"><a href="reporty-naplanovane.html">Reporty</a><span>/</span><span>Kavárna Dobrá · srpen 2026</span></div>
+
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Náhled reportu před odesláním</h1>
+          <div class="page-header__meta">Kavárna Dobrá s.r.o. · info@kavarnadobra.cz · odchází 1. 10. v 06:00</div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>Poslat sobě na zkoušku</button>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span>Odeslat klientovi</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <div class="split split--report">
+
+        <div class="stack" style="gap:12px">
+          <div class="row" style="justify-content:space-between">
+            <div class="segmented" style="flex:none">
+              <button class="segmented__item segmented__item--active" type="button">Počítač</button>
+              <button class="segmented__item" type="button">Mobil</button>
+            </div>
+            <div class="text-subtle" style="font-size:var(--font-size-label)">Předmět: <b>Zpráva o vašem webu — srpen 2026</b></div>
+          </div>
+
+          <div class="email-paper">
+            <div class="email-paper__sheet" style="font-family:'Instrument Sans',system-ui,sans-serif">
+
+              <div style="padding:26px 30px 22px;border-bottom:3px solid #3858e9">
+                <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK" style="width:170px;height:auto;display:block">
+              </div>
+
+              <div style="padding:28px 30px 8px">
+                <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#5f6379">ZPRÁVA O VAŠEM WEBU · SRPEN 2026</div>
+                <h2 style="margin:10px 0 0;font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.2">Váš web běžel celý srpen bez vážného problému</h2>
+                <p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:#41455f;text-wrap:pretty">Dobrý den, tady je krátký přehled o webu <b style="font-weight:600">kavarnadobra.cz</b> za uplynulý měsíc. Stará se o něj studio MEDIAGRAFIK — všechno níže jsme udělali za vás, nic nemusíte řešit.</p>
+              </div>
+
+              <div style="padding:22px 30px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+                <div style="border:1px solid #e7e9f2;border-radius:12px;padding:14px 16px;background:rgba(15,157,107,.08)">
+                  <div style="font-size:12px;color:#5f6379;font-weight:500">Dostupnost webu</div>
+                  <div style="font-size:24px;font-weight:600;letter-spacing:-.03em;margin-top:6px;line-height:1;color:#0a6248">99,4 %</div>
+                  <div style="font-size:12px;color:#5f6379;margin-top:6px">2 h 44 min mimo provoz</div>
+                </div>
+                <div style="border:1px solid #e7e9f2;border-radius:12px;padding:14px 16px;background:#fff">
+                  <div style="font-size:12px;color:#5f6379;font-weight:500">Provedené aktualizace</div>
+                  <div style="font-size:24px;font-weight:600;letter-spacing:-.03em;margin-top:6px;line-height:1;color:#14162b">12</div>
+                  <div style="font-size:12px;color:#5f6379;margin-top:6px">3 bezpečnostní</div>
+                </div>
+                <div style="border:1px solid #e7e9f2;border-radius:12px;padding:14px 16px;background:#fff">
+                  <div style="font-size:12px;color:#5f6379;font-weight:500">Kontrol webu</div>
+                  <div style="font-size:24px;font-weight:600;letter-spacing:-.03em;margin-top:6px;line-height:1;color:#14162b">2 976</div>
+                  <div style="font-size:12px;color:#5f6379;margin-top:6px">každých 15 minut</div>
+                </div>
+              </div>
+
+              <div style="padding:26px 30px 0">
+                <h3 style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">Co jsme pro vás udělali</h3>
+                <div style="margin-top:12px;display:flex;flex-direction:column;gap:9px">
+                  <div style="display:flex;gap:11px;align-items:flex-start">
+                    <span style="flex:none;width:18px;height:18px;border-radius:999px;background:#0f9d6b;display:grid;place-items:center;margin-top:1px"><span style="width:11px;height:11px;background-color:#fff;-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span></span>
+                    <div style="font-size:14px;line-height:1.5;color:#41455f"><b style="font-weight:600;color:#14162b">Aktualizovali jsme WordPress</b> na verzi 7.1 — obsahuje bezpečnostní opravy.</div>
+                  </div>
+                  <div style="display:flex;gap:11px;align-items:flex-start">
+                    <span style="flex:none;width:18px;height:18px;border-radius:999px;background:#0f9d6b;display:grid;place-items:center;margin-top:1px"><span style="width:11px;height:11px;background-color:#fff;-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span></span>
+                    <div style="font-size:14px;line-height:1.5;color:#41455f"><b style="font-weight:600;color:#14162b">Aktualizovali jsme 11 doplňků,</b> mimo jiné e-shop a kontaktní formulář.</div>
+                  </div>
+                  <div style="display:flex;gap:11px;align-items:flex-start">
+                    <span style="flex:none;width:18px;height:18px;border-radius:999px;background:#0f9d6b;display:grid;place-items:center;margin-top:1px"><span style="width:11px;height:11px;background-color:#fff;-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span></span>
+                    <div style="font-size:14px;line-height:1.5;color:#41455f"><b style="font-weight:600;color:#14162b">Zkontrolovali jsme zálohy,</b> web se zálohuje každý den ve 3 ráno a poslední záloha je v pořádku.</div>
+                  </div>
+                  <div style="display:flex;gap:11px;align-items:flex-start">
+                    <span style="flex:none;width:18px;height:18px;border-radius:999px;background:#0f9d6b;display:grid;place-items:center;margin-top:1px"><span style="width:11px;height:11px;background-color:#fff;-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span></span>
+                    <div style="font-size:14px;line-height:1.5;color:#41455f"><b style="font-weight:600;color:#14162b">Prodloužili jsme bezpečnostní certifikát,</b> platí do 12. listopadu 2026.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="padding:26px 30px 0">
+                <h3 style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">Servis v tomto měsíci</h3>
+                <div style="margin-top:12px;border:1px solid #e7e9f2;border-radius:12px;overflow:hidden">
+                  <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-bottom:1px solid #e7e9f2;background:#fff">
+                    <span style="flex:none;width:18px;height:18px;background-color:#3858e9;-webkit-mask:var(--icon-shield) center/contain no-repeat;mask:var(--icon-shield) center/contain no-repeat;margin-top:1px"></span>
+                    <div style="min-width:0;flex:1">
+                      <div style="font-size:14px;font-weight:600">Střední servis <span style="font-weight:400;color:#5f6379">· 4. 8. 2026</span></div>
+                      <div style="font-size:14px;color:#41455f;line-height:1.5;margin-top:3px">Aktualizovali jsme WordPress a 11 doplňků, pročistili databázi a ověřili, že se web zálohuje.</div>
+                    </div>
+                    <div style="flex:none;font-size:12px;color:#5f6379">1 h 50 min</div>
+                  </div>
+                  <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-bottom:0;background:#fff">
+                    <span style="flex:none;width:18px;height:18px;background-color:#3858e9;-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat;margin-top:1px"></span>
+                    <div style="min-width:0;flex:1">
+                      <div style="font-size:14px;font-weight:600">Malý servis <span style="font-weight:400;color:#5f6379">· 18. 8. 2026</span></div>
+                      <div style="font-size:14px;color:#41455f;line-height:1.5;margin-top:3px">Zmenšili jsme fotky v galerii a zapnuli mezipaměť — web se načte zhruba o vteřinu rychleji.</div>
+                    </div>
+                    <div style="flex:none;font-size:12px;color:#5f6379">40 min</div>
+                  </div>
+                </div>
+                <div style="font-size:13px;color:#5f6379;line-height:1.55;margin-top:10px">Příští malý servis máme naplánovaný na 21. září 2026. Nemusíte nic dělat, ozveme se, jen kdyby bylo potřeba web na chvíli odstavit.</div>
+              </div>
+
+              <div style="margin:24px 30px 0;padding:16px 18px;border-radius:12px;background:#fef4da;border:1px solid rgba(226,144,10,.35)">
+                <div style="font-size:14px;font-weight:600;color:#9e5300">Na co bychom se rádi domluvili</div>
+                <div style="font-size:14px;line-height:1.55;color:#41455f;margin-top:5px;text-wrap:pretty">Váš hosting stále běží na starší verzi PHP (7.4), pro kterou už nevycházejí bezpečnostní opravy. Přechod na novější verzi zabere zhruba hodinu a doporučujeme ho udělat do konce roku. Ozvěte se nám a domluvíme termín.</div>
+              </div>
+
+              <div style="margin:20px 30px 0;padding:16px 18px;border-radius:12px;background:#eef1fd;border:1px solid rgba(56,88,233,.22)">
+                <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#3858e9">POZNÁMKA OD STUDIA</div>
+                <div style="font-size:14px;line-height:1.55;color:#14162b;margin-top:6px;text-wrap:pretty">Tento měsíc jsme navíc zrychlili načítání fotogalerie — stránka s menu se teď otevře zhruba o vteřinu rychleji. Také jsme opravili odkaz na rezervace v patičce, který vedl na starou adresu.</div>
+              </div>
+
+              <div style="padding:26px 30px 0">
+                <h3 style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">Dostupnost v srpnu</h3>
+                <div style="margin-top:12px;display:grid;grid-template-columns:repeat(31,minmax(0,1fr));gap:3px;height:34px;align-items:end">
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#e2900a;border-radius:3px;height:66%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#dc2626;border-radius:3px;height:38%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                  <div style="background:#0f9d6b;border-radius:3px;height:100%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:#5f6379"><span>1. 8.</span><span>15. 8.</span><span>31. 8.</span></div>
+                <div style="font-size:13px;color:#41455f;line-height:1.55;margin-top:10px">Web byl nedostupný celkem 2 hodiny 44 minut, z toho nejdéle 22. srpna při plánované údržbě hostingu. Návštěvníci to ve zbytku měsíce nepoznali.</div>
+              </div>
+
+              <div style="margin:26px 30px 0;padding:18px;border-radius:12px;background:#f3f5fc;text-align:center">
+                <div style="font-size:14px;color:#41455f;line-height:1.55">Máte k webu jakýkoli dotaz?</div>
+                <a href="#" style="display:inline-block;margin-top:10px;background:#3858e9;color:#fff;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;text-decoration:none">Napište nám</a>
+              </div>
+
+              <div style="margin-top:26px;padding:20px 30px 26px;border-top:1px solid #e7e9f2;background:#fafbfe">
+                <div style="font-size:12px;color:#5f6379;line-height:1.6">MEDIAGRAFIK · správa a údržba webů<br>studio@mediagrafik.cz · +420 777 123 456</div>
+                <div style="font-size:11px;color:#5f6379;margin-top:10px">Tuto zprávu dostáváte, protože se staráme o váš web. <a href="#" style="color:#5f6379;text-decoration:underline">Nastavit frekvenci zpráv</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="split__aside">
+          <div class="card card--padded">
+            <div class="card__title">Poznámka pro klienta</div>
+            <div class="card__note">Nepovinné. Objeví se v reportu jako modrý blok — sem patří, co jste udělali navíc.</div>
+            <textarea class="form__control" rows="5" style="margin-top:12px" placeholder="Tento měsíc jsme navíc…">Tento měsíc jsme navíc zrychlili načítání fotogalerie — stránka s menu se teď otevře zhruba o vteřinu rychleji. Také jsme opravili odkaz na rezervace v patičce, který vedl na starou adresu.</textarea>
+            <div class="row" style="justify-content:space-between;margin-top:8px">
+              <span class="text-caption">189 / 400 znaků</span>
+              <a href="#" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)">Vymazat</a>
+            </div>
+            <div class="pill-group" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border-subtle)">
+              <button class="pill" type="button" style="font-size:var(--font-size-caption)">+ zrychlení webu</button>
+              <button class="pill" type="button" style="font-size:var(--font-size-caption)">+ oprava formuláře</button>
+              <button class="pill" type="button" style="font-size:var(--font-size-caption)">+ plánovaná odstávka</button>
+            </div>
+          </div>
+
+          <div class="card card--small-shadow" style="padding:6px 20px">
+            <div class="summary-list__row" style="align-items:center">
+              <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)">Graf dostupnosti</div><div class="text-caption">sloupce po dnech za celý měsíc</div></div>
+              <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+            </div>
+            <div class="summary-list__row" style="align-items:center">
+              <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)">Seznam aktualizací</div><div class="text-caption">co jsme na webu udělali</div></div>
+              <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+            </div>
+            <div class="summary-list__row" style="align-items:center">
+              <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)">Provedený servis</div><div class="text-caption">co jsme na webu odpracovali</div></div>
+              <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+            </div>
+            <div class="summary-list__row" style="align-items:center">
+              <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)">Doporučení</div><div class="text-caption">na co si dát pozor (PHP, certifikáty)</div></div>
+              <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+            </div>
+            <div class="summary-list__row" style="align-items:center">
+              <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)">Výzva ke kontaktu</div><div class="text-caption">tlačítko Napište nám</div></div>
+              <button class="toggle toggle--on" type="button" role="switch" aria-checked="true"><span class="toggle__knob"></span></button>
+            </div>
+            <div class="summary-list__row" style="align-items:center">
+              <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)">Technická příloha</div><div class="text-caption">verze pluginů a PHP — jen pro techniky</div></div>
+              <button class="toggle" type="button" role="switch" aria-checked="false"><span class="toggle__knob"></span></button>
+            </div>
+          </div>
+
+          <div class="card card--small-shadow">
+            <div class="summary-list">
+              <div class="summary-list__row"><span class="summary-list__label">Období</span><span class="summary-list__value">srpen 2026</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Příjemce</span><span class="summary-list__value">info@kavarnadobra.cz</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Odesílatel</span><span class="summary-list__value">studio@mediagrafik.cz</span></div>
+              <div class="summary-list__row"><span class="summary-list__label">Odchází</span><span class="summary-list__value">1. 10. 2026 v 06:00</span></div>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

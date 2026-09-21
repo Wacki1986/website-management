@@ -1,0 +1,172 @@
+// Doplňky pro seznamové obrazovky (Weby, Alerty).
+
+.table--sites { --table-columns: minmax(0, 1.7fr) minmax(0, 1.2fr) 126px 78px 106px 94px 132px 92px 34px; }
+.table--alerts { --table-columns: 26px minmax(0, 2.4fr) minmax(0, 1fr) 130px 140px 90px; }
+
+@media (max-width: 1100px) {
+  .table--sites { --table-columns: minmax(0, 1.5fr) minmax(0, 1.1fr) 116px 70px 94px 84px 124px 80px 34px; }
+  .table--alerts { --table-columns: 26px minmax(0, 2fr) minmax(0, 1fr) 120px 130px 84px; }
+}
+
+@media (max-width: 768px) {
+  .table--sites { --table-columns: minmax(0, 1fr) 110px; }
+  .table--alerts { --table-columns: 26px minmax(0, 1fr); }
+}
+
+// Skupinový mezititulek uvnitř tabulky.
+.table__group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-medium);
+  padding: 10px var(--layout-card-padding);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.table__group--caps {
+  background: var(--color-surface-sunken);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+a.table__row--link {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.table__row--top { align-items: start; }
+
+// Hlavička karty s filtry se smí zalomit do více řádků.
+.card__header--filters { flex-wrap: wrap; }
+
+.card__footer--muted {
+  background: var(--color-surface-sunken);
+  font-size: var(--font-size-label);
+  color: var(--color-text-subtle);
+}
+
+.page-header--list .page-header__title { margin: 0; }
+
+.segmented__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--border-radius-pill);
+}
+
+.segmented__count {
+  font-weight: var(--font-weight-medium);
+  opacity: 0.55;
+}
+
+.segmented__item { display: flex; align-items: center; gap: 7px; justify-content: center; }
+
+.btn--active {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
+
+.btn--icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+// Tlačítko tří teček na konci řádku tabulky.
+.btn--menu {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--border-radius-medium);
+  background: transparent;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+}
+
+.btn--menu:hover { background: var(--color-surface-muted); }
+
+// Pruh hromadných akcí nad tabulkou.
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-medium);
+  flex-wrap: wrap;
+  padding: 12px var(--layout-card-padding);
+  background: var(--color-brand-soft);
+  border-bottom: 1px solid var(--color-brand-border);
+}
+
+.bulk-bar__note {
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand);
+}
+
+.bulk-bar__actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.pill--brand {
+  background: var(--color-brand-soft);
+  border-color: var(--color-brand-border);
+  color: var(--color-brand);
+  font-weight: var(--font-weight-semibold);
+}
+
+.form__control--inline { width: auto; }
+
+.alert-row--muted { opacity: 0.6; }
+
+.text-faint { color: var(--color-text-faint); }
+.text-warning { color: var(--color-status-warning-text); font-weight: var(--font-weight-semibold); }
+.text-error { color: var(--color-status-error-text); font-weight: var(--font-weight-semibold); }
+
+// Široké tabulky se pod ~1000 px posouvají vodorovně místo drcení sloupců.
+.card--scroll-x { overflow-x: auto; }
+
+@media (min-width: 769px) {
+  .table--sites { min-width: 980px; }
+  .table--alerts { min-width: 900px; }
+}
+
+.table--report-queue { --table-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) 110px 140px minmax(0, 1.3fr) 165px 116px; }
+
+@media (max-width: 1100px) {
+  .table--report-queue { --table-columns: minmax(0, 1.5fr) minmax(0, 1.1fr) 96px 128px minmax(0, 1.2fr) 150px 108px; }
+}
+
+@media (max-width: 768px) {
+  .table--report-queue { --table-columns: minmax(0, 1fr) 110px; }
+}
+
+@media (min-width: 769px) {
+  .table--report-queue { min-width: 1040px; }
+  .table--users { min-width: 860px; }
+}
+
+.dot--muted { background: var(--color-text-faint); }
+
+.table--clients { --table-columns: minmax(0, 1.5fr) minmax(0, 1.2fr) 150px minmax(0, 1.4fr) 84px 34px; }
+
+@media (max-width: 1100px) {
+  .table--clients { --table-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) 140px minmax(0, 1.3fr) 76px 34px; }
+}
+
+@media (max-width: 768px) {
+  .table--clients { --table-columns: minmax(0, 1fr) 34px; }
+}
+
+@media (min-width: 769px) {
+  .table--clients { min-width: 900px; }
+}

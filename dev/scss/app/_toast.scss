@@ -1,0 +1,62 @@
+// app/_toast.scss — krátké potvrzení akce, zmizí samo (toast.js).
+// Server ho vykreslí rovnou do HTML, takže funguje i bez skriptu — jen
+// nezmizí sám a zavře se křížkem přes… nic; proto je krátké.
+
+.toasts {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 480px);
+  padding: 10px 8px 10px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-large);
+  background: var(--color-surface-card-solid);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-popover);
+  pointer-events: auto;
+
+  &::before {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--border-radius-pill);
+    background: var(--color-brand);
+  }
+
+  &--success::before { background: var(--color-status-ok); }
+  &--error::before { background: var(--color-status-error); }
+  &--warning::before { background: var(--color-status-warning); }
+
+  &__close {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    border: 0;
+    border-radius: var(--border-radius-small);
+    background: transparent;
+    color: var(--color-text-subtle);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-surface-muted);
+      color: var(--color-text-primary);
+    }
+  }
+}

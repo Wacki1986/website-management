@@ -1,0 +1,5 @@
+# Minimální konfigurace pro openssl_pkey_new() — bez souboru OpenSSL na
+# Windows odmítne vytvořit klíč („No such process"). Obsah nic nenastavuje.
+openssl_conf = default
+
+[default]

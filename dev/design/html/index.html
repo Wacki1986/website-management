@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — handoff balíček</title>
+<link rel="stylesheet" href="../dist/app.css">
+<style>body{margin:0;padding:40px 24px 80px;font-family:var(--font-family-base);color:var(--color-text-primary);background:var(--color-background-page)}.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:var(--spacing-xxlarge)}code{font-family:var(--font-family-mono);font-size:.92em}</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <div class="caps">MEDIAGRAFIK · správa webů</div>
+    <h1 style="margin:8px 0 6px">Handoff balíček</h1>
+    <div class="text-subtle">Statické obrazovky s finálními BEM třídami nad <code>dist/app.css</code>. Každá varianta, kterou v prototypu skrývá tweak, má vlastní soubor. Boční menu je prolinkované, takže se dá balíček proklikat.</div>
+  </div>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Dashboard</h2><div class="card__note">Tweak „screenState“ — sedm stavů.</div></div><span class="badge">7</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard.html">default</a></div>
+        <div class="table__cell text-subtle">dvě havárie v hero kartě, tabulka „Vyžaduje řešení“</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard-outage.html">outage</a></div>
+        <div class="table__cell text-subtle">čtyři weby mimo provoz</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard-manyupdates.html">manyUpdates</a></div>
+        <div class="table__cell text-subtle">vysoké počty aktualizací, více webů v „pozornosti“</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard-allgood.html">allGood</a></div>
+        <div class="table__cell text-subtle">klidová hero karta, tabulka přechází do prázdného stavu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard-loading.html">loading</a></div>
+        <div class="table__cell text-subtle">skeleton řádky</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard-empty.html">empty</a></div>
+        <div class="table__cell text-subtle">žádný web v monitoringu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="dashboard-apierror.html">apiError</a></div>
+        <div class="table__cell text-subtle">pás nad obsahem, monitor v menu nedostupný</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Weby</h2><div class="card__note">Filtr, seskupení a prázdný výsledek.</div></div><span class="badge">3</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="weby.html">seznam</a></div>
+        <div class="table__cell text-subtle">řazeno podle stavu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="weby-seskupeno.html">seskupeno podle klienta</a></div>
+        <div class="table__cell text-subtle">mezititulky <code>.table__group</code></div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="weby-prazdno.html">prázdný filtr</a></div>
+        <div class="table__cell text-subtle"><code>.empty</code> místo řádků</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Alerty</h2></div><span class="badge">4</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="alerty.html">nevyřešené</a></div>
+        <div class="table__cell text-subtle">výchozí pohled</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="alerty-vyber.html">hromadný výběr</a></div>
+        <div class="table__cell text-subtle">pruh <code>.bulk-bar</code> nad tabulkou</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="alerty-vyresene.html">vyřešené</a></div>
+        <div class="table__cell text-subtle">řádky s akcí Vrátit</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="alerty-prazdno.html">prázdný stav</a></div>
+        <div class="table__cell text-subtle">vše vyřešené</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Detail webu — záložky</h2><div class="card__note">V prototypu tweak „tab“.</div></div><span class="badge">7</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-prehled.html">Přehled</a></div>
+        <div class="table__cell text-subtle">fakta, uptime pásek, historie změn</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-pluginy.html">Pluginy</a></div>
+        <div class="table__cell text-subtle">tabulka s výběrem řádků</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-obsah.html">Obsah</a></div>
+        <div class="table__cell text-subtle">typy obsahu a stáří příspěvků</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-zabezpeceni.html">Zabezpečení</a></div>
+        <div class="table__cell text-subtle">pět opatření, skóre, „Co dořešit“</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-servis.html">Servis</a></div>
+        <div class="table__cell text-subtle">plán servisu a historie</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-reporty.html">Reporty</a></div>
+        <div class="table__cell text-subtle">odeslané reporty webu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-nastaveni.html">Nastavení</a></div>
+        <div class="table__cell text-subtle">připojení, reporty, hlídání</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Detail webu — stavy a varianty</h2><div class="card__note">Tweak „screenState“, motiv a šířka.</div></div><span class="badge">6</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-prehled-allgood.html">allGood</a></div>
+        <div class="table__cell text-subtle">klidová karta místo alertu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-prehled-loading.html">loading</a></div>
+        <div class="table__cell text-subtle">skeleton</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-prehled-apierror.html">apiError</a></div>
+        <div class="table__cell text-subtle">zastaralá data</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-zabezpeceni-allgood.html">Zabezpečení / allGood</a></div>
+        <div class="table__cell text-subtle">„Co dořešit“ přechází do prázdného stavu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-prehled-dark.html">dark mode</a></div>
+        <div class="table__cell text-subtle">stejné HTML, <code>data-theme="dark"</code></div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-webu-pluginy-mobil.html">mobil 390 px</a></div>
+        <div class="table__cell text-subtle">stejné HTML v úzkém viewportu</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Klienti</h2></div><span class="badge">6</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="klienti.html">seznam klientů</a></div>
+        <div class="table__cell text-subtle">filtry jako <code>.pill</code></div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-klienta.html">detail — čtení</a></div>
+        <div class="table__cell text-subtle"><code>.form__value</code> místo inputů</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="detail-klienta-uprava.html">detail — úprava</a></div>
+        <div class="table__cell text-subtle">stejná karta s <code>.form__control</code></div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="novy-klient.html">nový klient</a></div>
+        <div class="table__cell text-subtle">prázdný formulář, kontrolní seznam</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="novy-klient-chyby.html">chyby ve formuláři</a></div>
+        <div class="table__cell text-subtle"><code>.form__control--error</code> + <code>.form__error</code></div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="novy-klient-ulozeno.html">uloženo</a></div>
+        <div class="table__cell text-subtle">potvrzovací pás, vyplněná data</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Reporty</h2></div><span class="badge">8</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="reporty-naplanovane.html">naplánované</a></div>
+        <div class="table__cell text-subtle">fronta před odesláním</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="reporty-odeslane.html">odeslané</a></div>
+        <div class="table__cell text-subtle">historie</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="reporty-problemy.html">problémy</a></div>
+        <div class="table__cell text-subtle">nedoručené reporty</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nahled-reportu.html">náhled reportu</a></div>
+        <div class="table__cell text-subtle">e-mail před odesláním</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nahled-reportu-withnote.html">s poznámkou studia</a></div>
+        <div class="table__cell text-subtle">modrý blok v e-mailu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nahled-reportu-allgood.html">vše v pořádku</a></div>
+        <div class="table__cell text-subtle">jiný předmět, bez bloku doporučení</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nahled-reportu-sent.html">odesláno</a></div>
+        <div class="table__cell text-subtle">potvrzení v bočním panelu</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nahled-reportu-mobil.html">mobilní e-mail</a></div>
+        <div class="table__cell text-subtle">šířka 390 px</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><div><h2 class="card__title">Nastavení aplikace</h2><div class="card__note">Čtyři záložky.</div></div><span class="badge">4</span></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row">
+        <div class="table__cell"><a href="nastaveni-monitoring.html">Monitoring</a></div>
+        <div class="table__cell text-subtle">frekvence a krokovací pole</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nastaveni-alerty.html">Alerty a prahy</a></div>
+        <div class="table__cell text-subtle">prahy s přepínači, vypnuté pravidlo</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nastaveni-email.html">Odchozí pošta</a></div>
+        <div class="table__cell text-subtle">SMTP formulář</div>
+      </div>
+      <div class="table__row">
+        <div class="table__cell"><a href="nastaveni-uzivatele.html">Uživatelé</a></div>
+        <div class="table__cell text-subtle">tabulka s rolemi</div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__header"><h2 class="card__title">Dokumentace</h2></div>
+    <div class="table" style="--table-columns:230px minmax(0,1fr)">
+      <div class="table__row"><div class="table__cell"><a href="../README.md">README.md</a></div><div class="table__cell text-subtle">struktura balíčku, build, konvence</div></div>
+      <div class="table__row"><div class="table__cell"><a href="../ZMENY.md">ZMENY.md</a></div><div class="table__cell text-subtle">co je v balíčku nové</div></div>
+      <div class="table__row"><div class="table__cell"><a href="../STAVY.md">STAVY.md</a></div><div class="table__cell text-subtle">stav → třídy → kdy nastane</div></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

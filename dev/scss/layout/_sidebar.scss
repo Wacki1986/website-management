@@ -1,0 +1,132 @@
+@use "../abstracts/mixins" as *;
+
+.sidebar {
+  width: var(--layout-sidebar-width);
+  flex: none;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-xxlarge) var(--spacing-large);
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border-default);
+  @include glass-surface;
+
+  &__logo {
+    position: relative;
+    align-self: flex-start;
+    padding: var(--spacing-large) 8px var(--spacing-huge);
+    display: block;
+
+    img { width: 172px; height: auto; }
+
+    &:hover { text-decoration: none; }
+  }
+
+  &__logo-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.03em;
+    color: var(--color-on-brand-text);
+    background: var(--color-brand-solid);
+    border-radius: var(--border-radius-small);
+    padding: 2px 7px;
+    white-space: nowrap;
+    box-shadow: var(--shadow-brand-soft);
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 13px;
+    border-radius: var(--border-radius-large);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-brand-hover);
+      color: var(--color-brand-contrast);
+      text-decoration: none;
+    }
+
+    &--active {
+      background: var(--color-brand-solid);
+      color: var(--color-brand-contrast);
+      font-weight: var(--font-weight-semibold);
+      box-shadow: var(--shadow-brand-soft);
+    }
+  }
+
+  &__count {
+    margin-left: auto;
+    font-size: var(--font-size-subtle);
+    opacity: 0.7;
+
+    &--alert {
+      opacity: 1;
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-semibold);
+      background: var(--color-alert-badge);
+      color: #fff;
+      padding: 1px 8px;
+      border-radius: var(--border-radius-pill);
+      box-shadow: var(--shadow-alert-badge);
+    }
+  }
+
+  &__footer {
+    margin-top: var(--spacing-huge);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-medium);
+  }
+
+  &__monitor {
+    background: var(--color-surface-glass-strong);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--border-radius-xlarge);
+    padding: 13px var(--spacing-large);
+    font-size: var(--font-size-subtle);
+    box-shadow: var(--shadow-card-small);
+  }
+
+  &__monitor-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px;
+  }
+
+  &__user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--border-radius-pill);
+    background: linear-gradient(145deg, #c7cce6, #9ba3c9);
+  }
+}
+
+// doplněno: tmavý wordmark je na dark povrchu nečitelný
+[data-theme="dark"] .sidebar__logo img {
+  filter: brightness(0) invert(1);
+}

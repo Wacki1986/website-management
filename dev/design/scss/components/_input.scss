@@ -1,0 +1,155 @@
+// Ovládací prvky v tabulkách a panelech: zaškrtávátko, hledání, štítky, tečka, sunken panel.
+.checkbox {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface-card-solid);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.checkbox__mark {
+  display: none;
+  width: 11px;
+  height: 11px;
+  background-color: #fff;
+}
+
+.checkbox--checked,
+.checkbox--indeterminate {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+}
+
+.checkbox--checked .checkbox__mark {
+  display: block;
+  -webkit-mask: var(--icon-check) center / contain no-repeat;
+  mask: var(--icon-check) center / contain no-repeat;
+}
+
+.checkbox--indeterminate .checkbox__mark {
+  display: block;
+  -webkit-mask: var(--icon-minus) center / contain no-repeat;
+  mask: var(--icon-minus) center / contain no-repeat;
+}
+
+// Needitovatelná napověda hledání; v aplikaci to bude <input>.
+.search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+  padding: 9px 13px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-large);
+  background: var(--color-surface-card-solid);
+  color: var(--color-text-faint);
+  font-size: var(--font-size-body);
+}
+
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-small);
+}
+
+.pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  white-space: nowrap;
+  gap: var(--spacing-small);
+  padding: 7px 13px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-pill);
+  background: var(--color-surface-card-solid);
+  color: var(--color-text-subtle);
+  font-family: inherit;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+}
+
+.pill--active {
+  border-color: var(--color-brand-border);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pill--error {
+  border-color: var(--color-status-error-border);
+  color: var(--color-status-error-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pill--muted {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+}
+
+.pill--add {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pill--add:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.pill__note {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-caption);
+}
+
+.pill__remove {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  background-color: var(--color-text-faint);
+  cursor: pointer;
+  -webkit-mask: var(--icon-close) center / contain no-repeat;
+  mask: var(--icon-close) center / contain no-repeat;
+}
+
+// Samostatná stavová tečka bez textu (řádky historie, běh monitoru).
+.dot {
+  flex: none;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--border-radius-pill);
+}
+
+.dot--ok {
+  background: var(--color-status-ok);
+  box-shadow: 0 0 0 3px var(--color-status-ok-halo);
+}
+
+.dot--warning {
+  background: var(--color-status-warning);
+  box-shadow: 0 0 0 3px var(--color-status-warning-halo);
+}
+
+.dot--error {
+  background: var(--color-status-error);
+  box-shadow: 0 0 0 3px var(--color-status-error-halo);
+}
+
+// Zapuštěný blok uvnitř karty (nadcházející termíny).
+.panel {
+  padding: var(--spacing-large) var(--spacing-xlarge);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-large);
+  background: var(--color-surface-sunken);
+}

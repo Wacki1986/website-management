@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Weby (seskupeno podle klienta)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">5</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header page-header--list">
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Weby</h1>
+          <div class="page-header__meta">13 monitorovaných webů · 2 s problémem · 2 servisy po termínu</div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat vše</button>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-plus) center/contain no-repeat;mask:var(--icon-plus) center/contain no-repeat"></span>Přidat web</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <section class="card card--scroll-x">
+        <div class="card__header card__header--filters">
+          <div class="search" style="max-width:320px"><span class="icon icon--sm" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span><span>Hledat web nebo klienta…</span></div>
+              <div class="segmented">
+                <button class="segmented__item segmented__item--active" type="button">Vše<span class="segmented__count">13</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-error)"></span>Problém<span class="segmented__count">2</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-warning)"></span>Pozornost<span class="segmented__count">3</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-ok)"></span>V pořádku<span class="segmented__count">8</span></button>
+              </div>
+          <div class="row u-ml-auto">
+            <button class="btn btn--secondary btn--sm btn--active" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Seskupit podle klienta</button>
+            <div class="text-subtle" style="font-size:var(--font-size-label)">Řadit: <b>Klient</b></div>
+          </div>
+        </div>
+
+        <div class="table table--sites">
+          <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP / PHP</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div>Report</div><div></div></div>
+
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>AK Pavlík & partneři</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#1E293B">AP</span><div style="min-width:0"><div class="table__primary u-truncate">AK Pavlík & partneři</div><div class="table__secondary u-truncate">akpavlik.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">AK Pavlík & partneři</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.3</span></div>
+            <div class="table__cell table__cell--right"><span class="text-faint">–</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 17 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Autoservis Hruška</span>
+            <span class="text-caption">1 web · 1 s odchylkou</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#1F4E79">AH</span><div style="min-width:0"><div class="table__primary u-truncate">Autoservis Hruška</div><div class="table__secondary u-truncate">autohruska.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Autoservis Hruška</div>
+            <div class="table__cell"><span class="status status--warning"><span class="status__dot"></span>Zastaralé WP</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">99,9 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-status-warning-text)">6.6.2</span> · <span style="color:var(--color-text-secondary)">8.0</span></div>
+            <div class="table__cell table__cell--right"><span class="badge badge--warning">14</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--warning" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate text-warning" style="font-size:var(--font-size-label)">za 2 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">čtvrtletně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Domov Reality s.r.o.</span>
+            <span class="text-caption">1 web · 1 s odchylkou</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#4A4A8A">RD</span><div style="min-width:0"><div class="table__primary u-truncate">Realitka Domov</div><div class="table__secondary u-truncate">realitkadomov.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Domov Reality s.r.o.</div>
+            <div class="table__cell"><span class="status status--warning"><span class="status__dot"></span>Neaktivní pluginy</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">99,6 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.1</span></div>
+            <div class="table__cell table__cell--right"><span class="badge">2</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--warning" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span class="u-truncate text-warning" style="font-size:var(--font-size-label)">nenaplánováno</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-faint)">vypnuté</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Jan Beran</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#6B4F2A">TB</span><div style="min-width:0"><div class="table__primary u-truncate">Truhlářství Beran</div><div class="table__secondary u-truncate">truhlarstvi-beran.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Jan Beran</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.2</span></div>
+            <div class="table__cell table__cell--right"><span class="text-faint">–</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--error" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate text-error" style="font-size:var(--font-size-label)">po termínu 1 d</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Kavárna Dobrá s.r.o.</span>
+            <span class="text-caption">1 web · 1 s odchylkou</span>
+          </div>
+          <a class="table__row table__row--link table__row--error" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#7C3A1D">KD</span><div style="min-width:0"><div class="table__primary u-truncate">Kavárna Dobrá</div><div class="table__secondary u-truncate">kavarnadobra.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Kavárna Dobrá s.r.o.</div>
+            <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Nedostupný</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-status-error-text)">97,2 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-status-warning-text)">7.0.3</span> · <span style="color:var(--color-status-error-text)">7.4</span></div>
+            <div class="table__cell table__cell--right"><span class="badge badge--warning">9</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 12 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Květinářství Rosa</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#9D174D">KR</span><div style="min-width:0"><div class="table__primary u-truncate">Květinářství Rosa</div><div class="table__secondary u-truncate">kvetiny-rosa.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Květinářství Rosa</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">99,95 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.2</span></div>
+            <div class="table__cell table__cell--right"><span class="badge">2</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--warning" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate text-warning" style="font-size:var(--font-size-label)">za 3 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-faint)">vypnuté</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>MUDr. Jana Sedláčková</span>
+            <span class="text-caption">1 web · 1 s odchylkou</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#2F6F5E">MS</span><div style="min-width:0"><div class="table__primary u-truncate">MUDr. Sedláčková</div><div class="table__secondary u-truncate">ordinace-sedlackova.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">MUDr. Jana Sedláčková</div>
+            <div class="table__cell"><span class="status status--warning"><span class="status__dot"></span>PHP 7.4 EOL</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-status-error-text)">7.4</span></div>
+            <div class="table__cell table__cell--right"><span class="badge">6</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 21 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Pekařství Novák</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#A0522D">PN</span><div style="min-width:0"><div class="table__primary u-truncate">Pekařství Novák</div><div class="table__secondary u-truncate">pekarstvinovak.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Pekařství Novák</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.3</span></div>
+            <div class="table__cell table__cell--right"><span class="text-faint">–</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 9 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Pulse Sport s.r.o.</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#C2410C">FP</span><div style="min-width:0"><div class="table__primary u-truncate">Fitness Pulse</div><div class="table__secondary u-truncate">fitnesspulse.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Pulse Sport s.r.o.</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">99,98 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.2</span></div>
+            <div class="table__cell table__cell--right"><span class="badge">1</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 30 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">čtvrtletně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Zámečnictví Kos</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#374151">ZK</span><div style="min-width:0"><div class="table__primary u-truncate">Zámečnictví Kos</div><div class="table__secondary u-truncate">zamecnictvikos.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Zámečnictví Kos</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-status-warning-text)">7.0.3</span> · <span style="color:var(--color-text-secondary)">8.1</span></div>
+            <div class="table__cell table__cell--right"><span class="badge">1</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--warning" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span class="u-truncate text-warning" style="font-size:var(--font-size-label)">nenaplánováno</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Zelený dvůr s.r.o.</span>
+            <span class="text-caption">1 web</span>
+          </div>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#3F6212">BZ</span><div style="min-width:0"><div class="table__primary u-truncate">Bylinky Zelený dvůr</div><div class="table__secondary u-truncate">zelenydvur.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Zelený dvůr s.r.o.</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.3</span></div>
+            <div class="table__cell table__cell--right"><span class="text-faint">–</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 25 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <div class="table__group">
+            <span class="row" style="gap:10px;font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span>Zlatý Lev a.s.</span>
+            <span class="text-caption">2 weby · 1 s odchylkou</span>
+          </div>
+          <a class="table__row table__row--link table__row--error" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#8A6A1E">HZ</span><div style="min-width:0"><div class="table__primary u-truncate">Hotel Zlatý Lev</div><div class="table__secondary u-truncate">hotelzlatylev.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Zlatý Lev a.s.</div>
+            <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>SSL vypršel</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">99,1 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.1</span></div>
+            <div class="table__cell table__cell--right"><span class="badge">3</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--error" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate text-error" style="font-size:var(--font-size-label)">po termínu 5 d</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+          <a class="table__row table__row--link" href="detail-webu-prehled.html">
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><span class="avatar" style="background:#8A6A1E">HZ</span><div style="min-width:0"><div class="table__primary u-truncate">Hotel Zlatý Lev – rezervace</div><div class="table__secondary u-truncate">rezervace.hotelzlatylev.cz</div></div></div>
+            <div class="table__cell u-truncate text-secondary">Zlatý Lev a.s.</div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>V pořádku</span></div>
+            <div class="table__cell table__cell--mono table__cell--right" style="color:var(--color-text-secondary)">100 %</div>
+            <div class="table__cell table__cell--mono"><span style="color:var(--color-text-secondary)">7.1</span> · <span style="color:var(--color-text-secondary)">8.2</span></div>
+            <div class="table__cell table__cell--right"><span class="text-faint">–</span></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-clock) center/contain no-repeat;mask:var(--icon-clock) center/contain no-repeat"></span><span class="u-truncate" style="font-size:var(--font-size-label)">za 24 dní</span></div>
+            <div class="table__cell u-truncate" style="font-size:var(--font-size-label);color:var(--color-text-secondary)">měsíčně</div>
+            <div class="table__cell table__cell--right"><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </a>
+        </div>
+
+        <div class="card__footer card__footer--muted">
+          <span>Zobrazeno 13 z 13 webů</span>
+          <a class="u-ml-auto" href="dashboard.html">Zpět na dashboard</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

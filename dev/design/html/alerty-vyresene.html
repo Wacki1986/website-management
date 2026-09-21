@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Alerty (vyřešené)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item sidebar__item--active" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header page-header--list">
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Alerty</h1>
+          <div class="page-header__meta">7 nevyřešených · 2 kritických · 1 ignorovaných</div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary" type="button">Nastavit prahy</button>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span>Vyřešit vše nové</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric__label row" style="gap:8px">Nevyřešené</div>
+          <div class="metric__value">7</div>
+          <div class="metric__note">napříč 13 weby</div>
+        </div>
+        <div class="metric metric--error">
+          <div class="metric__label row" style="gap:8px"><span class="dot dot--error" style="width:9px;height:9px"></span>Kritické</div>
+          <div class="metric__value metric__value--error">2</div>
+          <div class="metric__note">web mimo provoz nebo neplatné SSL</div>
+        </div>
+        <div class="metric">
+          <div class="metric__label row" style="gap:8px">Nové dnes</div>
+          <div class="metric__value">3</div>
+          <div class="metric__note">první přišel v 06:40</div>
+        </div>
+        <div class="metric metric--warning">
+          <div class="metric__label row" style="gap:8px"><span class="dot dot--warning" style="width:9px;height:9px"></span>Nejdelší otevřený</div>
+          <div class="metric__value metric__value--warning">6 d</div>
+          <div class="metric__note">expirace domény · Zámečnictví Kos</div>
+        </div>
+      </div>
+
+      <section class="card card--scroll-x">
+        <div class="card__header card__header--filters">
+              <div class="segmented">
+                <button class="segmented__item segmented__item--active" type="button">Vše<span class="segmented__count">7</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-error)"></span>Kritické<span class="segmented__count">2</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-status-warning)"></span>Varování<span class="segmented__count">3</span></button>
+                <button class="segmented__item" type="button"><span class="segmented__dot" style="background:var(--color-text-faint)"></span>Informace<span class="segmented__count">2</span></button>
+              </div>
+          <div class="pill-group">
+            <button class="pill" type="button">Nevyřešené</button>
+            <button class="pill pill--brand" type="button">Vyřešené</button>
+            <button class="pill" type="button">Ignorované</button>
+            <button class="pill" type="button">Vše</button>
+          </div>
+          <div class="form__control form__control--select form__control--inline u-ml-auto">Web <b>· všechny</b><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+        </div>
+
+        <div class="table table--alerts">
+          <div class="table__group table__group--caps"><span>Tento týden</span><span style="font-weight:var(--font-weight-medium);letter-spacing:0;text-transform:none">2 alerty</span></div>
+          <div class="table__row table__row--top">
+            <div class="table__cell"><button class="checkbox" type="button" role="checkbox" aria-checked="false"><span class="checkbox__mark"></span></button></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px">
+              <span class="icon icon--lg icon--error" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span>
+              <div style="min-width:0">
+                <div class="table__primary text-error" style="font-size:var(--font-size-body-large)">Výpadek 18 minut</div>
+                <div class="table__secondary" style="font-size:var(--font-size-label);text-wrap:pretty">Hosting hlásil plánovanou údržbu, web byl mimo provoz 03:41–03:59.</div>
+                <div class="row" style="gap:14px;margin-top:8px"><span class="text-caption">pravidlo: 3 selhané kontroly</span></div>
+              </div>
+            </div>
+            <a class="table__cell row" style="flex-wrap:nowrap;gap:10px;color:var(--color-text-primary);text-decoration:none" href="detail-webu-prehled.html"><span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#7C3A1D">KD</span><div style="min-width:0"><div class="u-truncate" style="font-size:var(--font-size-label);font-weight:var(--font-weight-medium)">Kavárna Dobrá</div><div class="table__secondary u-truncate" style="margin-top:0">Kavárna Dobrá s.r.o.</div></div></a>
+            <div class="table__cell"><div style="font-size:var(--font-size-label);color:var(--color-text-secondary)">4. 9. 03:41</div><div class="text-caption" style="margin-top:3px">vyřešeno za 18 min</div></div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Vyřešeno</span></div>
+            <div class="table__cell row" style="justify-content:flex-end"><button class="btn btn--secondary btn--sm" type="button">Vrátit</button></div>
+          </div>
+          <div class="table__row table__row--top">
+            <div class="table__cell"><button class="checkbox" type="button" role="checkbox" aria-checked="false"><span class="checkbox__mark"></span></button></div>
+            <div class="table__cell row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px">
+              <span class="icon icon--lg icon--warning" style="-webkit-mask:var(--icon-shield) center/contain no-repeat;mask:var(--icon-shield) center/contain no-repeat"></span>
+              <div style="min-width:0">
+                <div class="table__primary text-warning" style="font-size:var(--font-size-body-large)">Zálohy neproběhly 2 dny</div>
+                <div class="table__secondary" style="font-size:var(--font-size-label);text-wrap:pretty">UpdraftPlus nenahrál zálohu na úložiště. Po zásahu běží znovu podle plánu.</div>
+                <div class="row" style="gap:14px;margin-top:8px"><span class="text-caption">pravidlo: záloha starší než 48 h</span></div>
+              </div>
+            </div>
+            <a class="table__cell row" style="flex-wrap:nowrap;gap:10px;color:var(--color-text-primary);text-decoration:none" href="detail-webu-prehled.html"><span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#C2410C">FP</span><div style="min-width:0"><div class="u-truncate" style="font-size:var(--font-size-label);font-weight:var(--font-weight-medium)">Fitness Pulse</div><div class="table__secondary u-truncate" style="margin-top:0">Pulse Sport s.r.o.</div></div></a>
+            <div class="table__cell"><div style="font-size:var(--font-size-label);color:var(--color-text-secondary)">3. 9. 04:10</div><div class="text-caption" style="margin-top:3px">vyřešeno za 6 h</div></div>
+            <div class="table__cell"><span class="status status--ok"><span class="status__dot"></span>Vyřešeno</span></div>
+            <div class="table__cell row" style="justify-content:flex-end"><button class="btn btn--secondary btn--sm" type="button">Vrátit</button></div>
+          </div>
+        </div>
+
+        <div class="card__footer card__footer--muted">
+          <span>Zobrazeno 2 z 10 alertů</span>
+          <a class="u-ml-auto" href="weby.html">Přejít na weby</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+// Náhled klientského e-mailu.
+
+// Plátno pro náhled e-mailu. Uvnitř jsou záměrně inline styly — e-mail se renderuje
+// v cizím klientovi, kde tokeny ani třídy neplatí.
+.email-paper {
+  display: flex;
+  justify-content: center;
+  padding: 28px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-card);
+  background: var(--color-surface-sunken);
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 768px) {
+  .email-paper { padding: var(--layout-content-padding-mobile); }
+}
+
+.email-paper__sheet {
+  width: 640px;
+  max-width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #14162b;
+  box-shadow: 0 10px 30px rgba(23, 26, 45, 0.14);
+}
+
+.email-paper__sheet--mobile { width: 390px; }
+
+.split--report { grid-template-columns: minmax(0, 1fr) 360px; }
+
+@media (max-width: 1100px) {
+  .split--report { grid-template-columns: minmax(0, 1fr); }
+}

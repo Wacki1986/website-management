@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Nový klient (chyby ve formuláři)</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item sidebar__item--active" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb"><a href="klienti.html">Klienti</a><span>/</span><span>Nový klient</span></div>
+
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Přidání nového klienta</h1>
+          <div class="page-header__meta">Povinné je jen jméno firmy, kontaktní osoba a e-mail. Zbytek jde doplnit později.</div>
+        </div>
+        <div class="page-header__actions">
+          <a class="btn btn--ghost" href="klienti.html">Zrušit</a>
+          <button class="btn btn--secondary" type="button">Uložit a přidat web</button>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-check) center/contain no-repeat;mask:var(--icon-check) center/contain no-repeat"></span>Uložit klienta</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <div class="split split--settings">
+
+        <div class="stack">
+
+          <div class="alert alert--row">
+            <span class="icon icon--lg icon--error" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)">Chybí 3 povinné údaje</div>
+              <div class="text-caption">Doplňte zvýrazněná pole a uložte znovu.</div>
+            </div>
+          </div>
+
+          <section class="card card--padded">
+            <div class="form">
+              <div class="row" style="justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div class="card__title">Firma</div>
+                  <div class="card__note">Zadejte IČO a údaje se doplní z rejstříku.</div>
+                </div>
+                <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span>Načíst z ARESu</button>
+              </div>
+
+              <div class="form__row">
+                <div class="form__field">
+                  <label class="form__label form__label--caps">IČO</label>
+                  <input class="form__control form__control--mono" type="text" value="" placeholder="12345678">
+                  <div class="form__hint">Načteme název i adresu z ARESu.</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">DIČ<span class="form__label-optional"> · nepovinné</span></label>
+                  <input class="form__control form__control--mono" type="text" value="" placeholder="CZ12345678">
+                </div>
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">Název firmy</label>
+                  <input class="form__control form__control--error" type="text" value="" placeholder="Firma s.r.o. nebo jméno OSVČ">
+                  <div class="form__error">Bez názvu firmy klienta nezaložíme.</div>
+                </div>
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">Fakturační adresa</label>
+                  <input class="form__control" type="text" value="" placeholder="Ulice 1, PSČ Město">
+                </div>
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">Fakturace<span class="form__label-optional"> · nepovinné</span></label>
+                  <input class="form__control" type="text" value="" placeholder="Paušál 2 400 Kč / měsíc nebo hodinově">
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card card--padded">
+            <div class="form">
+              <div>
+                <div class="card__title">Kontaktní osoba</div>
+                <div class="card__note">Komu voláme a píšeme. Reporty se nastavují až u jednotlivých webů.</div>
+              </div>
+
+              <div class="form__row">
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Jméno</label>
+                  <input class="form__control" type="text" value="Markéta" placeholder="Markéta">
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Příjmení</label>
+                  <input class="form__control form__control--error" type="text" value="" placeholder="Dobrá">
+                  <div class="form__error">Doplňte příjmení kontaktní osoby.</div>
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Role<span class="form__label-optional"> · nepovinné</span></label>
+                  <input class="form__control" type="text" value="" placeholder="majitelka, jednatel…">
+                </div>
+                <div class="form__field">
+                  <label class="form__label form__label--caps">Telefon</label>
+                  <input class="form__control form__control--mono" type="text" value="+420 731 442 108" placeholder="+420 …">
+                </div>
+                <div class="form__field" style="grid-column:span 2">
+                  <label class="form__label form__label--caps">E-mail</label>
+                  <input class="form__control form__control--error" type="text" value="" placeholder="jmeno@firma.cz">
+                  <div class="form__error">E-mail je povinný — chodí na něj reporty.</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card card--padded">
+            <div class="form">
+              <div class="row" style="justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div class="card__title">Weby klienta<span class="form__label-optional" style="font-size:var(--font-size-label)"> · nepovinné</span></div>
+                  <div class="card__note">Přiřaďte weby, které už monitorujeme, nebo je přidejte později.</div>
+                </div>
+                <span class="text-subtle" style="font-size:var(--font-size-label)">3 weby zatím bez klienta</span>
+              </div>
+
+              <div class="pick">
+                <button class="pick__item" type="button">
+                  <span class="checkbox"><span class="checkbox__mark"></span></span>
+                  <span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#2F6F5E">PU</span>
+                  <span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)">Penzion U Lípy</span><span class="table__secondary u-truncate" style="display:block;margin-top:0">penzionulipy.cz</span></span>
+                  <span class="text-caption u-nowrap">přidán 6. 9.</span>
+                </button>
+                <button class="pick__item" type="button">
+                  <span class="checkbox"><span class="checkbox__mark"></span></span>
+                  <span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#3F6212">ZK</span>
+                  <span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)">Zahradnictví Klas</span><span class="table__secondary u-truncate" style="display:block;margin-top:0">zahradnictviklas.cz</span></span>
+                  <span class="text-caption u-nowrap">přidán 2. 9.</span>
+                </button>
+                <button class="pick__item" type="button">
+                  <span class="checkbox"><span class="checkbox__mark"></span></span>
+                  <span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#9D174D">KV</span>
+                  <span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)">Kadeřnictví Vlna</span><span class="table__secondary u-truncate" style="display:block;margin-top:0">vlna-studio.cz</span></span>
+                  <span class="text-caption u-nowrap">přidán 28. 8.</span>
+                </button>
+              </div>
+
+              <div class="card__footer" style="padding:14px 0 0">
+                <span class="text-subtle" style="font-size:var(--font-size-label)">Web není v seznamu?</span>
+                <a href="weby.html" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)">Přidat nový web do monitoringu</a>
+              </div>
+            </div>
+          </section>
+
+          <section class="card card--padded">
+            <div class="form__field">
+              <label class="form__label form__label--caps">Interní poznámka<span class="form__label-optional"> · nevidí ji klient</span></label>
+              <textarea class="form__control" rows="4" placeholder="Kdy volat, co neměnit bez domluvy, jak fakturovat…"></textarea>
+            </div>
+          </section>
+
+        </div>
+
+        <aside class="split__aside">
+          <div class="card card--small-shadow card--padded">
+            <div class="caps">Náhled v seznamu</div>
+            <div class="row" style="flex-wrap:nowrap;gap:12px;margin-top:14px">
+              <span class="avatar" style="width:34px;height:34px;font-size:var(--font-size-caption);background:#3858e9"></span>
+              <div style="min-width:0">
+                <div class="u-truncate" style="font-weight:var(--font-weight-semibold);color:var(--color-text-faint)">Název firmy</div>
+                <div class="text-caption u-truncate">kontaktní osoba</div>
+              </div>
+            </div>
+            <div class="summary-list" style="padding:16px 0 0">
+              <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">Telefon</span><span class="summary-list__value text-faint">—</span></div>
+              <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">E-mail</span><span class="summary-list__value text-faint">—</span></div>
+              <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">Weby</span><span class="summary-list__value">0</span></div>
+            </div>
+          </div>
+
+          <div class="card card--small-shadow" style="padding:6px 22px">
+            <div class="task-list__item"><span class="task-list__mark"></span>Firma a fakturační údaje</div>
+            <div class="task-list__item"><span class="task-list__mark"></span>Kontaktní osoba</div>
+            <div class="task-list__item"><span class="task-list__mark"></span>E-mail pro reporty</div>
+            <div class="task-list__item"><span class="task-list__mark"></span>Přiřazený web</div>
+          </div>
+
+          <div class="card card--note" style="font-size:var(--font-size-label);line-height:var(--line-height-relaxed);color:var(--color-text-secondary)">Klient je jen kontakt. Frekvence reportů, servis i prahy alertů se nastavují u konkrétního webu — jeden klient tak může mít weby s různým režimem péče.</div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

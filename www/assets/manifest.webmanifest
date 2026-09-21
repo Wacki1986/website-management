@@ -1,0 +1,16 @@
+{
+    "name": "Správa webů",
+    "short_name": "Správa",
+    "description": "Monitoring WordPress webů klientů MEDIAGRAFIK, alerty, servis a reporty.",
+    "lang": "cs",
+    "start_url": "../",
+    "scope": "../",
+    "display": "standalone",
+    "background_color": "#0e1020",
+    "theme_color": "#3858e9",
+    "icons": [
+        { "src": "favicons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "favicons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        { "src": "favicons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    ]
+}

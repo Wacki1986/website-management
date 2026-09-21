@@ -1,0 +1,385 @@
+// app/_extras.scss — drobnosti, které aplikace potřebuje navíc k design
+// balíčku: skutečné formulářové prvky (návrh má statické ukázky), boční
+// menu na telefonu, nabídka účtu, hláška v obsahu, přepínač hesla.
+
+@use "../abstracts/mixins" as *;
+
+// --- formuláře -------------------------------------------------------
+
+// Zaškrtávátko s popiskem vedle (Form::checkbox).
+.form__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--font-size-body);
+  cursor: pointer;
+
+  input {
+    margin: 3px 0 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-brand);
+    flex: none;
+  }
+}
+
+.form__required { color: var(--color-status-error-text); }
+
+// Popisek v kapitálkách u polí, kde to návrh dělá (Nastavení, klient).
+.form__field--caps .form__label {
+  font-size: var(--font-size-caption);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+// Skutečný `<select>` a `<textarea>` se stylují stejně jako `.form__control`;
+// návrh má jen statický box se šipkou.
+select.form__control {
+  appearance: none;
+  padding-right: 34px;
+  background-image: var(--icon-chevron-down);
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 14px;
+}
+
+[data-theme="dark"] select.form__control {
+  filter: none;
+}
+
+select.form__control option { color: initial; }
+
+textarea.form__control {
+  min-height: 96px;
+  resize: vertical;
+  line-height: var(--line-height-body);
+  font: inherit;
+}
+
+input.form__control[type="file"] { padding: 8px 10px; }
+
+// Segmentovaný přepínač jako skupina rádií: popisek nese `.segmented__item`,
+// rádio je schované a stav kreslí `:has(:checked)`.
+.segmented__item:has(input:checked) {
+  background: var(--color-surface-card-solid);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-subtle);
+}
+
+// Přepínač zapnuto/vypnuto jako `<label>` se skrytým zaškrtávátkem (get_toggle).
+.toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+label.toggle { display: inline-block; cursor: pointer; }
+
+.toggle:has(.toggle__input:checked) {
+  background: var(--color-brand);
+
+  .toggle__knob { left: 19.5px; }
+}
+
+.toggle:has(.toggle__input:focus-visible) { @include focus-ring; }
+
+// --- hláška v obsahu (partials/notice) --------------------------------
+
+.alert--ok {
+  border-color: var(--color-status-ok-halo);
+  background: var(--color-status-ok-soft);
+}
+
+.alert--info {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+}
+
+.alert__content { flex: 1; min-width: 0; }
+
+.alert__row-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-status-error-text);
+
+  .alert--ok & { color: var(--color-status-ok-text); }
+  .alert--warning & { color: var(--color-status-warning-text); }
+  .alert--info & { color: var(--color-brand); }
+}
+
+.alert__list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: var(--font-size-label);
+  color: var(--color-text-secondary);
+}
+
+.icon--ok { background-color: var(--color-status-ok-text); }
+
+// --- boční menu: telefon a nabídka účtu -------------------------------
+
+.sidebar__mobile { display: none; }
+
+@media (max-width: 768px) {
+  .app { flex-direction: column; }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 12px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-default);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px 14px;
+
+    &__logo { padding: 4px 0 8px; }
+    &__logo img { width: 130px; }
+    &__mobile { display: block; }
+    &__mobile-toggle { list-style: none; }
+    &__mobile-toggle::-webkit-details-marker { display: none; }
+
+    // Navigace a patička se ukážou, jen když je menu rozbalené.
+    &__nav,
+    &__footer { display: none; grid-column: 1 / -1; }
+
+    &__mobile[open] ~ &__nav,
+    &__mobile[open] ~ &__footer { display: flex; }
+
+    &__footer { margin-top: 4px; }
+  }
+}
+
+.sidebar__account {
+  position: relative;
+
+  summary { list-style: none; cursor: pointer; border-radius: var(--border-radius-large); }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: var(--color-surface-hover); }
+}
+
+.sidebar__user-name {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-label);
+}
+
+.sidebar__menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-xlarge);
+  background: var(--color-surface-card-solid);
+  box-shadow: var(--shadow-popover);
+  z-index: 20;
+
+  // Na telefonu je patička v toku stránky — nabídka se otevře pod tlačítkem.
+  @media (max-width: 768px) {
+    position: static;
+    margin-top: 6px;
+  }
+}
+
+.sidebar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--border-radius-medium);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: var(--color-surface-hover); text-decoration: none; }
+}
+
+.sidebar__menu-mail { padding: 0 10px; overflow-wrap: anywhere; }
+
+// --- tajemství s odloženou výměnou (partials/secret-field) -------------
+
+.secret summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+.secret summary::-webkit-details-marker { display: none; }
+.secret__swap { color: var(--color-brand); font-weight: var(--font-weight-semibold); font-family: var(--font-family-base); }
+
+// --- přepínač viditelnosti hesla (password.js) -------------------------
+
+.password-field {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  width: 100%;
+
+  .form__control { padding-right: 44px; }
+}
+
+.password-field__toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--border-radius-medium);
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+
+  &::before { content: "ukázat"; }
+  &[data-shown="true"]::before { content: "skrýt"; }
+  &:hover { background: var(--color-surface-muted); color: var(--color-text-primary); }
+}
+
+// --- drobnosti ---------------------------------------------------------
+
+.avatar--photo { object-fit: cover; }
+
+// Tlačítko kopírování po úspěchu (copy.js přidá `is-done`).
+[data-copy].is-done { border-color: var(--color-status-ok); color: var(--color-status-ok-text); }
+
+// Odkazy uvnitř tabulky bez podtržení, ať se řádek čte jako celek.
+.table a { text-decoration: none; }
+.table a:hover { text-decoration: underline; }
+
+// --- hledání a výběr (skutečné prvky uvnitř bloků z návrhu) ------------
+
+// Vstup uvnitř `.search` (návrh má jen statický text).
+.search__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  outline: none;
+
+  &::placeholder { color: var(--color-text-faint); }
+}
+
+.search:focus-within { border-color: var(--color-brand); }
+
+// `.pick__item` jako <label> se skrytým zaškrtávátkem.
+.pick__item { position: relative; }
+
+.pick__item .form__check-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pick__item:has(.form__check-input:checked) {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+.pick__item:has(.form__check-input:focus-visible) { @include focus-ring; }
+
+// Pole přes celou šířku mřížky formuláře (Form::text(span: 12)).
+.form__row .form__field--12 { grid-column: 1 / -1; }
+
+// Odkaz jako položka segmentovaného přepínače nebo pilulka.
+a.segmented__item { text-decoration: none; color: inherit; }
+a.segmented__item.segmented__item--active { color: var(--color-text-primary); }
+a.pill { text-decoration: none; }
+a.table__row--link:hover { text-decoration: none; }
+
+// --- alerty a monitoring -----------------------------------------------
+
+// `.checkbox` jako <label> se skutečným zaškrtávátkem (alerty) — stav kreslí :has.
+label.checkbox { cursor: pointer; }
+.checkbox:has(input:checked) { border-color: var(--color-brand); background: var(--color-brand); }
+.checkbox:has(input:checked) .checkbox__mark {
+  display: block;
+  -webkit-mask: var(--icon-check) center / contain no-repeat;
+  mask: var(--icon-check) center / contain no-repeat;
+}
+
+// Pruh hromadných akcí schovaný, dokud není výběr (skript ho ukáže).
+.bulk-bar[hidden] { display: none; }
+
+// Krokovací pole se skutečným číselným vstupem.
+input.stepper__value {
+  font: inherit;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-body-large);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  appearance: textfield;
+  -moz-appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { appearance: none; margin: 0; }
+  &:focus-visible { @include focus-ring; }
+}
+
+.stepper--sm input.stepper__value { font-size: var(--font-size-label); width: 96px; }
+
+// Den bez kontrol v pásku uptime.
+.uptime__day--none { background: var(--color-surface-muted); }
+
+// Druh servisu jako skupina rádií: zvýraznění podle zaškrtnutí, ne jen
+// podle třídy ze serveru (přepnutí bez JS před odesláním formuláře).
+.choice__item:has(input:checked) {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+.choice__item:has(input:focus-visible) { @include focus-ring; }
+.choice__item .text-caption { margin-top: var(--spacing-xxsmall); }
+
+// Reporty: historie u webu (návrh `detail-webu-reporty.html` má tabulku
+// bez vlastního modifikátoru) a drobnosti náhledu.
+.table--reports { --table-columns: 110px minmax(0, 1fr) 160px 170px 90px; }
+
+@media (max-width: 768px) {
+  .table--reports { --table-columns: minmax(0, 1fr) 90px; }
+}
+
+// Adresát reportu jako formulář v pilulce (odebrání bez JS).
+form.pill { margin: 0; }
+.pill__remove {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+}
+.pill__remove:hover { color: var(--color-status-error-text); }
+
+// Textové tlačítko (Vymazat, Zahodit koncept).
+.btn--link {
+  border: 0;
+  background: transparent;
+  color: var(--color-brand);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+.btn--link:hover { text-decoration: underline; }
+
+// Tělo e-mailu v náhledu je tabulka s inline styly — jen ať se nedědí
+// odsazení odstavců z aplikace.
+.email-paper__sheet table { border-collapse: separate; }
+.email-paper__sheet p { margin: 0; }
+
+// Avatar webu v hero kartě je o chlup větší než v tabulce (návrh 34 px).
+.hero__item .avatar { width: 34px; height: 34px; font-size: var(--font-size-caption); }

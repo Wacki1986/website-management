@@ -1,0 +1,273 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Výchozí schéma správy instancí — stav k verzi 0.9.15.
+ *
+ * Vzniklo squashem migrací z vývoje do jednoho kroku (poprvé 9 migrací do
+ * 0.9.0, podruhé dalších 9 do 0.9.15 před nasazením na ostrou doménu).
+ * Soubor si při squashi nechává PŮVODNÍ NÁZEV: instalace, které už baseline
+ * mají v tabulce `migrations`, tak nic znovu nepouští — složené kroky u nich
+ * proběhly jako samostatné migrace. Proč která tabulka vypadá takhle, je
+ * v `dev/docs/00-provoz-spravy.md`; jednotlivé kroky drží git.
+ *
+ * `users` je první schválně — `remember_tokens` a `password_resets` se na ni
+ * odkazují cizím klíčem a v tomhle pořadí není potřeba kontrolu vypínat.
+ *
+ * Od 0.9.15 dál migrace už jen **přibývají**; znovu squashovat se smí až ve
+ * chvíli, kdy jsou všechny živé instalace na verzi squashe nebo výš — starší
+ * by přišly o kroky, které se do baseline složily, a už by se nedomigrovaly.
+ */
+return function (PDO $pdo): void {
+    $tables = [
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `users` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `username` varchar(100) NOT NULL,
+              `email` varchar(190) DEFAULT NULL,
+              `name` varchar(190) DEFAULT NULL,
+              `password_hash` varchar(255) NOT NULL,
+              `is_active` tinyint(1) NOT NULL DEFAULT 1,
+              `theme` varchar(10) NOT NULL DEFAULT 'auto',
+              `avatar` varchar(50) DEFAULT NULL,
+              `last_login_at` datetime DEFAULT NULL,
+              `created_at` datetime NOT NULL,
+              `updated_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_username` (`username`),
+              UNIQUE KEY `uq_users_email` (`email`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `remember_tokens` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `user_id` int(10) unsigned NOT NULL,
+              `selector` varchar(32) NOT NULL,
+              `validator_hash` char(64) NOT NULL,
+              `previous_hash` char(64) DEFAULT NULL,
+              `rotated_at` datetime DEFAULT NULL,
+              `expires_at` datetime NOT NULL,
+              `created_at` datetime NOT NULL,
+              `last_used_at` datetime DEFAULT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_remember_selector` (`selector`),
+              KEY `idx_remember_user` (`user_id`),
+              CONSTRAINT `fk_remember_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `password_resets` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `user_id` int(10) unsigned NOT NULL,
+              `selector` varchar(32) NOT NULL,
+              `validator_hash` char(64) NOT NULL,
+              `expires_at` datetime NOT NULL,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_reset_selector` (`selector`),
+              KEY `idx_reset_user` (`user_id`),
+              KEY `idx_reset_expires` (`expires_at`),
+              CONSTRAINT `fk_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `rate_limits` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `bucket` varchar(40) NOT NULL,
+              `key` varchar(191) NOT NULL,
+              `success` tinyint(1) NOT NULL DEFAULT 0,
+              `attempted_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_lookup` (`bucket`,`key`,`success`,`attempted_at`),
+              KEY `idx_purge` (`attempted_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `settings` (
+              `key` varchar(100) NOT NULL,
+              `value` text DEFAULT NULL,
+              `updated_at` datetime NOT NULL,
+              PRIMARY KEY (`key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `cores` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `version` varchar(50) NOT NULL,
+              `path` varchar(500) NOT NULL,
+              `is_current` tinyint(1) NOT NULL DEFAULT 0,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_core_version` (`version`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `instances` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `name` varchar(150) NOT NULL,
+              `instance_id` varchar(100) NOT NULL,
+              `url` varchar(255) NOT NULL,
+              `contact_email` varchar(255) NOT NULL DEFAULT '',
+              `contact_phone` varchar(50) NOT NULL DEFAULT '',
+              `note` text DEFAULT NULL,
+              `valid_until` date DEFAULT NULL,
+              `subscription_warned_until` date DEFAULT NULL,
+              `suspended_at` datetime DEFAULT NULL,
+              `suspend_reason` varchar(255) DEFAULT NULL,
+              `upgrade_pinned` tinyint(1) NOT NULL DEFAULT 0,
+              `allowed_modules` text DEFAULT NULL,
+              `notice_text` text DEFAULT NULL,
+              `notice_until` datetime DEFAULT NULL,
+              `migrate_token` text DEFAULT NULL,
+              `token_hint` varchar(4) NOT NULL DEFAULT '',
+              `last_health` text DEFAULT NULL,
+              `last_seen_at` datetime DEFAULT NULL,
+              `last_checked_at` datetime DEFAULT NULL,
+              `last_error` varchar(255) DEFAULT NULL,
+              `provision` text DEFAULT NULL,
+              `created_at` datetime NOT NULL,
+              `updated_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_instance_id` (`instance_id`),
+              UNIQUE KEY `uq_instance_url` (`url`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `migration_queue` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `instance_id` int(10) unsigned NOT NULL,
+              `core_id` int(10) unsigned DEFAULT NULL,
+              `position` int(10) unsigned NOT NULL,
+              `state` varchar(10) NOT NULL DEFAULT 'waiting',
+              `applied_count` int(10) unsigned DEFAULT NULL,
+              `backup` varchar(255) DEFAULT NULL,
+              `message` varchar(1000) DEFAULT NULL,
+              `started_at` datetime DEFAULT NULL,
+              `finished_at` datetime DEFAULT NULL,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_queue_state` (`state`,`position`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `audit_log` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `instance_id` int(10) unsigned DEFAULT NULL,
+              `instance_name` varchar(150) NOT NULL DEFAULT '',
+              `action` varchar(30) NOT NULL,
+              `user_id` int(10) unsigned DEFAULT NULL,
+              `user_name` varchar(100) NOT NULL DEFAULT '',
+              `success` tinyint(1) NOT NULL DEFAULT 1,
+              `description` varchar(500) NOT NULL DEFAULT '',
+              `detail` text DEFAULT NULL,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_audit_instance` (`instance_id`,`created_at`),
+              KEY `idx_audit_created` (`created_at`),
+              KEY `idx_audit_user` (`user_id`,`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        // Podpora — zrcadlo klientského modulu (párování přes UUID, čísla
+        // žádostí #POD jsou `id`, AUTO_INCREMENT proto startuje na 1000).
+        // Zprávy nesou dvojí čas: `origin_created_at` (kdy vznikla u původce)
+        // a `received_at` (kdy dorazila sem — měří čekání bez posunu hodin).
+        // `instance_id` je logický odkaz bez cizího klíče: žádosti smazané
+        // instance zůstávají jako historie.
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `support_tickets` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `uuid` char(32) NOT NULL,
+              `instance_id` int(10) unsigned NOT NULL,
+              `subject` varchar(200) NOT NULL,
+              `category` varchar(20) NOT NULL DEFAULT 'other',
+              `status` varchar(10) NOT NULL DEFAULT 'open',
+              `closed_at` datetime DEFAULT NULL,
+              `closed_by_side` varchar(10) NOT NULL DEFAULT '',
+              `closed_by_name` varchar(100) NOT NULL DEFAULT '',
+              `status_delivery_pending` tinyint(1) NOT NULL DEFAULT 0,
+              `created_by_name` varchar(100) NOT NULL DEFAULT '',
+              `created_by_email` varchar(190) NOT NULL DEFAULT '',
+              `origin_created_at` datetime NOT NULL,
+              `first_response_at` datetime DEFAULT NULL,
+              `last_message_at` datetime NOT NULL,
+              `last_message_from` varchar(10) NOT NULL DEFAULT 'client',
+              `last_message_preview` varchar(200) NOT NULL DEFAULT '',
+              `last_client_message_at` datetime DEFAULT NULL,
+              `created_at` datetime NOT NULL,
+              `updated_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_support_ticket_uuid` (`uuid`),
+              KEY `idx_support_ticket_instance` (`instance_id`, `status`, `last_message_at`),
+              KEY `idx_support_ticket_state` (`status`, `last_message_from`, `last_message_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci AUTO_INCREMENT=1000
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `support_messages` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `uuid` char(32) NOT NULL,
+              `ticket_id` int(10) unsigned NOT NULL,
+              `kind` varchar(10) NOT NULL DEFAULT 'message',
+              `author_side` varchar(10) NOT NULL,
+              `author_user_id` int(10) unsigned DEFAULT NULL,
+              `author_name` varchar(100) NOT NULL DEFAULT '',
+              `body` text NOT NULL,
+              `origin_created_at` datetime NOT NULL,
+              `received_at` datetime NOT NULL,
+              `delivery_status` varchar(10) NOT NULL DEFAULT 'none',
+              `delivery_attempts` int(10) unsigned NOT NULL DEFAULT 0,
+              `delivery_error` varchar(255) DEFAULT NULL,
+              `next_attempt_at` datetime DEFAULT NULL,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_support_message_uuid` (`uuid`),
+              KEY `idx_support_message_ticket` (`ticket_id`, `id`),
+              KEY `idx_support_message_delivery` (`delivery_status`, `next_attempt_at`),
+              CONSTRAINT `fk_support_message_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `support_attachments` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `uuid` char(32) NOT NULL,
+              `message_id` int(10) unsigned NOT NULL,
+              `orig_name` varchar(255) NOT NULL,
+              `mime` varchar(100) NOT NULL,
+              `size` int(10) unsigned NOT NULL,
+              `stored_path` varchar(100) NOT NULL,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uq_support_attachment_uuid` (`uuid`),
+              KEY `idx_support_attachment_message` (`message_id`),
+              CONSTRAINT `fk_support_attachment_message` FOREIGN KEY (`message_id`) REFERENCES `support_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `support_reads` (
+              `user_id` int(10) unsigned NOT NULL,
+              `ticket_id` int(10) unsigned NOT NULL,
+              `last_read_at` datetime NOT NULL,
+              PRIMARY KEY (`user_id`, `ticket_id`),
+              CONSTRAINT `fk_support_read_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+        // Historie provozních zpráv: živý stav žije po instancích
+        // (`instances.notice_*`) a automatika ho po konci uklízí — bez
+        // historie by se doběhlé zprávy nenávratně ztratily.
+        <<<'SQL'
+            CREATE TABLE IF NOT EXISTS `notice_history` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `text` text NOT NULL,
+              `until` datetime NOT NULL,
+              `instance_count` int(10) unsigned NOT NULL DEFAULT 0,
+              `created_at` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `idx_notice_history_until` (`until`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci
+            SQL,
+    ];
+
+    foreach ($tables as $sql) {
+        $pdo->exec($sql);
+    }
+};

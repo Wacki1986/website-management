@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Vrstva_1" data-name="Vrstva 1" viewBox="0 0 512 512" width="512" height="512"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+        fill-rule: evenodd;
+      }
+
+      .cls-1, .cls-2 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: #4067e6;
+      }
+    </style>
+  </defs><rect class="cls-2" width="512" height="512"></rect><path class="cls-1" d="M219.6,67.4c-54.8,5.6-102.1,10.9-125.4,13.5-8.8,1-15.5,8.4-15.6,17.3l-.7,63.9c0,3.8,3.2,6.7,6.9,6.3h0c3.7-.4,7,2.5,6.9,6.3l-2.9,253.5c-.1,10.5,8.9,18.7,19.3,17.7,22.8-2.2,65.1-6.4,125.1-12.7,93.9-9.9,201-54.2,201-202.6S298,59.4,219.6,67.4ZM242.7,351.9c-29.6,3.7-50.1,6.2-60.6,7.4-4.2.5-7.9-2.8-7.9-7.1l1.9-189.8c0-3.4,2.5-6.3,5.9-6.9,9.5-1.5,29.7-4.5,56.2-6.9,38.4-3.5,99.6,12.7,99.6,97.1s-50.7,100.5-95.2,106.1h0Z"></path></svg>

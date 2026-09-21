@@ -1,0 +1,59 @@
+{
+    // Live Sass Compile musí vyrobit PŘESNĚ to, co dělá dev/tools/build.ps1 a CI:
+    // dev/scss/app.scss → www/assets/css/app.css, compressed, bez mapy.
+    // Dvě různá nastavení = pokaždé jiný app.css a otázka „proběhl build?".
+    //
+    // Vstupní soubor se jmenuje app.scss, ne main.scss, **kvůli téhle
+    // příponě**: Live Sass Compile pojmenuje výstup podle zdroje a přejmenovat
+    // ho neumí. S main.scss vznikal main.css, který se nikde nenačítal — a kdo
+    // ladil styly v editoru, díval se na soubor, který aplikace nepoužívá.
+    "liveSassCompile.settings.formats": [
+        {
+            "format": "compressed",
+            "extensionName": ".css",
+            "savePath": "/www/assets/css",
+            "savePathReplacementPairs": null
+        }
+    ],
+    "liveSassCompile.settings.generateMap": false,
+    "liveSassCompile.settings.compileOnWatch": false,
+    "liveSassCompile.settings.watchOnLaunch": true,
+    "liveSassCompile.settings.useNewCompiler": true,
+    "liveSassCompile.settings.showOutputWindowOn": "Warning",
+    "liveSassCompile.settings.excludeList": ["**/node_modules/**", "**/.vscode/**"],
+
+    "editor.formatOnSave": true,
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+
+    "search.exclude": {
+        "www/assets/css": true,
+        "www/storage": true,
+        "node_modules": true
+    },
+    "files.watcherExclude": {
+        "**/www/storage/**": true
+    },
+
+    "files.associations": {
+        ".htaccess": "apacheconf",
+        "*.php": "php"
+    },
+
+    "[php]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+    "[scss]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+
+    // Bez executablePath kontrola syntaxe mlčky nefunguje.
+    // Cesta patří tomuhle stroji — po přeinstalaci PHP ji opravte.
+    "php.validate.enable": true,
+    "php.validate.executablePath": "c:\\php\\php.exe",
+    "emmet.excludeLanguages": ["php"]
+}

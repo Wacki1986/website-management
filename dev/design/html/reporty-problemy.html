@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Reporty / Problémy</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="dashboard.html"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item" href="weby.html"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="alerty.html"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="klienti.html"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item sidebar__item--active" href="reporty-naplanovane.html"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="nastaveni-monitoring.html"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header page-header--list">
+      <div class="page-header__top">
+        <div>
+          <h1 class="page-header__title">Reporty</h1>
+          <div class="page-header__meta">4 naplánovaných · 5 odeslaných v tomto měsíci · 1 nedoručený</div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary" type="button">Upravit šablonu</button>
+          <button class="btn btn--primary" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-mail) center/contain no-repeat;mask:var(--icon-mail) center/contain no-repeat"></span>Odeslat naplánované</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app__content">
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric__label row" style="gap:8px">Odesláno tento měsíc</div>
+          <div class="metric__value">5</div>
+          <div class="metric__note">z 11 webů s reportem</div>
+        </div>
+        <div class="metric">
+          <div class="metric__label row" style="gap:8px">Otevřenost</div>
+          <div class="metric__value">60 %</div>
+          <div class="metric__note">3 klientů report otevřelo</div>
+        </div>
+        <div class="metric metric--warning">
+          <div class="metric__label row" style="gap:8px"><span class="dot dot--warning" style="width:9px;height:9px"></span>Čeká na schválení</div>
+          <div class="metric__value metric__value--warning">2</div>
+          <div class="metric__note">odchází zítra v 06:00</div>
+        </div>
+        <div class="metric metric--error">
+          <div class="metric__label row" style="gap:8px"><span class="dot dot--error" style="width:9px;height:9px"></span>Nedoručeno</div>
+          <div class="metric__value metric__value--error">1</div>
+          <div class="metric__note">neplatná adresa příjemce</div>
+        </div>
+      </div>
+
+      <section class="card card--scroll-x">
+        <div class="card__header card__header--filters">
+              <div class="segmented">
+                <button class="segmented__item" type="button">Naplánované<span class="segmented__count">4</span></button>
+                <button class="segmented__item" type="button">Odeslané<span class="segmented__count">5</span></button>
+                <button class="segmented__item segmented__item--active" type="button">Problémy<span class="segmented__count">1</span></button>
+                <button class="segmented__item" type="button">Vše<span class="segmented__count">11</span></button>
+              </div>
+          <div class="search"><span class="icon icon--sm" style="-webkit-mask:var(--icon-search) center/contain no-repeat;mask:var(--icon-search) center/contain no-repeat"></span><span>Hledat web nebo klienta…</span></div>
+          <div class="form__control form__control--select form__control--inline u-ml-auto">Období <b>· srpen 2026</b><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-chevron-down) center/contain no-repeat;mask:var(--icon-chevron-down) center/contain no-repeat"></span></div>
+        </div>
+
+        <div class="table table--report-queue">
+          <div class="table__head"><div>Web</div><div>Klient</div><div>Období</div><div>Termín</div><div>Příjemce</div><div>Stav</div><div></div></div>
+
+          <div class="table__group table__group--caps"><span>Vyžaduje řešení</span><span style="font-weight:var(--font-weight-medium);letter-spacing:0;text-transform:none">1 report</span></div>
+          <div class="table__row table__row--error">
+            <a class="table__cell row" style="flex-wrap:nowrap;gap:11px;color:var(--color-text-primary);text-decoration:none" href="detail-webu-reporty.html"><span class="avatar" style="width:28px;height:28px;font-size:var(--font-size-caption);background:#4A4A8A">RD</span><div style="min-width:0"><div class="table__primary u-truncate">Realitka Domov</div><div class="table__secondary u-truncate" style="margin-top:0">realitkadomov.cz</div></div></a>
+            <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)">Domov Reality s.r.o.</div>
+            <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)">Srpen 2026</div>
+            <div class="table__cell"><div class="u-nowrap text-error" style="font-size:var(--font-size-label)">1. 9. 06:02</div><div class="text-caption u-nowrap">selhalo doručení</div></div>
+            <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)">ucetni@realitkadomov.cz</div>
+            <div class="table__cell"><span class="status status--error"><span class="status__dot"></span>Nedoručeno</span></div>
+            <div class="table__cell row" style="justify-content:flex-end;gap:8px"><a href="nahled-reportu.html" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)">Řešit</a><button class="btn--menu" type="button" aria-label="Akce"><span class="icon icon--sm icon--subtle" style="-webkit-mask:var(--icon-menu) center/contain no-repeat;mask:var(--icon-menu) center/contain no-repeat"></span></button></div>
+          </div>
+        </div>
+
+        <div class="card__footer card__footer--muted">
+          <span>Zobrazeno 1 z 11 reportů</span>
+          <a class="u-ml-auto" href="nahled-reportu.html">Otevřít náhled reportu</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>
