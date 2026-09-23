@@ -121,6 +121,14 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
 - Která akce je na webu k dispozici, rozhoduje verze pluginu v posledních
   datech webu. Tlačítko akce, kterou plugin ještě nezná, je neaktivní a
   v bublině řekne, na jakou verzi plugin aktualizovat.
+- **Knihovna pluginů** (menu → Knihovna pluginů): placené a vlastní pluginy,
+  které WordPress sám neaktualizuje. Nahrát ZIP od autora (jedna složka
+  pluginu v kořeni, hlavička s `Version:`); novější verze nahradí starší,
+  nižší nahrát nejde. Weby s MEDIAGRAFIK Monitorem 1.4.0+ si ji nabídnou
+  k aktualizaci samy (do 12 hodin, ve správě hned na záložce Pluginy).
+  ZIPy leží ve `storage/plugin-library/` (zálohovat, nenahrávat z počítače
+  — `sftp.json` je má ve výjimkách) a ven jdou jen s podpisem pro konkrétní
+  web. Velikost ZIPu omezuje `upload_max_filesize` hostingu.
 
 ## 5. Hromadné přidání webů
 

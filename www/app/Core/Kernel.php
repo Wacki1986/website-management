@@ -11,6 +11,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\ForgottenPasswordController;
 use App\Controllers\MonitorCronController;
 use App\Controllers\PluginDistributionController;
+use App\Controllers\PluginLibraryController;
 use App\Controllers\ReportController;
 use App\Controllers\TrackingController;
 use App\Controllers\ServiceController;
@@ -36,6 +37,7 @@ use App\Core\Monitor\SecurityAudit;
 use App\Core\Monitor\SnapshotImporter;
 use App\Core\Dashboard\DashboardData;
 use App\Core\Plugin\PluginDistribution;
+use App\Core\Plugin\PluginLibrary;
 use App\Core\Reports\ReportBuilder;
 use App\Core\Reports\ReportRenderer;
 use App\Core\Reports\ReportRepository;
@@ -84,7 +86,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.4.0';
+    public const VERSION = '0.5.0';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -426,6 +428,12 @@ final class Kernel
     public function pluginDistribution(): PluginDistribution
     {
         return $this->pluginDistribution ??= new PluginDistribution($this->storagePath('plugin'), $this->appUrl());
+    }
+
+    /** Knihovna placených a vlastních pluginů (mimo wordpress.org). */
+    public function pluginLibrary(): PluginLibrary
+    {
+        return new PluginLibrary($this->db(), $this->storagePath(), (string) $this->env('app_key', ''));
     }
 
     // --- monitoring a alerty ------------------------------------------
@@ -968,6 +976,8 @@ final class Kernel
         $router->add('POST', '/weby/{id}/pluginy/aktualizovat', [SiteActionController::class, 'updatePlugins'], Router::AUTH_ONLY, 'sites.plugins.update');
         $router->add('GET', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deleteForm'], name: 'sites.plugins.delete.form');
         $router->add('POST', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deletePlugin'], Router::AUTH_ONLY, 'sites.plugins.delete');
+        $router->add('POST', '/weby/{id}/pluginy/nesledovat', [SiteController::class, 'unwatchPlugin'], Router::AUTH_ONLY, 'sites.plugins.unwatch');
+        $router->add('POST', '/weby/{id}/pluginy/sledovat', [SiteController::class, 'watchPlugin'], Router::AUTH_ONLY, 'sites.plugins.watch');
         $router->add('GET', '/weby/{id}/wordpress', [SiteActionController::class, 'coreForm'], name: 'sites.core.form');
         $router->add('POST', '/weby/{id}/wordpress', [SiteActionController::class, 'updateCore'], Router::AUTH_ONLY, 'sites.core.update');
         $router->add('POST', '/weby/{id}/prihlasit', [SiteActionController::class, 'login'], Router::AUTH_ONLY, 'sites.login');
@@ -991,6 +1001,10 @@ final class Kernel
         $router->add('POST', '/weby/{id}/reporty/odeslat', [ReportController::class, 'sendNow'], Router::AUTH_ONLY, 'sites.reports.send');
 
         // Reporty — fronta, náhled a odeslání; sledovací pixel je veřejný.
+        $router->add('GET', '/knihovna', [PluginLibraryController::class, 'index'], name: 'library');
+        $router->add('POST', '/knihovna', [PluginLibraryController::class, 'upload'], Router::AUTH_ONLY, 'library.upload');
+        $router->add('GET', '/knihovna/{slug}/stahnout', [PluginLibraryController::class, 'download'], name: 'library.download');
+        $router->add('POST', '/knihovna/{slug}/smazat', [PluginLibraryController::class, 'remove'], Router::AUTH_ONLY, 'library.remove');
         $router->add('GET', '/reporty', [ReportController::class, 'index'], name: 'reports');
         $router->add('POST', '/reporty/odeslat-naplanovane', [ReportController::class, 'sendScheduled'], Router::AUTH_ONLY, 'reports.send-scheduled');
         $router->add('GET', '/reporty/{id}', [ReportController::class, 'show'], name: 'reports.show');
@@ -1038,6 +1052,10 @@ final class Kernel
 
         // Distribuce pluginu na weby klientů — volá WordPress, žádný
         // prohlížeč ani session. Bez výjimky v .htaccess je Basic auth odřízne.
+        // Knihovna pluginů pro weby — před obecnou adresou ZIPu Monitoru níže,
+        // jinak by `knihovna.json` spolkla `{file}`.
+        $router->add('GET', '/plugin/mediagrafik-monitor/knihovna.json', [PluginLibraryController::class, 'manifest'], Router::PUBLIC_ACCESS, 'library.manifest');
+        $router->add('GET', '/plugin/mediagrafik-monitor/knihovna/{file}', [PluginLibraryController::class, 'package'], Router::PUBLIC_ACCESS, 'library.package');
         $router->add('GET', '/plugin/mediagrafik-monitor/plugin-info.json', [PluginDistributionController::class, 'info'], Router::PUBLIC_ACCESS, 'plugin.info');
         $router->add('GET', '/plugin/mediagrafik-monitor/{file}', [PluginDistributionController::class, 'download'], Router::PUBLIC_ACCESS, 'plugin.download');
 

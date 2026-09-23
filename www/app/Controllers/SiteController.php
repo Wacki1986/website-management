@@ -265,19 +265,27 @@ final class SiteController extends Controller
         $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
         $q = $this->request()->string('q');
         $plugins = $this->kernel->snapshots()->plugins((int) $id, $q);
-        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version());
+        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version(), SiteActions::libraryFor($snapshot, $this->kernel->pluginLibrary()->versions()));
         $deleteBlocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_DELETE);
         $rows = [];
         $latestUpdate = null;
+        $ignoredCount = 0;
 
         foreach ($plugins as $plugin) {
             $file = (string) $plugin['file'];
+            $ignored = (int) ($plugin['updates_ignored'] ?? 0) === 1;
+            $ignoredCount += $ignored ? 1 : 0;
             $rows[] = [
                 'inactive' => (int) $plugin['is_active'] !== 1,
                 'updatable' => isset($updatable[$file]),
                 'new_version' => $updatable[$file]['new_version'] ?? $plugin['new_version'],
                 'deleteUrl' => $deleteBlocked === null && SiteActions::isDeletable($plugin)
                     ? get_url('weby/' . (int) $id . '/pluginy/smazat?plugin=' . rawurlencode($file))
+                    : null,
+                'ignored' => $ignored,
+                // Formulářová akce tlačítka „Nesledovat"/„Sledovat" v řádku.
+                'watchAction' => SiteActions::canToggleWatch($plugin)
+                    ? get_url('weby/' . (int) $id . '/pluginy/' . ($ignored ? 'sledovat' : 'nesledovat'))
                     : null,
             ] + $plugin;
 
@@ -299,12 +307,55 @@ final class SiteController extends Controller
                 'updates' => $snapshot !== null ? (int) $snapshot['plugins_updates'] : 0,
                 'securityUpdates' => $snapshot !== null ? (int) $snapshot['security_updates'] : 0,
                 'latestUpdate' => $latestUpdate,
+                'ignored' => $ignoredCount,
             ],
             'hasSnapshot' => $snapshot !== null,
             'updateBlocked' => SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_UPDATE),
             'deleteBlocked' => $deleteBlocked,
             'maxUpdates' => PluginClient::MAX_UPDATES,
         ]);
+    }
+
+    /**
+     * „Nesledovat aktualizace" u pluginu (bez licence, opuštěný…) a zpět.
+     * Plugin zůstává v seznamu, jen se nepočítá do čekajících aktualizací
+     * ani do alertu a nenabízí se k aktualizaci.
+     */
+    public function watchPlugin(string $id, bool $watch = true): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $file = $this->request()->string('plugin');
+        $plugin = null;
+
+        foreach ($this->kernel->snapshots()->plugins((int) $id) as $row) {
+            if ((string) $row['file'] === $file) {
+                $plugin = $row;
+            }
+        }
+
+        if ($plugin === null || !SiteActions::canToggleWatch($plugin)) {
+            return $this->redirectWithFlash('weby/' . $id . '/pluginy', 'Sledování jde vypnout jen u pluginu, který hlásí aktualizaci.', 'warning');
+        }
+
+        $snapshots = $this->kernel->snapshots();
+        $snapshots->setUpdatesIgnored((int) $id, $file, !$watch);
+
+        // Alert „čekající aktualizace" se hned přepočítá s novým počtem.
+        $this->kernel->alertEngine()->afterSnapshot($this->siteOr404((int) $id), $snapshots->snapshot((int) $id), date('Y-m-d H:i:s'));
+
+        $name = (string) $plugin['name'];
+        $this->kernel->events()->record((int) $id, EventLog::KIND_PLUGIN, 'ok',
+            $watch ? 'Aktualizace pluginu ' . $name . ' se zase sledují' : 'Aktualizace pluginu ' . $name . ' se nesledují',
+            ['action' => $watch ? 'watch' : 'unwatch', 'plugin' => $name], $this->actorName());
+
+        return $this->redirectWithFlash('weby/' . $id . '/pluginy', $watch
+            ? 'Aktualizace pluginu ' . $name . ' se zase sledují.'
+            : 'Aktualizace pluginu ' . $name . ' se nesledují — nepočítají se do čekajících aktualizací ani do alertu.');
+    }
+
+    public function unwatchPlugin(string $id): Response
+    {
+        return $this->watchPlugin($id, false);
     }
 
     public function content(string $id): Response

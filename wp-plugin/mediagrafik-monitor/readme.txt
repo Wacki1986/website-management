@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -25,6 +25,13 @@ jedním klikem ze Správy webů (jednorázový odkaz, bez hesla; jde vypnout v n
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.4.0 =
+* Aktualizace placených a vlastních pluginů z knihovny Správy webů (web se prokazuje otiskem API klíče, ZIP má podpis jen pro daný web).
+
+= 1.3.1 =
+* Oprava: po aktualizaci pluginu se nabízela „aktualizace" na právě nainstalovanou verzi (porovnávala se verze starého kódu v paměti, ne verze na disku).
+* Souhrn pro Správu webů nehlásí aktualizaci na stejnou nebo starší verzi.
 
 = 1.3.0 =
 * Přihlášení do administrace jedním klikem ze Správy webů (jednorázový odkaz na minutu, jen správcovský účet, jde vypnout).

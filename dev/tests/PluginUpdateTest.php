@@ -192,7 +192,7 @@ return [
 
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
             assertContainsString('potřebuje MEDIAGRAFIK Monitor 1.1.0', $html);
-            assertFalse(str_contains($html, 'name="plugin" value='), 'Řádkové tlačítko nemá být aktivní');
+            assertFalse(str_contains($html, 'data-pending-label="Aktualizuji…">Aktualizovat</button>'), 'Řádkové tlačítko Aktualizovat nemá být aktivní');
 
             $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/aktualizovat', [
                 '_token' => $token,
@@ -218,6 +218,15 @@ return [
         assertTrue(SiteActions::isDeletable(['is_active' => 0, 'file' => 'contact-form-7/wp-contact-form-7.php']));
         assertFalse(SiteActions::isDeletable(['is_active' => 1, 'file' => 'woocommerce/woocommerce.php']));
         assertFalse(SiteActions::isDeletable(['is_active' => 0, 'file' => 'mediagrafik-monitor-1.0.0/mediagrafik-monitor.php']));
+
+        // „Aktualizace" na už nainstalovanou verzi (zbytek mezipaměti WordPressu
+        // po aktualizaci pluginem < 1.3.1) se nenabízí; skutečně novější ano.
+        $plugins = [
+            ['file' => 'mediagrafik-monitor/mediagrafik-monitor.php', 'name' => 'MEDIAGRAFIK Monitor', 'version' => '1.3.0', 'has_update' => 1, 'new_version' => '1.3.0'],
+            ['file' => 'elementor/elementor.php', 'name' => 'Elementor', 'version' => '3.23.1', 'has_update' => 1, 'new_version' => '3.24.0'],
+        ];
+        assertSame(['elementor/elementor.php'], array_keys(SiteActions::updatable($plugins, '1.3.0')));
+        assertSame('1.3.1', SiteActions::updatable($plugins, '1.3.1')['mediagrafik-monitor/mediagrafik-monitor.php']['new_version'] ?? null);
     },
 
     'mazání: odkaz jen u neaktivního pluginu, potvrzení, smazání a čerstvá data' => function (): void {
@@ -326,6 +335,38 @@ return [
             $kernel->sites()->update($siteId, ['wp_login_user' => 'neexistuje']);
             $failed = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/prihlasit', ['_token' => $token]);
             assertSame('/weby/' . $siteId, $location($failed));
+
+            Urls::reset();
+        });
+    },
+
+    'nesledovat aktualizace: plugin se nepočítá, nenabízí, příznak přežije další načtení dat' => function (): void {
+        withUpdatableWp(8243, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.3.1'], function (string $url): void {
+            [$kernel, $token, $siteId] = puKernel($url);
+            $elementor = 'elementor/elementor.php';
+            $updates = static fn (): int => (int) $kernel->snapshots()->snapshot($siteId)['plugins_updates'];
+
+            assertSame(1, $updates());
+            $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+            assertContainsString('formaction="/weby/' . $siteId . '/pluginy/nesledovat" name="plugin" value="' . $elementor . '"', $html);
+            assertFalse(str_contains($html, 'value="mediagrafik-monitor/mediagrafik-monitor.php" class="btn--link text-subtle"'), 'Vlastní plugin nejde přestat sledovat');
+
+            kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/nesledovat', ['_token' => $token, 'plugin' => $elementor]);
+            assertSame(1, (int) puPlugin($kernel, $siteId, $elementor)['updates_ignored']);
+            assertSame(0, $updates(), 'Nesledovaný plugin se nepočítá do čekajících aktualizací');
+
+            $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+            assertContainsString('nesledováno', $html);
+            assertFalse(str_contains($html, 'name="plugins[]" value="' . $elementor . '"'), 'Nesledovaný plugin se nenabízí k aktualizaci');
+
+            // Další načtení dat z webu příznak nepřepíše.
+            $kernel->monitor()->checkOne($kernel->sites()->find($siteId));
+            assertSame(1, (int) puPlugin($kernel, $siteId, $elementor)['updates_ignored']);
+            assertSame(0, $updates());
+
+            kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/sledovat', ['_token' => $token, 'plugin' => $elementor]);
+            assertSame(0, (int) puPlugin($kernel, $siteId, $elementor)['updates_ignored']);
+            assertSame(1, $updates());
 
             Urls::reset();
         });

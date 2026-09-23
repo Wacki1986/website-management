@@ -58,6 +58,7 @@ final class SnapshotImporter
         }
 
         $changes = array_merge($changes, $this->importPlugins($siteId, $data['plugins']['items'] ?? [], $previous !== null, $now));
+        $this->recountUpdates($siteId);
 
         $this->sites->update($siteId, [
             'api_status' => 'ok',
@@ -269,6 +270,37 @@ final class SnapshotImporter
         }
 
         return $changes;
+    }
+
+    /**
+     * Počet čekajících aktualizací pluginů v snapshotě — bez pluginů, jejichž
+     * aktualizace se nesledují, a bez „aktualizací" na stejnou či starší
+     * verzi (zbytek mezipaměti WordPressu u pluginu < 1.3.1). Z tohohle čísla
+     * čtou záložka, seznam webů, dashboard, alert i report.
+     *
+     * @return int nový počet
+     */
+    public function recountUpdates(int $siteId): int
+    {
+        $count = 0;
+
+        foreach ($this->db->select('SELECT version, new_version FROM site_plugins WHERE site_id = :id AND has_update = 1 AND updates_ignored = 0', ['id' => $siteId]) as $plugin) {
+            if (version_compare((string) $plugin['new_version'], (string) $plugin['version'], '>')) {
+                $count++;
+            }
+        }
+
+        $this->db->update('site_snapshots', ['plugins_updates' => $count], ['site_id' => $siteId]);
+
+        return $count;
+    }
+
+    /** Sledovat / nesledovat aktualizace pluginu; vrací nový počet čekajících aktualizací. */
+    public function setUpdatesIgnored(int $siteId, string $file, bool $ignored): int
+    {
+        $this->db->update('site_plugins', ['updates_ignored' => $ignored ? 1 : 0], ['site_id' => $siteId, 'file' => $file]);
+
+        return $this->recountUpdates($siteId);
     }
 
     /** Uložená snapshot webu. @return array<string, mixed>|null */

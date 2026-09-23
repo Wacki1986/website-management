@@ -4,7 +4,7 @@
  * Plugin Name: MEDIAGRAFIK Monitor
  * Plugin URI: https://mediagrafik.cz
  * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Requires at least: 6.8
  * Requires PHP: 7.4
  * Author: Mediagrafik.cz
@@ -27,15 +27,16 @@ if (!defined('ABSPATH')) {
  * `X-MG-Key`. Klíč vydává hub, tady se ukládá jen jeho SHA-256 hash.
  * Na webu něco mění jen akce na pokyn hubu (podepsaný požadavek):
  * aktualizace pluginů (`MG_Plugin_Updates`), smazání neaktivních pluginů
- * a aktualizace WordPressu (`MG_Site_Actions`). A přihlášení do
- * administrace jedním klikem ze Správy webů (`MG_Login`).
+ * a aktualizace WordPressu (`MG_Site_Actions`), přihlášení do administrace
+ * jedním klikem (`MG_Login`). Aktualizace nabízí WordPressu pro sebe
+ * (`MG_Updater`) i pro pluginy z knihovny Správy webů (`MG_Library`).
  *
  * Verzi je nutné změnit na dvou místech: hlavička `Version:` a konstanta
  * `self::VERSION`. Distribuci (plugin-info.json + ZIP) dělá hub.
  */
 final class MG_Monitor
 {
-    const VERSION = '1.3.0';
+    const VERSION = '1.4.0';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';
@@ -49,13 +50,16 @@ final class MG_Monitor
      * Odkud se stahují aktualizace pluginu. Adresa hubu se ukládá při
      * vložení klíče (admin stránka) — plugin tak sám ví, kam se ptát.
      */
-    const DEFAULT_UPDATE_URL = 'https://sprava.mediagrafik.cz/plugin/mediagrafik-monitor/plugin-info.json';
+    const DEFAULT_HUB_URL = 'https://sprava.mediagrafik.cz';
 
     /** @var MG_Monitor|null */
     private static $instance = null;
 
     /** @var MG_Updater|null */
     private $updater = null;
+
+    /** @var MG_Library|null */
+    private $library = null;
 
     public static function instance()
     {
@@ -96,22 +100,33 @@ final class MG_Monitor
         require_once $dir . 'includes/class-mg-login.php';
         require_once $dir . 'includes/class-mg-rest-controller.php';
         require_once $dir . 'includes/class-mg-updater.php';
+        require_once $dir . 'includes/class-mg-library.php';
         require_once $dir . 'admin/class-mg-admin-page.php';
     }
 
-    /** Aktualizace z hubu — adresa se odvozuje z uložené adresy hubu. */
+    /**
+     * Aktualizace z hubu — tohoto pluginu i pluginů z knihovny Správy webů.
+     * Adresa se odvozuje z uložené adresy hubu.
+     */
     public function init_updater()
     {
         $hub = trim((string) get_option(self::OPTION_HUB_URL, ''));
-        $url = $hub !== '' ? rtrim($hub, '/') . '/plugin/mediagrafik-monitor/plugin-info.json' : self::DEFAULT_UPDATE_URL;
+        $hub = rtrim($hub !== '' ? $hub : self::DEFAULT_HUB_URL, '/');
 
-        $this->updater = new MG_Updater($url, __FILE__, self::VERSION);
+        $this->updater = new MG_Updater($hub . '/plugin/mediagrafik-monitor/plugin-info.json', __FILE__, self::VERSION);
+        $this->library = new MG_Library($hub);
     }
 
     /** @return MG_Updater|null null jen před `plugins_loaded` */
     public function updater()
     {
         return $this->updater;
+    }
+
+    /** @return MG_Library|null null jen před `plugins_loaded` */
+    public function library()
+    {
+        return $this->library;
     }
 
     public static function activate()

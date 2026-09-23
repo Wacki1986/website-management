@@ -126,7 +126,10 @@ final class MG_Collector
 
         foreach ($all as $file => $info) {
             $is_active = is_plugin_active($file);
-            $has_update = isset($responses[$file]);
+            // Nabídka stejné nebo starší verze (zbytek mezipaměti po
+            // aktualizaci) není aktualizace — hub by ji zbytečně nabízel.
+            $has_update = isset($responses[$file]->new_version)
+                && version_compare((string) $responses[$file]->new_version, isset($info['Version']) ? (string) $info['Version'] : '0', '>');
 
             if ($is_active) {
                 $active++;

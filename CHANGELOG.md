@@ -1,5 +1,40 @@
 # Změny
 
+## 0.5.0 — 23. 9. 2026
+
+- **Knihovna pluginů** (nová položka menu) — placené a vlastní pluginy mimo
+  wordpress.org. Nahraje se ZIP, správa z hlavičky přečte název a verzi;
+  novější verze nahradí starší (na serveru zůstává jen jeden ZIP, nižší
+  verzi nahrát nejde). Přehled, na kterých webech plugin je a kde čeká
+  aktualizace; ZIP ke stažení pro ruční instalaci na nový web.
+- **Plugin MEDIAGRAFIK Monitor 1.4.0** — nabízí WordPressu aktualizace
+  pluginů z knihovny (`MG_Library`, stejně jako vlastní `MG_Updater`):
+  aktualizace je vidět ve wp-admin i ve správě a spouští se stávajícím
+  „Aktualizovat". Web se prokazuje otiskem API klíče (`knihovna.json`),
+  ZIP stáhne jen s podpisem pro sebe — placené pluginy nejsou veřejné.
+  Adresy jsou pod `/plugin/mediagrafik-monitor/`, výjimka z Basic auth
+  platí beze změny.
+- Migrace `2026_09_23_000003_plugin_library` (tabulka `plugin_library`).
+
+## 0.4.1 — 23. 9. 2026
+
+- **Plugin MEDIAGRAFIK Monitor 1.3.1** — oprava: po aktualizaci pluginu
+  (z wp-admin i ze správy) se nabízela „aktualizace" na právě nainstalovanou
+  verzi. WordPress hned po aktualizaci kontroluje aktualizace ve stejném
+  požadavku, kdy běží ještě starý kód se starou konstantou `VERSION`;
+  plugin teď porovnává verzi na disku (`checked`) a falešnou nabídku smaže.
+  Souhrn pro správu nehlásí aktualizaci na stejnou ani starší verzi.
+- Správa nenabízí „Aktualizovat", když nabízená verze není novější než
+  nainstalovaná (i u webů se starším pluginem).
+- **„Nesledovat" aktualizace pluginu** — záložka Pluginy, u pluginu s čekající
+  aktualizací (typicky placený bez licence). Plugin zůstává v seznamu,
+  ale nepočítá se do čekajících aktualizací (záložka, seznam webů,
+  dashboard, alert, ranní souhrn, report) a nenabízí se k aktualizaci;
+  „Sledovat" to vrátí. Příznak přežije načítání dat z webu; MEDIAGRAFIK
+  Monitor přestat sledovat nejde. Počet čekajících aktualizací v datech
+  webu se teď počítá ve správě (`SnapshotImporter::recountUpdates()`).
+- Migrace `2026_09_23_000002_plugin_updates_ignored` (`site_plugins.updates_ignored`).
+
 ## 0.4.0 — 23. 9. 2026
 
 - **Přihlášení do wp-admin jedním klikem** — tlačítko „wp-admin" v hlavičce

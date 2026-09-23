@@ -34,6 +34,7 @@ $navItems = [
         'count' => (int) ($openAlertCount ?? 0), 'alert' => true],
     ['url' => 'klienti', 'label' => 'Klienti', 'icon' => 'users', 'active' => str_starts_with($currentPath, '/klienti')],
     ['url' => 'reporty', 'label' => 'Reporty', 'icon' => 'report', 'active' => str_starts_with($currentPath, '/reporty')],
+    ['url' => 'knihovna', 'label' => 'Knihovna pluginů', 'icon' => 'plugin', 'active' => str_starts_with($currentPath, '/knihovna')],
     ['url' => 'nastaveni', 'label' => 'Nastavení', 'icon' => 'settings', 'active' => str_starts_with($currentPath, '/nastaveni')],
 ];
 

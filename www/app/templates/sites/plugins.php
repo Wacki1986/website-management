@@ -6,13 +6,14 @@
  * `plugin-update`, řádkové „Aktualizovat" posílá jen svůj plugin
  * (`name="plugin"`). Skript doplňuje počet vybraných v tlačítku a stav
  * „Aktualizuji…" během čekání. „Smazat" u neaktivního pluginu vede na
- * potvrzovací stránku.
+ * potvrzovací stránku. „Nesledovat"/„Sledovat" míří přes `formaction`
+ * jinam (vnořený formulář HTML nedovolí).
  *
  * @var \App\Core\View\View $this
  * @var array               $site
- * @var array<int, array<string, mixed>> $rows
+ * @var array<int, array<string, mixed>> $rows  řádky `site_plugins` + `updatable`, `ignored`, `deleteUrl`, `watchAction`
  * @var string              $q
- * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}} $metrics
+ * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int} $metrics
  * @var bool                $hasSnapshot
  * @var ?string             $updateBlocked proč teď aktualizace nejde (null = jde)
  * @var ?string             $deleteBlocked proč teď mazání nejde (null = jde; řádek pak má `deleteUrl`)
@@ -33,7 +34,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
         <div class="metric">
             <div class="metric__label">Čekající aktualizace</div>
             <div class="metric__value<?= $metrics['updates'] > 0 ? ' metric__value--warning' : '' ?>"><?= $hasSnapshot ? $metrics['updates'] : '—' ?></div>
-            <div class="metric__note"><?= $metrics['securityUpdates'] > 0 ? $metrics['securityUpdates'] . ' bezpečnostní' : ($hasSnapshot ? 'žádná bezpečnostní' : '') ?></div>
+            <div class="metric__note"><?= $metrics['securityUpdates'] > 0 ? $metrics['securityUpdates'] . ' bezpečnostní' : ($hasSnapshot ? 'žádná bezpečnostní' : '') ?><?= $metrics['ignored'] > 0 ? ' · ' . $metrics['ignored'] . ' nesledováno' : '' ?></div>
         </div>
         <div class="metric<?= $metrics['inactive'] > 0 ? ' metric--error' : '' ?>">
             <div class="metric__label">Neaktivní pluginy</div>
@@ -80,8 +81,16 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                             </div>
                             <div class="table__cell"><?= $plugin['inactive'] ? get_status('error', 'Neaktivní · riziko') : get_status('ok', 'Aktivní') ?></div>
                             <div class="table__cell table__cell--mono u-hide-mobile"><?= $this->e((string) $plugin['version']) ?></div>
-                            <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>"><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
-                            <div class="table__cell table__cell--right u-hide-mobile">
+                            <?php if ($plugin['ignored']): ?>
+                                <div class="table__cell table__cell--mono u-hide-mobile text-faint" title="Aktualizace tohoto pluginu se nesledují — nepočítají se do čekajících ani do alertu."><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) . ' · ' : '' ?>nesledováno</div>
+                            <?php else: ?>
+                                <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>"><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
+                            <?php endif; ?>
+                            <div class="table__cell table__cell--right u-hide-mobile row" style="justify-content:flex-end;gap:12px;flex-wrap:nowrap">
+                                <?php if ($plugin['watchAction'] !== null): ?>
+                                    <button type="submit" formaction="<?= $plugin['watchAction'] ?>" name="plugin" value="<?= $this->e((string) $plugin['file']) ?>" class="btn--link text-subtle" style="font-size:var(--font-size-label)"
+                                            title="<?= $plugin['ignored'] ? 'Znovu počítat aktualizace tohoto pluginu' : 'Nepočítat aktualizace tohoto pluginu (např. bez licence)' ?>"><?= $plugin['ignored'] ? 'Sledovat' : 'Nesledovat' ?></button>
+                                <?php endif; ?>
                                 <?php if ($plugin['updatable'] && $updateBlocked === null): ?>
                                     <button type="submit" name="plugin" value="<?= $this->e((string) $plugin['file']) ?>" class="btn--link" data-pending-label="Aktualizuji…">Aktualizovat</button>
                                 <?php elseif ($plugin['updatable']): ?>

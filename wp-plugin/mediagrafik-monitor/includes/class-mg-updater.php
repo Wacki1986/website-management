@@ -47,18 +47,34 @@ final class MG_Updater
 
         $remote = $this->get_remote_info();
 
-        if ($remote && version_compare($this->version, $remote->version, '<')) {
-            $transient->response[$this->plugin_basename] = (object) array(
-                'slug' => $this->plugin_slug,
-                'plugin' => $this->plugin_basename,
-                'new_version' => $remote->version,
-                'url' => isset($remote->homepage) ? $remote->homepage : '',
-                'package' => $remote->download_url,
-                'tested' => isset($remote->tested) ? $remote->tested : '',
-                'requires_php' => isset($remote->requires_php) ? $remote->requires_php : '',
-                'requires' => isset($remote->requires) ? $remote->requires : '',
-            );
+        // Verze podle souboru na disku (`checked`), ne podle konstanty: hned
+        // po aktualizaci WordPress kontroluje aktualizace ve stejném požadavku,
+        // kdy je v paměti ještě starý kód se starou VERSION — a nabídl by
+        // „aktualizaci" na verzi, která už je nainstalovaná.
+        $installed = isset($transient->checked[$this->plugin_basename]) ? (string) $transient->checked[$this->plugin_basename] : $this->version;
+
+        // Hub neodpověděl — nic neměnit, ani platnou nabídku nemazat.
+        if (!$remote) {
+            return $transient;
         }
+
+        if (version_compare($installed, $remote->version, '>=')) {
+            // Zbytek po předchozí chybné kontrole ven — jinak drží 12 hodin.
+            unset($transient->response[$this->plugin_basename]);
+
+            return $transient;
+        }
+
+        $transient->response[$this->plugin_basename] = (object) array(
+            'slug' => $this->plugin_slug,
+            'plugin' => $this->plugin_basename,
+            'new_version' => $remote->version,
+            'url' => isset($remote->homepage) ? $remote->homepage : '',
+            'package' => $remote->download_url,
+            'tested' => isset($remote->tested) ? $remote->tested : '',
+            'requires_php' => isset($remote->requires_php) ? $remote->requires_php : '',
+            'requires' => isset($remote->requires) ? $remote->requires : '',
+        );
 
         return $transient;
     }

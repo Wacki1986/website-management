@@ -62,21 +62,35 @@ final class SiteActions
      * novou verzi, a MEDIAGRAFIK Monitor, když správa rozdává novější, než
      * má web — web sám by se o ní dozvěděl až po 12hodinové cache.
      *
+     * Stejně se nabízí plugin z knihovny pluginů, když je v ní novější verze
+     * (web se to dozví až po své 12hodinové cache).
+     *
      * @param array<int, array<string, mixed>> $plugins  řádky `site_plugins`
      * @param string|null                     $released verze pluginu, kterou rozdává správa
+     * @param array<string, string>           $library  soubor => verze v knihovně (`libraryFor()`)
      * @return array<string, array{name: string, new_version: string}> podle souboru pluginu
      */
-    public static function updatable(array $plugins, ?string $released): array
+    public static function updatable(array $plugins, ?string $released, array $library = []): array
     {
         $updatable = [];
 
         foreach ($plugins as $plugin) {
             $file = (string) $plugin['file'];
 
-            if ((int) $plugin['has_update'] === 1) {
+            // Nesledovaný plugin (bez licence…) se aktualizovat nenabízí.
+            if ((int) ($plugin['updates_ignored'] ?? 0) === 1) {
+                continue;
+            }
+
+            // Web může hlásit „aktualizaci" na verzi, kterou už má (zbytek
+            // mezipaměti WordPressu po aktualizaci pluginem starší 1.3.1) —
+            // nabízí se jen skutečně novější verze.
+            if ((int) $plugin['has_update'] === 1 && version_compare((string) $plugin['new_version'], (string) $plugin['version'], '>')) {
                 $updatable[$file] = ['name' => (string) $plugin['name'], 'new_version' => (string) $plugin['new_version']];
             } elseif ($released !== null && self::isMonitor($file) && version_compare((string) $plugin['version'], $released, '<')) {
                 $updatable[$file] = ['name' => (string) $plugin['name'], 'new_version' => $released];
+            } elseif (isset($library[$file]) && version_compare((string) $plugin['version'], $library[$file], '<')) {
+                $updatable[$file] = ['name' => (string) $plugin['name'], 'new_version' => $library[$file]];
             }
         }
 
@@ -93,6 +107,32 @@ final class SiteActions
     public static function isDeletable(array $plugin): bool
     {
         return (int) $plugin['is_active'] !== 1 && !self::isMonitor((string) $plugin['file']);
+    }
+
+    /**
+     * Verze z knihovny pluginů, které web umí použít — jen s MEDIAGRAFIK
+     * Monitorem 1.4.0+, starší plugin by si ZIP neuměl stáhnout.
+     *
+     * @param array<string, mixed>|null $snapshot
+     * @param array<string, string>     $versions `PluginLibrary::versions()`
+     * @return array<string, string>
+     */
+    public static function libraryFor(?array $snapshot, array $versions): array
+    {
+        return $snapshot !== null && version_compare((string) $snapshot['plugin_version'], PluginClient::LIBRARY_SINCE, '>=') ? $versions : [];
+    }
+
+    /**
+     * Jde u pluginu přepnout sledování aktualizací? Jen u toho, který
+     * aktualizaci hlásí (nebo už je nesledovaný), a nikdy u MEDIAGRAFIK
+     * Monitoru — správa by pak nenabídla jeho vlastní aktualizace.
+     *
+     * @param array<string, mixed> $plugin řádek `site_plugins`
+     */
+    public static function canToggleWatch(array $plugin): bool
+    {
+        return !self::isMonitor((string) $plugin['file'])
+            && ((int) $plugin['has_update'] === 1 || (int) ($plugin['updates_ignored'] ?? 0) === 1);
     }
 
     /** Je to náš plugin? Podle souboru, složka může mít jiné jméno. */

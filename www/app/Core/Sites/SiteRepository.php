@@ -185,6 +185,30 @@ final class SiteRepository
         return $stored === '' ? null : $this->secrets->decrypt($stored);
     }
 
+    /**
+     * Web podle otisku API klíče (SHA-256) — tak se prokazuje plugin, který
+     * klíč sám nezná, jen jeho otisk (knihovna pluginů). Klíče jsou tu
+     * šifrované, takže se porovnávají po jednom; webů jsou desítky.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findByKeyHash(string $hash): ?array
+    {
+        if (preg_match('/^[a-f0-9]{64}$/', $hash) !== 1) {
+            return null;
+        }
+
+        foreach ($this->db->select("SELECT * FROM sites WHERE removed_at IS NULL AND api_key IS NOT NULL AND api_key <> ''") as $site) {
+            $key = $this->apiKey($site);
+
+            if ($key !== null && hash_equals(hash('sha256', $key), $hash)) {
+                return $site;
+            }
+        }
+
+        return null;
+    }
+
     /** Přiřazení webů klientovi (formulář klienta). @param array<int, int> $siteIds */
     public function assignToClient(array $siteIds, int $clientId): void
     {

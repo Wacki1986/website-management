@@ -43,6 +43,9 @@ final class PluginClient
         self::ACTION_LOGIN_LINK => '1.3.0',
     ];
 
+    /** Od této verze si plugin na webu bere aktualizace z knihovny pluginů správy. */
+    public const LIBRARY_SINCE = '1.4.0';
+
     /** Kolik pluginů plugin přijme v jednom požadavku (`MG_Plugin_Updates`). */
     public const MAX_UPDATES = 10;
 

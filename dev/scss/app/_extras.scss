@@ -495,3 +495,12 @@ a.btn--ghost:hover { color: var(--color-text-secondary); }
 a.btn--danger:hover { color: #fff; }
 a.btn--inverse:hover { color: #1b1e38; }
 a.btn--ghost-inverse:hover { color: var(--color-text-inverse-subtle); }
+
+// --- knihovna pluginů -------------------------------------------------
+
+// Tabulka knihovny (návrh ji nemá): plugin, verze, weby, nahráno, akce.
+// Na úzké obrazovce se posouvá do strany (`card--scroll-x`).
+.table--library {
+  --table-columns: minmax(0, 1.5fr) 110px minmax(0, 1.7fr) minmax(0, 1fr) 120px;
+  min-width: 820px;
+}

@@ -54,6 +54,20 @@ final class MG_Plugin_Updates
             $own->refresh();
         }
 
+        // Totéž pro knihovnu pluginů: plugin, o jehož nové verzi WordPress
+        // ještě neví, nejspíš právě přibyl do knihovny — seznam načíst znovu.
+        $library = MG_Monitor::instance()->library();
+        $known = get_site_transient('update_plugins');
+
+        if ($library !== null) {
+            foreach ($files as $file) {
+                if (!isset($known->response[$file])) {
+                    $library->refresh();
+                    break;
+                }
+            }
+        }
+
         // Údaje o nových verzích mohou být staré až 12 hodin — hub vidí
         // aktualizaci z našeho posledního souhrnu, tak ať ji zná i upgrader.
         wp_update_plugins();
