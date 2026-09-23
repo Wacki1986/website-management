@@ -16,16 +16,6 @@ export function initThemeToggle() {
         return;
     }
 
-    // Výchozí volba je „podle systému" a server neví, co systém zrovna hlásí.
-    // Bez tohohle by v nabídce nesvítilo nic a přepínač by vypadal nenastavený.
-    if (!document.documentElement.dataset.theme || document.documentElement.dataset.theme === 'auto') {
-        const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        buttons.forEach((button) => {
-            button.classList.toggle('is-active', button.dataset.themeSet === (dark ? 'dark' : 'light'));
-        });
-    }
-
     buttons.forEach((button) => {
         button.addEventListener('click', (event) => {
             const next = button.dataset.themeSet;
@@ -33,10 +23,10 @@ export function initThemeToggle() {
             event.preventDefault();
             document.documentElement.dataset.theme = next;
 
-            // Zvýraznění zvolené možnosti — server ho po překreslení pošle sám,
-            // ale k tomu tady nedojde.
+            // Zvýraznění zvolené možnosti — server ho po překreslení pošle sám
+            // (stejnou třídou), ale k překreslení tady nedojde.
             buttons.forEach((other) => {
-                other.classList.toggle('is-active', other === button);
+                other.classList.toggle('segmented__item--active', other === button);
             });
 
             fetch(button.form.action, {

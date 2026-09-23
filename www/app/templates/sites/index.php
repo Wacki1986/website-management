@@ -21,12 +21,12 @@
 $this->extend('layout/shell', ['title' => $title]);
 
 // Adresa filtru: zachová hledání a klienta, mění jen stav.
-$filterUrl = static fn (array $override): string => get_url('weby') . '?' . http_build_query(array_filter([
+$filterUrl = static fn (array $override): string => get_url('weby') . '?' . http_build_query(array_filter(array_merge([
     'q' => $q,
     'klient' => $clientId,
     'seskupit' => $grouped ? 1 : null,
     'stav' => $level,
-] + $override, static fn ($v): bool => $v !== null && $v !== '' && $v !== 0));
+], $override), static fn ($v): bool => $v !== null && $v !== '' && $v !== 0));
 
 $segments = [
     ['key' => '', 'label' => 'Vše', 'count' => $counts['all'], 'dot' => ''],
@@ -41,7 +41,7 @@ $renderRow = function (array $site) use ($csrfToken): void {
     ?>
     <a class="table__row table__row--link<?= $level === 'problem' ? ' table__row--error' : '' ?>" href="<?= $detail ?>">
         <div class="table__cell row" style="flex-wrap:nowrap;gap:13px">
-            <?= get_avatar((string) $site['name']) ?>
+            <?= get_site_avatar((int) $site['id'], (string) $site['name'], (string) ($site['icon'] ?? '')) ?>
             <div style="min-width:0">
                 <div class="table__primary u-truncate"><?= $this->e((string) $site['name']) ?></div>
                 <div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($site['host']) ?></div>

@@ -38,7 +38,7 @@ return [
             assertSame('ok', $result['code']);
             assertSame('1.0.0', $result['plugin_version']);
             assertSame('6.8.2', $result['data']['wordpress']['version']);
-            assertSame(3, count($result['data']['plugins']['items']));
+            assertSame(4, count($result['data']['plugins']['items']));
 
             $ping = (new PluginClient(timeout: 5))->ping($url, FAKE_WP_KEY);
             assertSame('ok', $ping['code']);

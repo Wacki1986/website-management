@@ -17,10 +17,13 @@ use App\Core\Monitor\MonitorSettings;
 use App\Core\Notifications\EmailMessage;
 use App\Core\Notifications\MailSettings;
 use App\Core\Notifications\PushSubscriptions;
+use App\Core\Service\ServiceChecklists;
+use App\Core\Service\ServiceSchedule;
+use App\Core\Sites\SiteActions;
 
 /**
  * Nastavení aplikace (návrh `nastaveni-*.html`) — každá záložka své URL:
- * Monitoring · Alerty a prahy · Odchozí pošta · Oznámení · Uživatelé.
+ * Monitoring · Alerty a prahy · Servis · Odchozí pošta · Oznámení · Uživatelé.
  * Vlastní stránka na záložku, ne JS přepínání panelů — funguje to i bez
  * JavaScriptu a jde to odkázat.
  *
@@ -53,6 +56,7 @@ final class SettingsController extends Controller
             'activeTab' => 'monitoring',
             'values' => $values,
             'alertEmails' => $this->kernel->settings()->get('alert_emails'),
+            'wpLoginUser' => $this->kernel->settings()->get(SiteActions::LOGIN_USER_SETTING),
             'cronToken' => $token,
             'cronLine' => $token !== null ? MonitorCronController::cronLine($this->kernel->appUrl(), $token) : '',
             'lastRun' => MonitorRun::lastRun($this->kernel->settings()),
@@ -70,6 +74,7 @@ final class SettingsController extends Controller
         // Adresy: neplatné se tiše vyhodí; kdyby nezůstala žádná, řekne se to.
         $raw = $request->string('alert_emails');
         $this->kernel->settings()->set('alert_emails', $raw);
+        $this->kernel->settings()->set(SiteActions::LOGIN_USER_SETTING, mb_substr($request->string('wp_login_user'), 0, 100));
         $valid = $this->kernel->monitorSettings()->alertEmails();
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uloženo nastavení monitoringu');
 
@@ -154,6 +159,40 @@ final class SettingsController extends Controller
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uloženy prahy alertů');
 
         return $this->redirectWithFlash('nastaveni/alerty', 'Prahy alertů jsou uložené.');
+    }
+
+    // -----------------------------------------------------------------
+    // Servis — seznamy úkolů k druhům servisu
+    // -----------------------------------------------------------------
+
+    public function service(): Response
+    {
+        $kinds = [];
+
+        foreach ($this->kernel->serviceChecklists()->all() as $code => $items) {
+            $kinds[] = ServiceSchedule::KINDS[$code] + ['code' => $code, 'text' => implode("\n", $items), 'count' => count($items)];
+        }
+
+        return $this->view('settings/service', [
+            'title' => 'Nastavení',
+            'activeTab' => 'servis',
+            'kinds' => $kinds,
+            'maxItems' => ServiceChecklists::MAX_ITEMS,
+        ]);
+    }
+
+    public function saveService(): Response
+    {
+        $checklists = $this->kernel->serviceChecklists();
+        $counts = [];
+
+        foreach (array_keys(ServiceSchedule::KINDS) as $code) {
+            $counts[] = ServiceSchedule::KINDS[$code]['label'] . ' ' . count($checklists->save($code, $this->request()->string('checklist_' . $code)));
+        }
+
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uloženy úkoly servisu (' . implode(', ', $counts) . ')');
+
+        return $this->redirectWithFlash('nastaveni/servis', 'Seznamy úkolů jsou uložené. Platí pro nové zápisy servisu, zapsané zůstávají, jak byly.');
     }
 
     // -----------------------------------------------------------------

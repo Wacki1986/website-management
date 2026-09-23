@@ -29,6 +29,9 @@ final class AuditLog
     public const ACTION_SITE_EDIT = 'web-upraven';
     public const ACTION_SITE_REMOVE = 'web-odebran';
     public const ACTION_SITE_KEY = 'web-klic';
+    public const ACTION_PLUGIN_UPDATE = 'pluginy-aktualizace';
+    public const ACTION_PLUGIN_DELETE = 'plugin-smazani';
+    public const ACTION_CORE_UPDATE = 'wordpress-aktualizace';
     public const ACTION_CLIENT = 'klient';
     public const ACTION_ALERT = 'alert';
     public const ACTION_SERVICE = 'servis';
@@ -47,6 +50,9 @@ final class AuditLog
         self::ACTION_SITE_EDIT => ['Úprava webu', ''],
         self::ACTION_SITE_REMOVE => ['Odebrání webu', 'error'],
         self::ACTION_SITE_KEY => ['Nový API klíč', 'warning'],
+        self::ACTION_PLUGIN_UPDATE => ['Aktualizace pluginů', 'brand'],
+        self::ACTION_PLUGIN_DELETE => ['Smazání pluginu', 'error'],
+        self::ACTION_CORE_UPDATE => ['Aktualizace WordPressu', 'brand'],
         self::ACTION_CLIENT => ['Klient', ''],
         self::ACTION_ALERT => ['Alert', 'warning'],
         self::ACTION_SERVICE => ['Servis', 'brand'],

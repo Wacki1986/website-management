@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Monitor\PluginClient;
 use App\Core\Service\ServiceSchedule;
+use App\Core\Sites\SiteActions;
 use App\Core\Sites\SiteRepository;
 use App\Core\Sites\SiteStatus;
 
@@ -53,6 +55,7 @@ trait SiteHeaderTrait
             'headerStatus' => $headerStatus,
             'host' => SiteRepository::host((string) $site['url']),
             'adminUrl' => (string) $site['admin_url'] !== '' ? (string) $site['admin_url'] : rtrim((string) $site['url'], '/') . '/wp-admin/',
+            'login' => $this->headerLogin($site),
             'intervalLabel' => 'kontrola ' . (SiteRepository::INTERVALS[(int) $site['check_interval_min']] ?? 'každých 15 min'),
             'apiWarning' => $apiDown ? [
                 'title' => 'Web neodpovídá monitorovacímu API',
@@ -62,4 +65,22 @@ trait SiteHeaderTrait
         ];
     }
 
+    /**
+     * Tlačítko „wp-admin": přihlášení jedním klikem, když ho web umí a je
+     * nastavený účet studia; jinak null a hlavička ukáže obyčejný odkaz.
+     *
+     * @param array<string, mixed> $site řádek z `findWithSnapshot()` (sloupce `snap_*`)
+     * @return array{action: string, user: string}|null
+     */
+    private function headerLogin(array $site): ?array
+    {
+        $user = SiteActions::loginUser($site, $this->kernel->settings()->get(SiteActions::LOGIN_USER_SETTING));
+        $snapshot = ($site['snap_fetched_at'] ?? null) !== null ? ['plugin_version' => (string) $site['snap_plugin_version']] : null;
+
+        if ($user === '' || SiteActions::blocked($site, $snapshot, PluginClient::ACTION_LOGIN_LINK) !== null) {
+            return null;
+        }
+
+        return ['action' => get_url('weby/' . (int) $site['id'] . '/prihlasit'), 'user' => $user];
+    }
 }

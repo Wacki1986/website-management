@@ -99,9 +99,9 @@ $back = $client === null ? get_url('klienti') : get_url('klienti/' . (int) $clie
                         <?php if ($unassigned !== []): ?>
                             <div class="pick">
                                 <?php foreach ($unassigned as $free): ?>
-                                    <label class="pick__item<?= in_array((int) $free['id'], $values['sites'], true) ? ' pick__item--active' : '' ?>">
+                                    <label class="pick__item">
                                         <input type="checkbox" name="sites[]" value="<?= (int) $free['id'] ?>"<?= in_array((int) $free['id'], $values['sites'], true) ? ' checked' : '' ?> class="form__check-input">
-                                        <?= get_avatar((string) $free['name'], '', 'sm') ?>
+                                        <?= get_site_avatar((int) $free['id'], (string) $free['name'], (string) ($free['icon'] ?? ''), 'sm') ?>
                                         <span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)"><?= $this->e((string) $free['name']) ?></span><span class="table__secondary u-truncate" style="display:block;margin-top:0"><?= $this->e(\App\Core\Sites\SiteRepository::host((string) $free['url'])) ?></span></span>
                                         <span class="text-caption u-nowrap">přidán <?= $this->e(get_czech_date((string) $free['created_at'])) ?></span>
                                     </label>

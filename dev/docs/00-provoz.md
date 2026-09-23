@@ -92,6 +92,35 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
 - Plugin nic neposílá sám: aplikace se ho ptá (`/wp-json/mediagrafik-monitor/v1/…`
   s hlavičkou `X-MG-Key`). Když web REST API blokuje, plugin zkouší
   `?rest_route=`; když ani to neprojde, web má stav „Plugin neodpovídá".
+- **Aktualizace pluginů ze správy** (plugin 1.1.0+): detail webu → Pluginy →
+  zaškrtnout a „Aktualizovat vybrané" (nejvýš 10 najednou), nebo
+  „Aktualizovat" v řádku. Požadavek je navíc podepsaný časem (okno ±5 minut
+  — rozejdou-li se hodiny serveru správy a webu, plugin odpoví „Podpis
+  nesouhlasí"). Web aktualizuje stejně jako hromadná aktualizace ve
+  wp-admin: aktivní pluginy zůstanou aktivní, při selhání rozbalení vrátí
+  WordPress původní verzi. Nejde to na webu s `DISALLOW_FILE_MODS` nebo bez
+  přímého zápisu na disk (FTP údaje ve `wp-config.php`) a u placených
+  pluginů bez licence — správa ukáže důvod. Výsledek je v Historii webu
+  a v auditu. Weby s pluginem 1.0.0 mají tlačítko neaktivní, dokud si
+  plugin samy neaktualizují (viz předchozí bod) — přechod 1.0.0 → 1.1.0 je
+  potřeba jednou udělat ve wp-admin (nahrát ZIP, „Nahradit stávající").
+- Od 1.1.0 jde i MEDIAGRAFIK Monitor aktualizovat ze správy: jakmile je na
+  serveru správy novější ZIP, záložka Pluginy ho nabídne hned (správa verzi
+  zná z `plugin-info.json`), web si při aktualizaci novou verzi načte
+  znovu a nečeká na svou 12hodinovou cache.
+- **Smazání neaktivního pluginu** (plugin 1.2.0+): Pluginy → „Smazat" u
+  neaktivního pluginu → potvrzovací stránka. Web plugin smaže jako wp-admin
+  včetně odinstalace (plugin tím obvykle smaže i svá data). Aktivní plugin
+  ani MEDIAGRAFIK Monitor smazat nejde.
+- **Aktualizace WordPressu** (plugin 1.2.0+): Přehled → „Aktualizovat" u
+  verze WordPressu → potvrzovací stránka. Web aktualizuje jako wp-admin
+  (stránka údržby, převod databáze). Potvrzuje se konkrétní verze; když
+  web mezitím nabízí jinou, nebo nová verze potřebuje vyšší PHP/MySQL,
+  aktualizace se odmítne s důvodem. Před hlavní verzí (6.8 → 6.9) web
+  zazálohujte — potvrzovací stránka ukazuje stáří poslední zálohy.
+- Která akce je na webu k dispozici, rozhoduje verze pluginu v posledních
+  datech webu. Tlačítko akce, kterou plugin ještě nezná, je neaktivní a
+  v bublině řekne, na jakou verzi plugin aktualizovat.
 
 ## 5. Hromadné přidání webů
 

@@ -6,14 +6,12 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * REST endpointy pro hub: `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`.
+ * REST endpointy pro hub: `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`
+ * (GET) a akce `POST /actions/{plugin-update,plugin-delete,core-update,login-link}`.
  *
- * Všechno GET, všechno za klíčem v hlavičce `X-MG-Key`. Odpověď má vždy
- * obálku `{ok, plugin_version, generated_at, data}` nebo
+ * Všechno za klíčem v hlavičce `X-MG-Key`. Odpověď má vždy obálku
+ * `{ok, plugin_version, generated_at, data}` nebo
  * `{ok: false, error: {code, message}}` a `Cache-Control: no-store`.
- *
- * Mutující akce (aktualizace/mazání pluginů) jsou v2 — místo pro ně je
- * v `register_action_routes()`.
  */
 final class MG_Rest_Controller
 {
@@ -34,13 +32,45 @@ final class MG_Rest_Controller
     }
 
     /**
-     * v2: `POST /actions/plugin-update`, `/actions/plugin-delete`,
-     * `/actions/core-update` — s podpisem `MG_Api_Key::verify_signature()`.
-     * V1 nic neregistruje; hub s tím počítá a tlačítka má neaktivní.
+     * Akce, které na webu něco mění. Kromě klíče chtějí podpis s časem
+     * (`MG_Api_Key::verify_signature()`) — zachycený požadavek nejde po
+     * pěti minutách zopakovat ani mu změnit tělo.
      */
     public static function register_action_routes()
     {
-        // záměrně prázdné
+        $actions = array(
+            'plugin-update' => 'plugin_update',
+            'plugin-delete' => 'plugin_delete',
+            'core-update' => 'core_update',
+            'login-link' => 'login_link',
+        );
+
+        foreach ($actions as $path => $callback) {
+            register_rest_route(self::NAMESPACE_V1, '/actions/' . $path, array(
+                'methods' => 'POST',
+                'permission_callback' => array(__CLASS__, 'action_permission'),
+                'callback' => array(__CLASS__, $callback),
+            ));
+        }
+    }
+
+    /**
+     * @param WP_REST_Request $request
+     * @return true|WP_Error
+     */
+    public static function action_permission($request)
+    {
+        $allowed = self::permission($request);
+
+        if ($allowed !== true) {
+            return $allowed;
+        }
+
+        if (!MG_Api_Key::verify_signature($request, trim((string) $request->get_header('x-mg-key')))) {
+            return new WP_Error('invalid_signature', 'Podpis požadavku nesouhlasí nebo vypršel — zkontrolujte čas serveru.', array('status' => 401));
+        }
+
+        return true;
     }
 
     /**
@@ -128,6 +158,72 @@ final class MG_Rest_Controller
     public static function security()
     {
         return self::respond(array('security' => MG_Security_Checks::run()));
+    }
+
+    /**
+     * @param WP_REST_Request $request tělo `{"plugins": ["slozka/soubor.php", …]}`
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function plugin_update($request)
+    {
+        $body = json_decode((string) $request->get_body(), true);
+        $files = is_array($body) && isset($body['plugins']) && is_array($body['plugins']) ? $body['plugins'] : array();
+        $items = MG_Plugin_Updates::run($files);
+
+        if (is_wp_error($items)) {
+            return $items;
+        }
+
+        return self::respond(array('plugins' => $items));
+    }
+
+    /**
+     * @param WP_REST_Request $request tělo `{"plugins": ["slozka/soubor.php", …]}`
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function plugin_delete($request)
+    {
+        $body = json_decode((string) $request->get_body(), true);
+        $files = is_array($body) && isset($body['plugins']) && is_array($body['plugins']) ? $body['plugins'] : array();
+        $items = MG_Site_Actions::delete_plugins($files);
+
+        if (is_wp_error($items)) {
+            return $items;
+        }
+
+        return self::respond(array('plugins' => $items));
+    }
+
+    /**
+     * @param WP_REST_Request $request tělo `{"version": "6.9"}` — verze, kterou člověk potvrdil
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function core_update($request)
+    {
+        $body = json_decode((string) $request->get_body(), true);
+        $result = MG_Site_Actions::update_core(is_array($body) && isset($body['version']) ? (string) $body['version'] : '');
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return self::respond(array('core' => $result));
+    }
+
+    /**
+     * @param WP_REST_Request $request tělo `{"user": "mediagrafik"}`
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function login_link($request)
+    {
+        $body = json_decode((string) $request->get_body(), true);
+        $link = MG_Login::create_link(is_array($body) && isset($body['user']) ? (string) $body['user'] : '');
+
+        if (is_wp_error($link)) {
+            return $link;
+        }
+
+        return self::respond(array('login' => $link));
     }
 
     /**

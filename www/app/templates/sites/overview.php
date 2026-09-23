@@ -8,7 +8,8 @@
  *
  * @var \App\Core\View\View $this
  * @var array               $site
- * @var array<string, array<string, mixed>>|null $metrics  wp/php/db/theme, null = ještě žádná data
+ * @var array<string, array<string, mixed>>|null $metrics  wp/php/db/theme, null = ještě žádná data;
+ *                                                     wp.updateUrl = potvrzení aktualizace WordPressu (null = nejde)
  * @var array<int, array{label: string, value: string, tone: string}> $summary
  * @var array<int, array<string, mixed>> $events   posledních 6 událostí
  * @var int                 $eventCount
@@ -41,7 +42,7 @@ $percentTone = $percent === null ? 'text-faint' : ($percent < 99 ? 'metric__valu
                     <div class="metric metric--compact">
                         <div class="metric__label">WordPress</div>
                         <div class="metric__value"><?= $this->e($metrics['wp']['value']) ?></div>
-                        <div class="metric__note"><?= $metrics['wp']['update'] !== null ? get_badge('→ ' . $metrics['wp']['update'], 'warning') : 'aktuální' ?></div>
+                        <div class="metric__note"><?= $metrics['wp']['update'] !== null ? get_badge('→ ' . $metrics['wp']['update'], 'warning') : 'aktuální' ?><?php if ($metrics['wp']['updateUrl'] !== null): ?> <a href="<?= $metrics['wp']['updateUrl'] ?>">Aktualizovat</a><?php endif; ?></div>
                     </div>
                     <div class="metric metric--compact<?= $metrics['php']['eol'] ? ' metric--error' : '' ?>">
                         <div class="metric__label">PHP</div>

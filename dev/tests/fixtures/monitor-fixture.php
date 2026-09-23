@@ -77,7 +77,7 @@ function monitorFixture(): array
     $settings->set('alert_emails', 'studio@test.cz');
 
     return ['db' => $db, 'sites' => $sites, 'uptime' => $uptime, 'alerts' => $alerts, 'engine' => $engine, 'run' => $run, 'settings' => $settings, 'events' => $events, 'logDir' => $logDir,
-        'mailer' => $mailer, 'notifier' => $notifier, 'logger' => $logger, 'security' => $security, 'monitorSettings' => $monitorSettings, 'mailSettings' => $mailSettings];
+        'mailer' => $mailer, 'notifier' => $notifier, 'logger' => $logger, 'security' => $security, 'monitorSettings' => $monitorSettings, 'mailSettings' => $mailSettings, 'importer' => $importer];
 }
 
 /** @return array{ok: bool, status: int, ms: int, error: ?string} */

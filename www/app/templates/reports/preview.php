@@ -103,20 +103,20 @@ $noteLength = mb_strlen((string) $report['note']);
                 <?php endif; ?>
             </form>
 
-            <form method="post" action="<?= get_url($base . '/sekce') ?>" class="card card--small-shadow" style="padding:6px 20px" data-autosubmit>
+            <form method="post" action="<?= get_url($base . '/sekce') ?>" class="card card--small-shadow" style="padding:6px 20px" data-unsaved>
                 <?php render_csrf($csrfToken) ?>
                 <?php foreach ($sections as $section): ?>
                     <div class="summary-list__row" style="align-items:center">
                         <div><div style="font-size:var(--font-size-body);font-weight:var(--font-weight-medium)"><?= $this->e($section['label']) ?></div><div class="text-caption"><?= $this->e($section['note']) ?></div></div>
                         <?php if ($editable): ?>
-                            <?= get_toggle('sections[]', $section['on'], $section['label']) ?>
+                            <?= get_toggle('sections[]', $section['on'], $section['label'], $section['key']) ?>
                         <?php else: ?>
                             <?= get_status($section['on'] ? 'ok' : 'muted', $section['on'] ? 'ano' : 'ne') ?>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
                 <?php if ($editable): ?>
-                    <div class="card__footer" style="padding:12px 0 8px"><button type="submit" class="btn btn--secondary btn--sm btn--block" data-autosubmit-button>Uložit sekce</button></div>
+                    <div class="card__footer" style="padding:12px 0 8px"><button type="submit" class="btn btn--secondary btn--sm btn--block" data-unsaved-button data-unsaved-label="Uložit změny sekcí">Uložit sekce</button></div>
                 <?php endif; ?>
             </form>
 

@@ -162,6 +162,7 @@ final class DashboardData
         return [
             'id' => (int) $site['id'],
             'name' => (string) $site['name'],
+            'icon' => (string) ($site['icon'] ?? ''),
             'host' => SiteRepository::host((string) $site['url']),
             'clientId' => $site['client_id'] !== null ? (int) $site['client_id'] : null,
             'clientName' => (string) ($site['client_name'] ?? ''),
@@ -208,6 +209,7 @@ final class DashboardData
             return [
                 'id' => (int) $site['id'],
                 'name' => (string) $site['name'],
+                'icon' => (string) ($site['icon'] ?? ''),
                 'note' => $host . ' · ' . ($code > 0 ? 'HTTP ' . $code : 'server neodpovídá') . ', ' . get_count((int) $site['consecutive_failures'], 'kontrola po sobě selhala', 'kontroly po sobě selhaly', 'kontrol po sobě selhalo'),
                 'duration' => get_duration($since, $nowText),
                 'kind' => 'mimo provoz',
@@ -219,6 +221,7 @@ final class DashboardData
         return [
             'id' => (int) $site['id'],
             'name' => (string) $site['name'],
+            'icon' => (string) ($site['icon'] ?? ''),
             'note' => $host . ' · certifikát vypršel ' . date('j. n.', (int) strtotime($sslTo)) . ', prohlížeč hlásí varování',
             'duration' => get_duration($sslTo, $nowText),
             'kind' => 'neplatné SSL',

@@ -33,11 +33,7 @@ $this->extend('layout/shell', ['title' => $title]);
                         <div class="threshold-row__title"><?= get_dot($rule['on'] ? 'warning' : 'muted') ?><?= $this->e($rule['label']) ?></div>
                         <div class="text-caption" style="margin-top:4px"><?= $this->e($rule['text']) ?><?= $rule['note'] !== '' ? ' ' . $this->e($rule['note']) : '' ?></div>
                     </div>
-                    <div class="stepper stepper--sm<?= $rule['on'] ? '' : ' stepper--off' ?>" data-stepper>
-                        <button class="stepper__btn" type="button" data-stepper-down aria-label="Snížit"><?= get_icon('minus', 'icon--sm') ?></button>
-                        <input class="stepper__value" type="number" name="<?= $this->e($rule['key']) ?>_max" value="<?= $rule['value'] ?>" min="<?= $rule['min'] ?>" max="<?= $rule['max'] ?>" data-stepper-unit="<?= $this->e($rule['unit']) ?>" aria-label="<?= $this->e($rule['label']) ?>">
-                        <button class="stepper__btn" type="button" data-stepper-up aria-label="Zvýšit"><?= get_icon('plus', 'icon--sm') ?></button>
-                    </div>
+                    <?= get_stepper($rule['key'] . '_max', $rule['value'], $rule['min'], $rule['max'], $rule['unit'], $rule['label'], class: 'stepper--sm' . ($rule['on'] ? '' : ' stepper--off')) ?>
                     <div class="row" style="justify-content:flex-end"><?= get_toggle($rule['key'] . '_on', $rule['on'], $rule['label']) ?></div>
                 </div>
             <?php endforeach; ?>

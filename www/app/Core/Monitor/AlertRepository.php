@@ -39,7 +39,7 @@ final class AlertRepository
     public function find(int $id): ?array
     {
         return $this->db->selectOne(
-            'SELECT a.*, s.name AS site_name, s.url AS site_url, c.name AS client_name
+            'SELECT a.*, s.name AS site_name, s.url AS site_url, s.icon AS site_icon, c.name AS client_name
              FROM alerts a JOIN sites s ON s.id = a.site_id LEFT JOIN clients c ON c.id = s.client_id
              WHERE a.id = :id',
             ['id' => $id],
@@ -136,7 +136,7 @@ final class AlertRepository
         }
 
         return $this->db->select(
-            'SELECT a.*, s.name AS site_name, s.url AS site_url, c.name AS client_name
+            'SELECT a.*, s.name AS site_name, s.url AS site_url, s.icon AS site_icon, c.name AS client_name
              FROM alerts a JOIN sites s ON s.id = a.site_id LEFT JOIN clients c ON c.id = s.client_id'
                 . ($conditions !== [] ? ' WHERE ' . implode(' AND ', $conditions) : '')
                 . ' ORDER BY a.opened_at DESC, a.id DESC LIMIT ' . max(1, $limit),

@@ -67,11 +67,28 @@ final class ReportSender
         ]);
     }
 
-    /** Po změně poznámky nebo sekcí — přegenerovat HTML. @param array<string, mixed> $report */
-    public function rerender(array $report): void
+    /**
+     * Po změně poznámky nebo sekcí — přegenerovat HTML.
+     *
+     * Rozpracovaný report (koncept, čeká na schválení) dostane i čerstvý
+     * souhrn: jinak by ukazoval data z chvíle, kdy vznikl — bez aktualizací
+     * a servisu zapsaných mezitím a bez sekcí přidaných v novější verzi.
+     * Odeslaný report se nepřepočítává, musí zůstat, jak ho klient dostal.
+     *
+     * @param array<string, mixed> $report
+     */
+    public function rerender(array $report, ?string $today = null): void
     {
+        $summary = $report['summary'];
+        $site = in_array($report['status'], ['draft', 'pending_approval'], true) ? $this->sites->findWithSnapshot((int) $report['site_id']) : null;
+
+        if ($site !== null) {
+            $summary = $this->builder->build($site, (string) $report['period_from'], (string) $report['period_to'], (string) $report['period_label'], $today);
+        }
+
         $this->reports->update((int) $report['id'], [
-            'html' => $this->renderer->document($report['summary'], $this->options($report['summary'], (string) $report['note'], $report['sections'])),
+            'summary' => $summary,
+            'html' => $this->renderer->document($summary, $this->options($summary, (string) $report['note'], $report['sections'])),
         ]);
     }
 
@@ -92,6 +109,13 @@ final class ReportSender
 
         if ($site === null) {
             return ['ok' => false, 'sent' => 0, 'failed' => ['—' => 'Web už neexistuje.']];
+        }
+
+        // Rozpracovaný report odchází s čerstvým souhrnem — stejným, jaký
+        // ukazuje náhled (ReportController::preview), ne s daty z chvíle,
+        // kdy koncept vznikl.
+        if (in_array($report['status'], ['draft', 'pending_approval'], true)) {
+            $summary = $this->builder->build($site, (string) $report['period_from'], (string) $report['period_to'], (string) $report['period_label']);
         }
 
         if ($recipients === []) {
@@ -135,6 +159,7 @@ final class ReportSender
         $this->reports->update((int) $report['id'], [
             'status' => $status,
             'error' => $error,
+            'summary' => $summary,
             'html' => $html,
             'sent_at' => $sent > 0 ? $now : null,
         ]);

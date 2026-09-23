@@ -65,7 +65,7 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
                     <span class="form__label form__label--caps">Šifrování</span>
                     <div class="segmented" style="max-width:420px">
                         <?php foreach ($mailSecurities as $code => $label): ?>
-                            <label class="segmented__item<?= (string) $mail['security'] === $code ? ' segmented__item--active' : '' ?>">
+                            <label class="segmented__item">
                                 <input type="radio" name="security" value="<?= $this->e($code) ?>"<?= (string) $mail['security'] === $code ? ' checked' : '' ?> class="visually-hidden">
                                 <?= $this->e(explode(' (', $label)[0]) ?>
                             </label>

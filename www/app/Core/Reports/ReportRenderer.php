@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Reports;
 
+use App\Core\Sites\ContentFreshness;
+
 /**
  * HTML klientského reportu podle návrhu `nahled-reportu.html`.
  *
@@ -24,16 +26,26 @@ final class ReportRenderer
     private const BORDER = '#e7e9f2';
     private const OK = '#0f9d6b';
 
+    /** Barva tečky stavu (`ContentFreshness::tone()`) — v poště nejsou tokeny. */
+    private const TONES = ['ok' => self::OK, 'warning' => '#e2900a', 'error' => '#dc2626', 'muted' => self::MUTED];
+
     /**
      * @param array<string, mixed> $summary  z `ReportBuilder::build()`
      * @param array{note?: string, sections?: array<int, string>, pixelUrl?: string, logoUrl?: string,
-     *     studio?: array{name: string, email: string, phone: string}, contactUrl?: string, mobile?: bool} $options
+     *     studio?: array{name: string, email: string, phone: string}, contactUrl?: string, mobile?: bool, preview?: bool} $options
+     *     `preview` = vykreslit i vypnuté sekce (skryté, s `data-report-section`) pro přepínání v náhledu
      */
     public function body(array $summary, array $options = []): string
     {
         $e = static fn (mixed $v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
         $sections = $options['sections'] ?? ReportRepository::defaultSections();
         $on = static fn (string $key): bool => in_array($key, $sections, true);
+        // Náhled před odesláním vykreslí i vypnuté sekce, jen skryté — přepínač
+        // sekce je pak ukáže bez načtení stránky (report-preview.js). Do e-mailu
+        // klientovi jdou jen zapnuté.
+        $preview = (bool) ($options['preview'] ?? false);
+        $show = static fn (string $key): bool => $preview || $on($key);
+        $row = static fn (string $key): string => $preview ? '<tr data-report-section="' . $key . '"' . ($on($key) ? '' : ' hidden') . '>' : '<tr>';
         $studio = $options['studio'] ?? ['name' => 'MEDIAGRAFIK', 'email' => '', 'phone' => ''];
         $logoUrl = $options['logoUrl'] ?? '';
         $mobile = (bool) ($options['mobile'] ?? false);
@@ -88,7 +100,7 @@ final class ReportRenderer
         }
 
         // Co jsme pro vás udělali.
-        if ($on('updates') && $summary['done'] !== []) {
+        if ($show('updates') && $summary['done'] !== []) {
             $items = '';
 
             foreach ($summary['done'] as $item) {
@@ -97,13 +109,13 @@ final class ReportRenderer
                     . '<td valign="top" style="padding:0 0 9px;font-size:14px;line-height:1.5;color:' . self::BODY . ';"><b style="font-weight:600;color:' . self::TEXT . ';">' . $e($item['strong']) . '</b> ' . $e($item['text']) . '</td></tr>';
             }
 
-            $h .= '<tr><td style="padding:26px ' . $pad . ' 0;">'
+            $h .= $row('updates') . '<td style="padding:26px ' . $pad . ' 0;">'
                 . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">Co jsme pro vás udělali</h3>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $items . '</table></td></tr>';
         }
 
         // Servis.
-        if ($on('services') && ($summary['services'] !== [] || $summary['nextService'] !== null)) {
+        if ($show('services') && ($summary['services'] !== [] || $summary['nextService'] !== null)) {
             $rows = '';
             $count = count($summary['services']);
 
@@ -117,7 +129,7 @@ final class ReportRenderer
                     . '</tr></table></td></tr>';
             }
 
-            $h .= '<tr><td style="padding:26px ' . $pad . ' 0;">'
+            $h .= $row('services') . '<td style="padding:26px ' . $pad . ' 0;">'
                 . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">Servis v tomto období</h3>'
                 . ($rows !== ''
                     ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ' . self::BORDER . ';border-radius:12px;border-collapse:separate;">' . $rows . '</table>'
@@ -128,21 +140,66 @@ final class ReportRenderer
                 . '</td></tr>';
         }
 
+        // Obsah webu (reporty před verzí 0.4.0 tuhle část souhrnu nemají).
+        $content = $summary['content'] ?? null;
+        $contactUrl = $options['contactUrl'] ?? ($studio['email'] !== '' ? 'mailto:' . $studio['email'] : '');
+
+        if ($show('content') && is_array($content) && $content['types'] !== []) {
+            $rows = '';
+            $count = count($content['types']);
+
+            foreach ($content['types'] as $i => $type) {
+                $dot = self::TONES[$type['tone']] ?? self::MUTED;
+                $rows .= '<tr><td style="padding:12px 16px;' . ($i < $count - 1 ? 'border-bottom:1px solid ' . self::BORDER . ';' : '') . '">'
+                    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
+                    . '<td valign="top" style="font-size:14px;line-height:1.5;color:' . self::BODY . ';">'
+                    . '<div style="font-weight:600;color:' . self::TEXT . ';">' . $e($type['label']) . ' <span style="font-weight:400;color:' . self::MUTED . ';">· ' . $e(get_count((int) $type['published'], 'publikovaný', 'publikované', 'publikovaných')) . '</span></div>'
+                    . ($type['latestTitle'] !== '' ? '<div style="margin-top:2px;font-size:13px;color:' . self::MUTED . ';">Poslední: „' . $e(ContentFreshness::title((string) $type['latestTitle'])) . '“</div>' : '')
+                    . '</td>'
+                    . '<td valign="top" align="right" style="font-size:13px;color:' . self::TEXT . ';white-space:nowrap;padding-left:12px;">'
+                    . '<span style="display:inline-block;width:8px;height:8px;border-radius:999px;background:' . $dot . ';margin-right:6px;"></span>' . $e($type['ageLabel'])
+                    . '</td></tr></table></td></tr>';
+            }
+
+            $invite = '';
+
+            if (($content['invite'] ?? null) !== null) {
+                [$background, $border, $title] = $content['tone'] === 'error'
+                    ? ['#fdecec', 'rgba(220,38,38,.3)', '#a61b1b']
+                    : ['#fef4da', 'rgba(226,144,10,.35)', '#9e5300'];
+                $invite = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td style="padding:16px 18px;border-radius:12px;background:' . $background . ';border:1px solid ' . $border . ';">'
+                    . '<div style="font-size:14px;font-weight:600;color:' . $title . ';">' . $e($content['invite']['title']) . '</div>'
+                    . '<div style="font-size:14px;line-height:1.55;color:' . self::BODY . ';margin-top:5px;">' . $e($content['invite']['text']) . '</div>'
+                    . ($contactUrl !== ''
+                        ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:12px;"><tr><td bgcolor="' . self::BRAND . '" style="border-radius:10px;background:' . self::BRAND . ';">'
+                            . '<a href="' . $e($contactUrl) . '" style="display:inline-block;color:#ffffff;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none;">Ozvěte se nám</a>'
+                            . '</td></tr></table>'
+                        : '')
+                    . '</td></tr></table>';
+            }
+
+            $h .= $row('content') . '<td style="padding:26px ' . $pad . ' 0;">'
+                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">Obsah webu</h3>'
+                . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ' . self::BORDER . ';border-radius:12px;border-collapse:separate;">' . $rows . '</table>'
+                . $invite
+                . '</td></tr>';
+        }
+
         // Doporučení.
-        if ($on('recommendations') && $summary['recommendations'] !== []) {
+        if ($show('recommendations') && $summary['recommendations'] !== []) {
             $items = '';
 
             foreach ($summary['recommendations'] as $rec) {
                 $items .= '<div style="font-size:14px;line-height:1.55;color:' . self::BODY . ';margin-top:5px;"><b style="font-weight:600;color:#9e5300;">' . $e($rec['title']) . '.</b> ' . $e($rec['text']) . '</div>';
             }
 
-            $h .= '<tr><td style="padding:24px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#fef4da;border:1px solid rgba(226,144,10,.35);">'
+            $h .= $row('recommendations') . '<td style="padding:24px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#fef4da;border:1px solid rgba(226,144,10,.35);">'
                 . '<div style="font-size:14px;font-weight:600;color:#9e5300;">Na co bychom se rádi domluvili</div>' . $items
                 . '</td></tr></table></td></tr>';
         }
 
         // Graf dostupnosti.
-        if ($on('uptime_chart') && $uptime['days'] !== []) {
+        if ($show('uptime_chart') && $uptime['days'] !== []) {
             $cells = '';
             $dayCount = count($uptime['days']);
 
@@ -160,7 +217,7 @@ final class ReportRenderer
             $middle = $uptime['days'][intdiv($dayCount, 2)]['day'];
             $last = $uptime['days'][$dayCount - 1]['day'];
 
-            $h .= '<tr><td style="padding:26px ' . $pad . ' 0;">'
+            $h .= $row('uptime_chart') . '<td style="padding:26px ' . $pad . ' 0;">'
                 . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">Dostupnost ' . $e(str_starts_with($period['phrase'], 'celý ') ? 'v ' . get_czech_month((int) date('n', strtotime($period['from'])), 'locative') : 'v období') . '</h3>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;"><tr>' . $cells . '</tr></table>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:7px;"><tr>'
@@ -172,7 +229,7 @@ final class ReportRenderer
         }
 
         // Technická příloha.
-        if ($on('technical')) {
+        if ($show('technical')) {
             $tech = $summary['technical'];
             $rows = array_filter([
                 'WordPress' => $tech['wp'],
@@ -190,16 +247,15 @@ final class ReportRenderer
                     $items .= '<tr><td style="padding:6px 0;font-size:13px;color:' . self::MUTED . ';border-bottom:1px solid ' . self::BORDER . ';">' . $e($label) . '</td><td align="right" style="padding:6px 0;font-size:13px;color:' . self::TEXT . ';border-bottom:1px solid ' . self::BORDER . ';font-family:Consolas,\'Courier New\',monospace;">' . $e($value) . '</td></tr>';
                 }
 
-                $h .= '<tr><td style="padding:26px ' . $pad . ' 0;">'
+                $h .= $row('technical') . '<td style="padding:26px ' . $pad . ' 0;">'
                     . '<h3 style="margin:0 0 8px;font-size:15px;font-weight:600;color:' . self::TEXT . ';">Technická příloha</h3>'
                     . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $items . '</table></td></tr>';
             }
         }
 
         // Výzva ke kontaktu.
-        if ($on('cta')) {
-            $contactUrl = $options['contactUrl'] ?? ($studio['email'] !== '' ? 'mailto:' . $studio['email'] : '');
-            $h .= '<tr><td style="padding:26px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:18px;border-radius:12px;background:#f3f5fc;">'
+        if ($show('cta')) {
+            $h .= $row('cta') . '<td style="padding:26px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:18px;border-radius:12px;background:#f3f5fc;">'
                 . '<div style="font-size:14px;color:' . self::BODY . ';line-height:1.55;">Máte k webu jakýkoli dotaz?</div>'
                 . '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin-top:10px;"><tr><td align="center" bgcolor="' . self::BRAND . '" style="border-radius:10px;background:' . self::BRAND . ';">'
                 . '<a href="' . $e($contactUrl !== '' ? $contactUrl : '#') . '" style="display:inline-block;color:#ffffff;padding:11px 20px;font-size:14px;font-weight:600;text-decoration:none;">Napište nám</a>'
@@ -275,6 +331,20 @@ final class ReportRenderer
 
             foreach ($summary['services'] as $service) {
                 $lines[] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ': ' . $service['description'];
+            }
+        }
+
+        $content = $summary['content'] ?? null;
+
+        if (in_array('content', $sections, true) && is_array($content) && $content['types'] !== []) {
+            array_push($lines, '', 'Obsah webu:');
+
+            foreach ($content['types'] as $type) {
+                $lines[] = '- ' . $type['label'] . ' (' . get_count((int) $type['published'], 'publikovaný', 'publikované', 'publikovaných') . '): ' . $type['ageLabel'];
+            }
+
+            if (($content['invite'] ?? null) !== null) {
+                $lines[] = $content['invite']['title'] . '. ' . $content['invite']['text'];
             }
         }
 

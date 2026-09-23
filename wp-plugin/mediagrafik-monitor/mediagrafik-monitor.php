@@ -4,7 +4,7 @@
  * Plugin Name: MEDIAGRAFIK Monitor
  * Plugin URI: https://mediagrafik.cz
  * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.0.0
+ * Version: 1.3.0
  * Requires at least: 6.8
  * Requires PHP: 7.4
  * Author: Mediagrafik.cz
@@ -25,18 +25,25 @@ if (!defined('ABSPATH')) {
  * Plugin je záměrně pasivní: žádný WP-Cron, žádné e-maily, žádné SMTP.
  * Hub (Správa webů) se ptá sám — model „pull" — a pověřuje se hlavičkou
  * `X-MG-Key`. Klíč vydává hub, tady se ukládá jen jeho SHA-256 hash.
+ * Na webu něco mění jen akce na pokyn hubu (podepsaný požadavek):
+ * aktualizace pluginů (`MG_Plugin_Updates`), smazání neaktivních pluginů
+ * a aktualizace WordPressu (`MG_Site_Actions`). A přihlášení do
+ * administrace jedním klikem ze Správy webů (`MG_Login`).
  *
  * Verzi je nutné změnit na dvou místech: hlavička `Version:` a konstanta
  * `self::VERSION`. Distribuci (plugin-info.json + ZIP) dělá hub.
  */
 final class MG_Monitor
 {
-    const VERSION = '1.0.0';
+    const VERSION = '1.3.0';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';
     const OPTION_LAST_SEEN = 'mg_monitor_last_seen';
     const OPTION_HUB_URL = 'mg_monitor_hub_url';
+
+    /** Přihlášení ze Správy webů povoleno? '1' / '0', výchozí povoleno. */
+    const OPTION_ALLOW_LOGIN = 'mg_monitor_allow_login';
 
     /**
      * Odkud se stahují aktualizace pluginu. Adresa hubu se ukládá při
@@ -46,6 +53,9 @@ final class MG_Monitor
 
     /** @var MG_Monitor|null */
     private static $instance = null;
+
+    /** @var MG_Updater|null */
+    private $updater = null;
 
     public static function instance()
     {
@@ -69,6 +79,8 @@ final class MG_Monitor
         }
 
         add_action('plugins_loaded', array($this, 'init_updater'));
+        // Prio 1: odkaz z hubu přihlásí dřív, než se web začne vykreslovat.
+        add_action('init', array('MG_Login', 'maybe_login'), 1);
     }
 
     private function load_dependencies()
@@ -79,6 +91,9 @@ final class MG_Monitor
         require_once $dir . 'includes/class-mg-rate-limit.php';
         require_once $dir . 'includes/class-mg-collector.php';
         require_once $dir . 'includes/class-mg-security-checks.php';
+        require_once $dir . 'includes/class-mg-site-actions.php';
+        require_once $dir . 'includes/class-mg-plugin-updates.php';
+        require_once $dir . 'includes/class-mg-login.php';
         require_once $dir . 'includes/class-mg-rest-controller.php';
         require_once $dir . 'includes/class-mg-updater.php';
         require_once $dir . 'admin/class-mg-admin-page.php';
@@ -90,7 +105,13 @@ final class MG_Monitor
         $hub = trim((string) get_option(self::OPTION_HUB_URL, ''));
         $url = $hub !== '' ? rtrim($hub, '/') . '/plugin/mediagrafik-monitor/plugin-info.json' : self::DEFAULT_UPDATE_URL;
 
-        new MG_Updater($url, __FILE__, self::VERSION);
+        $this->updater = new MG_Updater($url, __FILE__, self::VERSION);
+    }
+
+    /** @return MG_Updater|null null jen před `plugins_loaded` */
+    public function updater()
+    {
+        return $this->updater;
     }
 
     public static function activate()

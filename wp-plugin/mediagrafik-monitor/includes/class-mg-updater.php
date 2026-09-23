@@ -118,6 +118,30 @@ final class MG_Updater
         return $remote;
     }
 
+    /** Soubor pluginu (`slozka/mediagrafik-monitor.php`) — tak ho zná upgrader. */
+    public function basename()
+    {
+        return $this->plugin_basename;
+    }
+
+    /**
+     * Hub chce plugin aktualizovat hned, bez čekání na 12hodinovou cache.
+     * Zahodí uložené `plugin-info.json` a údaje o aktualizacích označí za
+     * staré — příští `wp_update_plugins()` se hubu zeptá znovu a
+     * `check_for_updates()` doplní novou verzi i s balíčkem.
+     */
+    public function refresh()
+    {
+        delete_transient($this->cache_key);
+
+        $current = get_site_transient('update_plugins');
+
+        if (is_object($current)) {
+            $current->last_checked = 0;
+            set_site_transient('update_plugins', $current);
+        }
+    }
+
     public function purge_cache($upgrader, $options)
     {
         if (isset($options['action'], $options['type']) && $options['action'] === 'update' && $options['type'] === 'plugin') {

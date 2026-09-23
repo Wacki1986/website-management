@@ -1,8 +1,8 @@
 /**
  * Náhled reportu: přepínač Počítač/Mobil bez načtení stránky, počítadlo
- * znaků poznámky, rychlé pilulky s předpřipravenými větami a automatické
- * uložení sekcí po přepnutí. Všechno funguje i bez skriptu — přepínač
- * jsou odkazy, sekce mají tlačítko Uložit.
+ * znaků poznámky, rychlé pilulky s předpřipravenými větami, okamžité
+ * ukázání/schování sekce po přepnutí a zvýraznění neuložených změn. Všechno
+ * funguje i bez skriptu — přepínač jsou odkazy, sekce se ukládají tlačítkem.
  */
 export function initReportPreview() {
     const sheet = document.querySelector('[data-preview-sheet]');
@@ -52,13 +52,26 @@ export function initReportPreview() {
         });
     }
 
-    document.querySelectorAll('form[data-autosubmit]').forEach((form) => {
-        const button = form.querySelector('[data-autosubmit-button]');
+    // Sekce se ukládají až tlačítkem (přepnutí stránku nenačítá). Náhled má
+    // vykreslené i vypnuté sekce (skryté, `data-report-section`), takže je
+    // přepínač hned ukáže nebo schová; tlačítko se zvýrazní, ať je vidět,
+    // že je co uložit.
+    document.querySelectorAll('form[data-unsaved]').forEach((form) => {
+        const button = form.querySelector('[data-unsaved-button]');
 
-        if (button) {
-            button.hidden = true;
-        }
+        form.addEventListener('change', (event) => {
+            const input = event.target;
 
-        form.addEventListener('change', () => form.submit());
+            if (sheet && input instanceof HTMLInputElement && input.name === 'sections[]') {
+                sheet.querySelectorAll(`[data-report-section="${input.value}"]`).forEach((section) => {
+                    section.hidden = !input.checked;
+                });
+            }
+
+            if (button) {
+                button.classList.replace('btn--secondary', 'btn--primary');
+                button.textContent = button.dataset.unsavedLabel ?? button.textContent;
+            }
+        });
     });
 }

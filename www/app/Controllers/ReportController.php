@@ -256,8 +256,21 @@ final class ReportController extends Controller
         $report = $this->reportOr404((int) $id);
         $mobile = $this->request()->string('zobrazeni') === 'mobil';
         $sender = $this->kernel->reportSender();
-        $options = $sender->options($report['summary'], (string) $report['note'], $report['sections'], '', $mobile);
         $sentState = in_array($report['status'], ['sent', 'partial', 'failed'], true);
+        $summary = $report['summary'];
+
+        // Rozpracovaný report: náhled z aktuálních dat (uloží se tlačítkem
+        // u sekcí nebo poznámky) a i s vypnutými sekcemi, jen skrytými, ať
+        // je přepínač ukáže hned. Odeslaný ukazuje přesně to, co klient dostal.
+        if (!$sentState) {
+            $site = $this->kernel->sites()->findWithSnapshot((int) $report['site_id']);
+
+            if ($site !== null) {
+                $summary = $this->kernel->reportBuilder()->build($site, (string) $report['period_from'], (string) $report['period_to'], (string) $report['period_label']);
+            }
+        }
+
+        $options = $sender->options($summary, (string) $report['note'], $report['sections'], '', $mobile) + ['preview' => !$sentState];
         $me = $this->kernel->auth()->current();
 
         $sections = [];
@@ -273,8 +286,8 @@ final class ReportController extends Controller
             'report' => $report,
             'row' => self::row($report),
             'mobile' => $mobile,
-            'emailBody' => $this->kernel->reportRenderer()->body($report['summary'], $options),
-            'subject' => (string) $report['summary']['subject'],
+            'emailBody' => $this->kernel->reportRenderer()->body($summary, $options),
+            'subject' => (string) $summary['subject'],
             'sections' => $sections,
             'noteMax' => self::NOTE_MAX,
             'quickNotes' => ['zrychlení webu' => 'Tento měsíc jsme navíc zrychlili načítání webu.', 'oprava formuláře' => 'Opravili jsme kontaktní formulář, zprávy zase chodí správně.', 'plánovaná odstávka' => 'V nejbližších týdnech plánujeme krátkou odstávku kvůli údržbě hostingu — dáme vědět předem.'],
@@ -310,7 +323,7 @@ final class ReportController extends Controller
     public function saveSections(string $id): Response
     {
         $report = $this->editableOr404((int) $id);
-        $chosen = (array) ($_POST['sections'] ?? []);
+        $chosen = array_filter((array) $this->request()->input('sections', []), 'is_scalar');
         $sections = array_values(array_intersect(array_keys(ReportRepository::SECTIONS), array_map('strval', $chosen)));
         $this->kernel->reports()->update((int) $id, ['sections' => $sections]);
         $this->kernel->reportSender()->rerender($this->reportOr404((int) $id));
@@ -420,6 +433,7 @@ final class ReportController extends Controller
             'id' => (int) $report['id'],
             'siteId' => (int) $report['site_id'],
             'siteName' => (string) ($report['site_name'] ?? ''),
+            'siteIcon' => (string) ($report['site_icon'] ?? ''),
             'clientName' => (string) ($report['client_name'] ?? ''),
             'host' => isset($report['site_url']) ? SiteRepository::host((string) $report['site_url']) : '',
             'period' => (string) $report['period_label'],

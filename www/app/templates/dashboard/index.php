@@ -22,11 +22,11 @@
  */
 $this->extend('layout/shell', ['title' => $title]);
 
-$url = static fn (array $override): string => get_url('/') . '?' . http_build_query(array_filter([
+$url = static fn (array $override): string => get_url('/') . '?' . http_build_query(array_filter(array_merge([
     'stav' => $level,
     'klient' => $clientId,
     'q' => $q,
-] + $override, static fn ($v): bool => $v !== null && $v !== ''));
+], $override), static fn ($v): bool => $v !== null && $v !== ''));
 
 $segments = [
     ['key' => '', 'label' => 'Vše', 'count' => $needs, 'dot' => ''],
@@ -79,7 +79,7 @@ $segments = [
                     <?php else: ?>
                         <?php foreach ($hero['items'] as $item): ?>
                             <div class="hero__item">
-                                <?= get_avatar($item['name'], '', 'md') ?>
+                                <?= get_site_avatar($item['id'], $item['name'], $item['icon'], 'md') ?>
                                 <div style="min-width:140px;flex:1">
                                     <div class="hero__item-title u-truncate"><?= $this->e($item['name']) ?></div>
                                     <div class="hero__item-note"><?= $this->e($item['note']) ?></div>
@@ -186,7 +186,7 @@ $segments = [
                 <?php else: ?>
                     <?php foreach ($rows as $row): ?>
                         <a class="table__row table__row--link<?= $row['level'] === 'problem' ? ' table__row--error' : '' ?>" href="<?= get_url('weby/' . $row['id']) ?>">
-                            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><?= get_avatar($row['name']) ?><div style="min-width:0"><div class="table__primary u-truncate"><?= $this->e($row['name']) ?></div><div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($row['host']) ?></div></div></div>
+                            <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><?= get_site_avatar($row['id'], $row['name'], $row['icon']) ?><div style="min-width:0"><div class="table__primary u-truncate"><?= $this->e($row['name']) ?></div><div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($row['host']) ?></div></div></div>
                             <div class="table__cell"><?= get_status($row['state']['tone'], $row['state']['label']) ?></div>
                             <div class="table__cell table__cell--mono table__cell--right<?= $row['uptimeTone'] === 'faint' ? ' text-faint' : ($row['uptimeTone'] !== '' ? ' text-' . $row['uptimeTone'] : ' text-secondary') ?>"><?= $this->e($row['uptime']) ?></div>
                             <div class="table__cell table__cell--mono<?= $row['wpTone'] !== '' ? ' text-' . $row['wpTone'] : ' text-secondary' ?>"><?= $this->e($row['wp'] !== '' ? $row['wp'] : '—') ?></div>

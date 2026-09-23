@@ -10,12 +10,14 @@ use App\Core\Events\EventLog;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
+use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceSchedule;
 
 /**
  * Detail webu — záložka Servis (návrh `detail-webu-servis.html`):
- * plán servisu, nadcházející termíny, historie provedených servisů
- * a zápis nového. Hlavičku záložek sdílí se `SiteController::header()`.
+ * plán servisu, nadcházející termíny, historie provedených servisů,
+ * zápis nového a úprava zapsaného (text i checklist úkolů z Nastavení →
+ * Servis). Hlavičku záložek sdílí se `SiteController::header()`.
  */
 final class ServiceController extends Controller
 {
@@ -51,6 +53,8 @@ final class ServiceController extends Controller
                 'icon' => $logKind['icon'],
                 'time' => $log['minutes'] !== null ? self::minutesLabel((int) $log['minutes']) : '—',
                 'done' => $log['status'] === 'done',
+                'progress' => ServiceChecklists::progress(ServiceChecklists::decode($log['checklist'] ?? null)),
+                'editUrl' => get_url('weby/' . (int) $id . '/servis/' . (int) $log['id'] . '/upravit'),
             ];
         }
 
@@ -145,46 +149,22 @@ final class ServiceController extends Controller
             $description = $items !== [] ? 'Zabezpečení: ' . implode(', ', array_map(static fn (array $c): string => mb_strtolower($c['label']), $items)) : '';
         }
 
-        return $this->view('sites/service-log-form', $this->header($site, 'servis') + [
-            'kinds' => ServiceSchedule::KINDS,
-            'values' => [
-                'performed_on' => date('Y-m-d'),
-                'kind' => $plan !== null ? (string) $plan['kind'] : 'small',
-                'description' => $description,
-                'minutes' => $plan !== null ? ServiceSchedule::KINDS[(string) $plan['kind']]['minutes'] : 50,
-                'status' => 'done',
-            ],
-            'errors' => [],
-        ]);
+        return $this->logView($site, null, [
+            'performed_on' => date('Y-m-d'),
+            'kind' => $plan !== null ? (string) $plan['kind'] : 'small',
+            'description' => $description,
+            'minutes' => $plan !== null ? ServiceSchedule::KINDS[(string) $plan['kind']]['minutes'] : 50,
+            'status' => 'done',
+        ], $this->formChecklists(null, null), []);
     }
 
     public function storeLog(string $id): Response
     {
         $site = $this->siteOr404((int) $id);
-        $request = $this->request();
-        $values = [
-            'performed_on' => $request->string('performed_on'),
-            'kind' => $request->string('kind'),
-            'description' => mb_substr($request->string('description'), 0, 5000),
-            'minutes' => $request->int('minutes'),
-            'status' => $request->string('status') === 'skipped' ? 'skipped' : 'done',
-        ];
-        $errors = [];
-
-        if (\DateTime::createFromFormat('Y-m-d', $values['performed_on']) === false) {
-            $errors['performed_on'] = 'Zadejte datum servisu.';
-        }
-
-        if ($values['description'] === '') {
-            $errors['description'] = 'Napište, co jste udělali — klient to uvidí v reportu.';
-        }
+        [$values, $errors] = $this->readLog(null);
 
         if ($errors !== []) {
-            return $this->view('sites/service-log-form', $this->header($site, 'servis') + [
-                'kinds' => ServiceSchedule::KINDS,
-                'values' => $values,
-                'errors' => $errors,
-            ], 422);
+            return $this->logView($site, null, $values, $this->formChecklists(null, $this->postedDone()), $errors, 422);
         }
 
         $service = $this->kernel->service();
@@ -208,6 +188,40 @@ final class ServiceController extends Controller
         return $this->redirectWithFlash('weby/' . $id . '/servis', 'Servis je zapsaný' . ($values['status'] === 'done' ? ' a objeví se v nejbližším reportu.' : '.'));
     }
 
+    /** Úprava zápisu — dopsat text, doodškrtnout checklist, opravit datum či čas. */
+    public function editForm(string $id, string $logId): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $log = $this->logOr404((int) $id, (int) $logId);
+
+        return $this->logView($site, $log, [
+            'performed_on' => (string) $log['performed_on'],
+            'kind' => (string) $log['kind'],
+            'description' => (string) $log['description'],
+            'minutes' => $log['minutes'] !== null ? (int) $log['minutes'] : null,
+            'status' => (string) $log['status'],
+        ], $this->formChecklists($log, null), []);
+    }
+
+    public function updateLog(string $id, string $logId): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $log = $this->logOr404((int) $id, (int) $logId);
+        [$values, $errors] = $this->readLog($log);
+
+        if ($errors !== []) {
+            return $this->logView($site, $log, $values, $this->formChecklists($log, $this->postedDone()), $errors, 422);
+        }
+
+        // Plán se úpravou neposouvá: termín posunul už původní zápis
+        // a úprava je oprava údajů, ne nový servis.
+        $this->kernel->service()->updateLog((int) $id, (int) $logId, $values);
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SERVICE, true,
+            'Upraven záznam servisu z ' . get_czech_date($values['performed_on']) . (($progress = ServiceChecklists::progress($values['checklist'])) !== '' ? ' · ' . $progress : ''));
+
+        return $this->redirectWithFlash('weby/' . $id . '/servis', 'Záznam servisu je upravený.');
+    }
+
     public function removeLog(string $id, string $logId): Response
     {
         $site = $this->siteOr404((int) $id);
@@ -224,6 +238,127 @@ final class ServiceController extends Controller
     }
 
     // -----------------------------------------------------------------
+
+    /**
+     * Formulář zápisu (nový i úprava).
+     *
+     * @param array<string, mixed>      $site
+     * @param array<string, mixed>|null $log    upravovaný zápis, null = nový
+     * @param array<string, mixed>      $values
+     * @param array<string, array<int, array{label: string, done: bool}>> $checklists
+     * @param array<string, string>     $errors
+     */
+    private function logView(array $site, ?array $log, array $values, array $checklists, array $errors, int $status = 200): Response
+    {
+        $base = 'weby/' . (int) $site['id'] . '/servis';
+
+        return $this->view('sites/service-log-form', $this->header($site, 'servis') + [
+            'kinds' => ServiceSchedule::KINDS,
+            'values' => $values,
+            'checklists' => $checklists,
+            'errors' => $errors,
+            'isEdit' => $log !== null,
+            'formAction' => get_url($log !== null ? $base . '/' . (int) $log['id'] . '/upravit' : $base . '/zapsat'),
+            'editedNote' => $log !== null
+                ? 'Zapsáno ' . get_when((string) $log['created_at']) . ((string) $log['user_name'] !== '' ? ' · ' . $log['user_name'] : '')
+                    . (($log['updated_at'] ?? null) !== null ? ' · naposledy upraveno ' . get_when((string) $log['updated_at']) : '')
+                : '',
+        ], $status);
+    }
+
+    /**
+     * Pole formuláře zápisu + checklist druhu, který je vybraný.
+     *
+     * @param array<string, mixed>|null $log upravovaný zápis (kvůli jeho uloženému checklistu)
+     * @return array{0: array{performed_on: string, kind: string, description: string, minutes: ?int, status: string, checklist: array<int, array{label: string, done: bool}>}, 1: array<string, string>}
+     */
+    private function readLog(?array $log): array
+    {
+        $request = $this->request();
+        $kind = $request->string('kind');
+        $kind = isset(ServiceSchedule::KINDS[$kind]) ? $kind : 'small';
+        $values = [
+            'performed_on' => $request->string('performed_on'),
+            'kind' => $kind,
+            'description' => mb_substr($request->string('description'), 0, 5000),
+            'minutes' => $request->int('minutes'),
+            'status' => $request->string('status') === 'skipped' ? 'skipped' : 'done',
+            'checklist' => ServiceChecklists::build($this->checklistLabels($kind, $log), (array) ($this->postedDone()[$kind] ?? [])),
+        ];
+        $errors = [];
+
+        if (\DateTime::createFromFormat('Y-m-d', $values['performed_on']) === false) {
+            $errors['performed_on'] = 'Zadejte datum servisu.';
+        }
+
+        if ($values['description'] === '') {
+            $errors['description'] = 'Napište, co jste udělali — klient to uvidí v reportu.';
+        }
+
+        return [$values, $errors];
+    }
+
+    /**
+     * Checklisty pro formulář — jeden na každý druh servisu; stránka ukáže
+     * jen ten, jehož druh je vybraný (CSS `:has`), takže přepnutí druhu
+     * funguje bez skriptu i bez znovunačtení.
+     *
+     * @param array<string, mixed>|null        $log    upravovaný zápis
+     * @param array<string, array<int, mixed>>|null $posted odškrtnutí z odeslaného formuláře (po chybě)
+     * @return array<string, array<int, array{label: string, done: bool}>>
+     */
+    private function formChecklists(?array $log, ?array $posted): array
+    {
+        $checklists = [];
+
+        foreach (array_keys(ServiceSchedule::KINDS) as $kind) {
+            $labels = $this->checklistLabels($kind, $log);
+            $saved = $log !== null && (string) $log['kind'] === $kind ? ServiceChecklists::decode($log['checklist'] ?? null) : null;
+
+            if ($posted !== null) {
+                $checklists[$kind] = ServiceChecklists::build($labels, (array) ($posted[$kind] ?? []));
+            } else {
+                $checklists[$kind] = $saved ?? ServiceChecklists::build($labels, []);
+            }
+        }
+
+        return $checklists;
+    }
+
+    /**
+     * Úkoly druhu: u upravovaného zápisu jeho uložená kopie (pozdější
+     * změna seznamu v nastavení starý zápis nemění), jinak seznam
+     * z Nastavení → Servis.
+     *
+     * @param array<string, mixed>|null $log
+     * @return array<int, string>
+     */
+    private function checklistLabels(string $kind, ?array $log): array
+    {
+        $saved = $log !== null && (string) $log['kind'] === $kind ? ServiceChecklists::decode($log['checklist'] ?? null) : null;
+
+        return $saved !== null ? array_column($saved, 'label') : $this->kernel->serviceChecklists()->template($kind);
+    }
+
+    /** Odškrtnuté úkoly z formuláře: `done[druh][] = index`. @return array<string, array<int, mixed>> */
+    private function postedDone(): array
+    {
+        $done = $this->request()->input('done', []);
+
+        return is_array($done) ? array_map(static fn (mixed $items): array => is_array($items) ? $items : [], $done) : [];
+    }
+
+    /** @return array<string, mixed> */
+    private function logOr404(int $siteId, int $logId): array
+    {
+        $log = $this->kernel->service()->findLog($siteId, $logId);
+
+        if ($log === null) {
+            throw HttpException::notFound('Záznam servisu neexistuje.');
+        }
+
+        return $log;
+    }
 
     /** @param array<string, mixed>|null $plan @return array{is_active: bool, kind: string, frequency: string, first_date: string} */
     private function planValues(?array $plan): array

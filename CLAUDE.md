@@ -25,6 +25,10 @@ kódu: `../dispu/aplikace/dev/docs/11-jak-cist-kod.md`. Provozní dokumentace:
   viz `dev/design/STAVY.md`.
 - Ikony: `get_icon('shield', 'icon--sm icon--warning')`, ne inline masky.
 - Záložky jsou odkazy na vlastní URL, ne JS přepínání.
+- U skutečných polí formuláře (rádio, zaškrtávátko v `.segmented__item`,
+  `.choice__item`, `.pick__item`, `.toggle`) se stav **nekreslí třídou
+  `--active`/`--on` ze serveru**, jen CSS `:has(:checked)` v `app/_extras.scss`
+  — třída by po kliknutí zůstala viset. Třídy z návrhu jen u odkazů a tlačítek.
 
 ## Šablony (`www/app/templates/`)
 

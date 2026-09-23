@@ -22,11 +22,11 @@
  */
 $this->extend('layout/shell', ['title' => $title]);
 
-$url = static fn (array $override): string => get_url('alerty') . '?' . http_build_query(array_filter([
+$url = static fn (array $override): string => get_url('alerty') . '?' . http_build_query(array_filter(array_merge([
     'stav' => $status === 'open' ? null : $status,
     'zavaznost' => $severity,
     'web' => $siteId,
-] + $override, static fn ($v): bool => $v !== null && $v !== ''));
+], $override), static fn ($v): bool => $v !== null && $v !== ''));
 
 $segments = [
     ['key' => '', 'label' => 'Vše', 'count' => $counts['open'], 'dot' => ''],
@@ -135,7 +135,7 @@ $states = [['key' => 'open', 'label' => 'Nevyřešené'], ['key' => 'resolved', 
                                     </div>
                                 </div>
                                 <a class="table__cell row" style="flex-wrap:nowrap;gap:10px;color:var(--color-text-primary);text-decoration:none" href="<?= get_url('weby/' . (int) $alert['site_id']) ?>">
-                                    <?= get_avatar((string) $alert['site_name'], '', 'sm') ?>
+                                    <?= get_site_avatar((int) $alert['site_id'], (string) $alert['site_name'], (string) ($alert['site_icon'] ?? ''), 'sm') ?>
                                     <div style="min-width:0"><div class="u-truncate" style="font-size:var(--font-size-label);font-weight:var(--font-weight-medium)"><?= $this->e((string) $alert['site_name']) ?></div><div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e((string) ($alert['client_name'] ?? $alert['host'])) ?></div></div>
                                 </a>
                                 <div class="table__cell">

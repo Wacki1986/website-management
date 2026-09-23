@@ -11,6 +11,8 @@
  * @var array<int, string>  $intervals
  * @var string|null         $pluginVersion  verze pluginu k distribuci
  * @var string              $pluginInfoUrl
+ * @var string              $defaultLoginUser výchozí účet studia pro přihlášení (Nastavení → Monitoring)
+ * @var string              $iconNote  odkud je ikona webu (favicona / nahrané logo / žádná)
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $site['name'] . ' — Nastavení']);
@@ -52,17 +54,47 @@ $base = 'weby/' . (int) $site['id'];
 
                     <form method="post" action="<?= get_url($base . '/nastaveni') ?>" class="form">
                         <?php render_csrf($csrfToken) ?>
+                        <?= $form->text('url', 'Adresa webu', (string) $site['url'], type: 'text', required: true, class: 'form__field--caps',
+                            attributes: ['class' => 'form__control--mono', 'autocomplete' => 'off'],
+                            hint: 'Když web jede na www nebo se stěhuje na jinou doménu. Historie, uptime, servis, reporty i API klíč zůstanou; certifikát a doména se ověří znovu.') ?>
                         <div class="form__row">
                             <?= $form->text('name', 'Název webu', (string) $site['name'], class: 'form__field--caps') ?>
                             <?= $form->select('client_id', 'Přiřazený klient', $clients, $site['client_id'], placeholder: '— bez klienta —', class: 'form__field--caps') ?>
                             <?= $form->select('check_interval_min', 'Frekvence kontrol', $intervals, (int) $site['check_interval_min'], class: 'form__field--caps') ?>
                             <?= $form->text('admin_url', 'Adresa administrace', (string) $site['admin_url'], type: 'url', class: 'form__field--caps',
                                 attributes: ['placeholder' => rtrim((string) $site['url'], '/') . '/wp-admin/', 'class' => 'form__control--mono'], hint: 'Prázdné = /wp-admin/. Vyplňte, když je přihlášení na jiné adrese.') ?>
+                            <?= $form->text('wp_login_user', 'Přihlašovat jako', (string) $site['wp_login_user'], class: 'form__field--caps',
+                                attributes: ['placeholder' => $defaultLoginUser !== '' ? $defaultLoginUser : 'mediagrafik', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
+                                hint: $defaultLoginUser !== '' ? 'Prázdné = výchozí účet studia „' . $defaultLoginUser . '" z Nastavení → Monitoring.' : 'Účet, do kterého „wp-admin" přihlásí bez hesla. Výchozí pro všechny weby nastavíte v Nastavení → Monitoring.') ?>
                             <?= $form->text('hosting_note', 'Hosting', (string) $site['hosting_note'], class: 'form__field--caps', attributes: ['placeholder' => 'Wedos · NoLimit']) ?>
                             <?= $form->text('backup_note', 'Zálohy', (string) $site['backup_note'], class: 'form__field--caps', attributes: ['placeholder' => 'denně · 03:00'], hint: 'Jen poznámka do přehledu, dokud plugin zálohy neumí zjistit.') ?>
                         </div>
                         <div class="row"><button class="btn btn--primary" type="submit">Uložit změny</button><a class="btn btn--ghost" href="<?= get_url($base) ?>">Zrušit</a></div>
                     </form>
+                </div>
+            </section>
+
+            <section class="card card--padded">
+                <div class="form">
+                    <div class="row" style="gap:14px;align-items:center">
+                        <?= get_site_avatar((int) $site['id'], (string) $site['name'], (string) $site['icon']) ?>
+                        <div>
+                            <div class="card__title">Ikona webu</div>
+                            <div class="card__note"><?= $this->e($iconNote) ?></div>
+                        </div>
+                    </div>
+                    <form method="post" action="<?= get_url($base . '/ikona') ?>" enctype="multipart/form-data" class="row" style="gap:10px;flex-wrap:wrap">
+                        <?php render_csrf($csrfToken) ?>
+                        <input class="form__control" type="file" name="icon" accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico" aria-label="Soubor s logem" style="flex:1;min-width:220px">
+                        <button type="submit" class="btn btn--secondary btn--sm"><?= get_btn_icon('plus') ?>Nahrát logo</button>
+                    </form>
+                    <div class="row" style="gap:10px">
+                        <form method="post" action="<?= get_url($base . '/ikona/stahnout') ?>"><?php render_csrf($csrfToken) ?><button type="submit" class="btn btn--ghost btn--sm"><?= get_btn_icon('refresh') ?>Stáhnout faviconu z webu</button></form>
+                        <?php if ((string) $site['icon'] !== ''): ?>
+                            <form method="post" action="<?= get_url($base . '/ikona/smazat') ?>"><?php render_csrf($csrfToken) ?><button type="submit" class="btn btn--ghost btn--sm"><?= get_btn_icon('trash') ?>Odebrat</button></form>
+                        <?php endif; ?>
+                    </div>
+                    <div class="form__hint">Logo má přednost před faviconou a automatika ho nepřepíše. PNG, JPG, WebP, GIF nebo ICO do 2 MB; SVG převeďte na PNG.</div>
                 </div>
             </section>
 

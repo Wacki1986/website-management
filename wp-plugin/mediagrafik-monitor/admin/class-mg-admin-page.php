@@ -7,7 +7,8 @@ if (!defined('ABSPATH')) {
 
 /**
  * Nastavení → MEDIAGRAFIK Monitor: vložení API klíče, adresa hubu,
- * kdy hub naposledy četl data, a tlačítko „Otestovat sběr dat".
+ * povolení přihlášení ze Správy webů, kdy hub naposledy četl data,
+ * a tlačítko „Otestovat sběr dat".
  *
  * Každá akce má nonce a kontrolu `manage_options`.
  */
@@ -51,6 +52,7 @@ final class MG_Admin_Page
             }
 
             update_option(MG_Monitor::OPTION_HUB_URL, $hub, false);
+            update_option(MG_Monitor::OPTION_ALLOW_LOGIN, isset($_POST['mg_monitor_allow_login']) ? '1' : '0', false);
             add_settings_error(self::SLUG, 'saved', $key !== '' ? 'Klíč je uložený. Ve Správě webů klikněte na „Zkontrolovat teď".' : 'Nastavení uloženo.', 'updated');
         }
 
@@ -101,6 +103,13 @@ final class MG_Admin_Page
                         <td>
                             <input type="url" class="regular-text code" id="mg_monitor_hub" name="mg_monitor_hub" value="<?php echo esc_attr($hub); ?>" placeholder="https://sprava.mediagrafik.cz">
                             <p class="description">Odtud si plugin bere své aktualizace. Nepovinné — bez vyplnění se použije výchozí adresa.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Přihlášení ze Správy webů</th>
+                        <td>
+                            <label><input type="checkbox" name="mg_monitor_allow_login" value="1"<?php checked(MG_Login::is_allowed()); ?>> Povolit přihlášení do administrace jedním klikem ze Správy webů</label>
+                            <p class="description">Správa si vyžádá jednorázový odkaz (platí minutu) a přihlásí správcovský účet studia bez hesla. Hesla se nikam neukládají.</p>
                         </td>
                     </tr>
                     <tr>

@@ -20,6 +20,7 @@ import { initPush } from './modules/push.js';
 import { initSelection } from './modules/selection.js';
 import { initSteppers } from './modules/stepper.js';
 import { initReportPreview } from './modules/report-preview.js';
+import { initPending } from './modules/pending.js';
 
 initToasts();
 initThemeToggle();
@@ -33,3 +34,4 @@ initPush();
 initSelection();
 initSteppers();
 initReportPreview();
+initPending();

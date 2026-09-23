@@ -15,7 +15,7 @@
  * @var array{date: string, countdown: string, overdue: bool, note: string}|null $next
  * @var string              $planNote
  * @var array{kind: string, frequency: string, estimate: string, year: string} $summary
- * @var array<int, array<string, mixed>> $logs
+ * @var array<int, array<string, mixed>> $logs  řádky historie; `progress` = „3 z 4 úkolů" (nebo ''), `editUrl` = úprava zápisu
  * @var string              $logsNote
  * @var string              $prefill
  * @var string              $csrfToken
@@ -43,9 +43,9 @@ $base = 'weby/' . (int) $site['id'];
                     <span class="form__label">1 · Druh servisu</span>
                     <div class="choice">
                         <?php foreach ($kinds as $code => $kind): ?>
-                            <label class="choice__item<?= $values['kind'] === $code ? ' choice__item--active' : '' ?>">
+                            <label class="choice__item">
                                 <input type="radio" name="kind" value="<?= $this->e($code) ?>"<?= $values['kind'] === $code ? ' checked' : '' ?> class="visually-hidden">
-                                <div class="choice__title"><?= get_icon($kind['icon'], 'icon--sm ' . ($values['kind'] === $code ? 'icon--brand' : 'icon--subtle')) ?><?= $this->e($kind['label']) ?></div>
+                                <div class="choice__title"><?= get_icon($kind['icon'], 'icon--sm icon--subtle') ?><?= $this->e($kind['label']) ?></div>
                                 <div class="choice__note"><?= $this->e($kind['note']) ?></div>
                                 <div class="text-caption"><?= $this->e($kind['estimate']) ?></div>
                             </label>
@@ -63,7 +63,7 @@ $base = 'weby/' . (int) $site['id'];
                         <span class="form__label">3 · Jak často se opakuje</span>
                         <div class="segmented">
                             <?php foreach ($frequencies as $code => $frequency): ?>
-                                <label class="segmented__item<?= $values['frequency'] === $code ? ' segmented__item--active' : '' ?>"><input type="radio" name="frequency" value="<?= $this->e($code) ?>"<?= $values['frequency'] === $code ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($frequency['label']) ?></label>
+                                <label class="segmented__item"><input type="radio" name="frequency" value="<?= $this->e($code) ?>"<?= $values['frequency'] === $code ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($frequency['label']) ?></label>
                             <?php endforeach; ?>
                         </div>
                         <div class="form__hint"><?= $values['first_date'] !== '' ? 'Další termíny: ' . mb_strtolower($this->e($frequencies[$values['frequency']]['label'])) . ' od ' . $this->e(get_czech_date($values['first_date'])) . '.' : 'Vyplňte první servis.' ?></div>
@@ -134,7 +134,7 @@ $base = 'weby/' . (int) $site['id'];
                     <div class="table__row">
                         <div class="table__cell table__cell--mono"><?= $this->e($log['date']) ?></div>
                         <div class="table__cell row" style="flex-wrap:nowrap;gap:9px"><?= get_icon($log['icon'], 'icon--sm ' . ($log['done'] ? 'icon--subtle' : 'icon--warning')) ?><span class="u-truncate"><?= $this->e($log['kindLabel']) ?></span></div>
-                        <div class="table__cell text-secondary" style="text-wrap:pretty"><?= $this->e((string) $log['description']) ?><?php if ((string) $log['user_name'] !== ''): ?><span class="text-caption"> · <?= $this->e((string) $log['user_name']) ?></span><?php endif; ?></div>
+                        <div class="table__cell text-secondary" style="text-wrap:pretty"><?= $this->e((string) $log['description']) ?><?php if ((string) $log['user_name'] !== ''): ?><span class="text-caption"> · <?= $this->e((string) $log['user_name']) ?></span><?php endif; ?><?php if ($log['progress'] !== ''): ?><span class="text-caption"> · <?= $this->e($log['progress']) ?></span><?php endif; ?> <a class="text-caption" href="<?= $log['editUrl'] ?>">Upravit</a></div>
                         <div class="table__cell table__cell--mono table__cell--right text-subtle"><?= $this->e($log['time']) ?></div>
                         <div class="table__cell row" style="justify-content:space-between;flex-wrap:nowrap">
                             <?= $log['done'] ? get_status('ok', 'Hotovo') : get_status('warning', 'Přeskočeno') ?>

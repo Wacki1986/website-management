@@ -10,6 +10,7 @@
  * @var string              $activeTab
  * @var array<string, int>  $values      klíče z MonitorSettings::DEFAULTS
  * @var string              $alertEmails
+ * @var string              $wpLoginUser výchozí účet pro přihlášení do webů
  * @var string|null         $cronToken   plný token (jen pro zkopírování do cPanelu)
  * @var string              $cronLine
  * @var array|null          $lastRun
@@ -22,13 +23,6 @@ $this->extend('layout/shell', ['title' => $title]);
 
 $form = $this->form();
 $intervals = [5 => '5 minut', 15 => '15 minut', 30 => '30 minut', 60 => '1 hodina'];
-$stepper = function (string $name, int $value, string $unit, int $min, int $max, int $step = 1) use ($form): string {
-    return '<div class="stepper" data-stepper>'
-        . '<button class="stepper__btn" type="button" data-stepper-down aria-label="Snížit">' . get_icon('minus', 'icon--sm') . '</button>'
-        . '<input class="stepper__value" type="number" name="' . $form::idFor($name) . '" value="' . $value . '" min="' . $min . '" max="' . $max . '" step="' . $step . '" data-stepper-unit="' . $unit . '" aria-label="' . $name . '">'
-        . '<button class="stepper__btn" type="button" data-stepper-up aria-label="Zvýšit">' . get_icon('plus', 'icon--sm') . '</button>'
-        . '</div>';
-};
 ?>
 <?= $this->partial('partials/settings-tabs', ['activeTab' => $activeTab]) ?>
 
@@ -47,7 +41,7 @@ $stepper = function (string $name, int $value, string $unit, int $min, int $max,
                         <span class="form__label form__label--caps">Frekvence kontrol</span>
                         <div class="segmented">
                             <?php foreach ($intervals as $minutes => $label): ?>
-                                <label class="segmented__item<?= $values['monitor_interval_min'] === $minutes ? ' segmented__item--active' : '' ?>"><input type="radio" name="monitor_interval_min" value="<?= $minutes ?>"<?= $values['monitor_interval_min'] === $minutes ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($label) ?></label>
+                                <label class="segmented__item"><input type="radio" name="monitor_interval_min" value="<?= $minutes ?>"<?= $values['monitor_interval_min'] === $minutes ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($label) ?></label>
                             <?php endforeach; ?>
                         </div>
                         <div class="form__hint">Každý web se zkontroluje každých <?= $values['monitor_interval_min'] ?> minut · <?= number_format($siteCount * intdiv(1440, max(1, $values['monitor_interval_min'])), 0, ',', ' ') ?> kontrol denně při <?= get_count($siteCount, 'webu', 'webech', 'webech') ?></div>
@@ -56,27 +50,27 @@ $stepper = function (string $name, int $value, string $unit, int $min, int $max,
                     <div class="form__row">
                         <div class="form__field">
                             <span class="form__label form__label--caps">Timeout odpovědi</span>
-                            <?= $stepper('monitor_timeout_s', $values['monitor_timeout_s'], 's', 3, 60) ?>
+                            <?= get_stepper('monitor_timeout_s', $values['monitor_timeout_s'], 3, 60, 's', 'Timeout odpovědi') ?>
                             <div class="form__hint">po této době se kontrola počítá jako selhaná</div>
                         </div>
                         <div class="form__field">
                             <span class="form__label form__label--caps">Selhání před alertem</span>
-                            <?= $stepper('monitor_fail_threshold', $values['monitor_fail_threshold'], '×', 1, 10) ?>
+                            <?= get_stepper('monitor_fail_threshold', $values['monitor_fail_threshold'], 1, 10, '×', 'Selhání před alertem') ?>
                             <div class="form__hint">chrání před falešným poplachem při krátkém výpadku</div>
                         </div>
                         <div class="form__field">
                             <span class="form__label form__label--caps">Historie kontrol</span>
-                            <?= $stepper('monitor_history_months', $values['monitor_history_months'], 'měsíců', 1, 60) ?>
+                            <?= get_stepper('monitor_history_months', $values['monitor_history_months'], 1, 60, 'měsíců', 'Historie kontrol') ?>
                             <div class="form__hint">starší záznamy se mažou, denní součty a reporty zůstávají</div>
                         </div>
                         <div class="form__field">
                             <span class="form__label form__label--caps">Data z pluginu</span>
-                            <?= $stepper('monitor_snapshot_hours', $values['monitor_snapshot_hours'], 'h', 1, 48) ?>
+                            <?= get_stepper('monitor_snapshot_hours', $values['monitor_snapshot_hours'], 1, 48, 'h', 'Data z pluginu') ?>
                             <div class="form__hint">jak často se stahují verze a pluginy z webu</div>
                         </div>
                         <div class="form__field">
                             <span class="form__label form__label--caps">Ranní souhrn v</span>
-                            <?= $stepper('monitor_digest_hour', $values['monitor_digest_hour'], 'h', 0, 23) ?>
+                            <?= get_stepper('monitor_digest_hour', $values['monitor_digest_hour'], 0, 23, 'h', 'Ranní souhrn v hodinu') ?>
                             <div class="form__hint">souhrn aktualizací a denní úklid</div>
                         </div>
                     </div>
@@ -84,6 +78,10 @@ $stepper = function (string $name, int $value, string $unit, int $min, int $max,
                     <?= $form->text('alert_emails', 'Alerty posílat na', $alertEmails, class: 'form__field--caps', measure: 'none',
                         attributes: ['placeholder' => 'studio@mediagrafik.cz, petra@mediagrafik.cz'],
                         hint: 'Více adres oddělte čárkou. Prázdné = jen upozornění na telefon.') ?>
+
+                    <?= $form->text('wp_login_user', 'Účet studia na webech', $wpLoginUser, class: 'form__field--caps', measure: 'none',
+                        attributes: ['placeholder' => 'mediagrafik', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
+                        hint: 'Uživatelské jméno (nebo e-mail) správcovského účtu, do kterého tlačítko „wp-admin" přihlásí bez hesla. U webu jde přepsat. Prázdné = tlačítko jen otevře přihlášení.') ?>
 
                     <div class="row"><button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Uložit nastavení</button></div>
                 </form>

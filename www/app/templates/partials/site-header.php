@@ -10,6 +10,7 @@
  * @var array{tone: string, label: string} $headerStatus
  * @var string              $host
  * @var string              $adminUrl
+ * @var array{action: string, user: string}|null $login přihlášení jedním klikem (null = jen odkaz na přihlášení)
  * @var string              $intervalLabel
  * @var array{title: string, text: string}|null $apiWarning
  * @var string              $csrfToken
@@ -35,7 +36,14 @@
             </div>
         </div>
         <div class="page-header__actions">
-            <a class="btn btn--secondary btn--sm" href="<?= $this->e($adminUrl) ?>" target="_blank" rel="noopener"><?= get_btn_icon('external') ?>wp-admin</a>
+            <?php if ($login !== null): ?>
+                <form method="post" action="<?= $login['action'] ?>" target="_blank">
+                    <?php render_csrf($csrfToken) ?>
+                    <button type="submit" class="btn btn--secondary btn--sm" title="Přihlásit jako <?= $this->e($login['user']) ?> — bez hesla"><?= get_btn_icon('external') ?>wp-admin</button>
+                </form>
+            <?php else: ?>
+                <a class="btn btn--secondary btn--sm" href="<?= $this->e($adminUrl) ?>" target="_blank" rel="noopener"><?= get_btn_icon('external') ?>wp-admin</a>
+            <?php endif; ?>
             <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>">
                 <?php render_csrf($csrfToken) ?>
                 <button type="submit" class="btn btn--primary btn--sm"><?= get_btn_icon('refresh') ?>Zkontrolovat teď</button>

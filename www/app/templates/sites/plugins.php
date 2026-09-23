@@ -2,9 +2,11 @@
 /**
  * Detail webu — Pluginy (návrh `detail-webu-pluginy.html`).
  *
- * v1 bez vzdálených akcí: „Aktualizovat vybrané" a akce v řádcích jsou
- * neaktivní s vysvětlením (rozhodnutí z plánu). Výběr řádků doplňuje
- * `selection.js`; bez skriptu jsou zaškrtávátka jen značky.
+ * Aktualizace jde bez skriptu: zaškrtávátka jsou skutečná pole formuláře
+ * `plugin-update`, řádkové „Aktualizovat" posílá jen svůj plugin
+ * (`name="plugin"`). Skript doplňuje počet vybraných v tlačítku a stav
+ * „Aktualizuji…" během čekání. „Smazat" u neaktivního pluginu vede na
+ * potvrzovací stránku.
  *
  * @var \App\Core\View\View $this
  * @var array               $site
@@ -12,6 +14,9 @@
  * @var string              $q
  * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}} $metrics
  * @var bool                $hasSnapshot
+ * @var ?string             $updateBlocked proč teď aktualizace nejde (null = jde)
+ * @var ?string             $deleteBlocked proč teď mazání nejde (null = jde; řádek pak má `deleteUrl`)
+ * @var int                 $maxUpdates    kolik pluginů najednou
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
@@ -48,32 +53,49 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
             <label class="search"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat plugin…" class="search__input" aria-label="Hledat plugin"></label>
             <div class="u-ml-auto row">
                 <noscript><button type="submit" class="btn btn--secondary btn--sm">Hledat</button></noscript>
-                <button class="btn btn--primary btn--sm" type="button" disabled title="Vzdálené aktualizace připravujeme — zatím aktualizujte přímo ve wp-admin." data-selection-button>Aktualizovat vybrané</button>
+                <button class="btn btn--primary btn--sm" type="submit" form="plugin-update" data-selection-button data-pending-label="Aktualizuji…"<?= $updateBlocked !== null ? ' disabled title="' . $this->e($updateBlocked) . '"' : ' title="Nejvýš ' . $maxUpdates . ' najednou"' ?>>Aktualizovat vybrané</button>
             </div>
         </form>
 
         <?php if ($rows === []): ?>
             <?php render_empty($hasSnapshot ? 'Žádný plugin neodpovídá hledání' : 'Zatím žádná data', $hasSnapshot ? 'Zkuste jiný název.' : 'Seznam pluginů dorazí s první kontrolou přes plugin MEDIAGRAFIK Monitor.', 'plugin') ?>
         <?php else: ?>
-            <div class="table table--plugins" data-selection>
-                <div class="table__head">
-                    <div><button class="checkbox" type="button" role="checkbox" aria-checked="false" data-selection-all><span class="checkbox__mark"></span></button></div>
-                    <div>Plugin</div><div>Stav</div><div>Verze</div><div>Dostupná</div><div class="table__cell table__cell--right">Akce</div>
-                </div>
-                <?php foreach ($rows as $plugin): ?>
-                    <div class="table__row<?= $plugin['inactive'] ? ' table__row--error' : '' ?>">
-                        <div class="table__cell"><button class="checkbox" type="button" role="checkbox" aria-checked="false" data-selection-item><span class="checkbox__mark"></span></button></div>
-                        <div class="table__cell">
-                            <div class="table__primary u-truncate"><?= $this->e((string) $plugin['name']) ?></div>
-                            <div class="table__secondary u-truncate"><?= $this->e((string) $plugin['author']) ?></div>
-                        </div>
-                        <div class="table__cell"><?= $plugin['inactive'] ? get_status('error', 'Neaktivní · riziko') : get_status('ok', 'Aktivní') ?></div>
-                        <div class="table__cell table__cell--mono u-hide-mobile"><?= $this->e((string) $plugin['version']) ?></div>
-                        <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>"><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
-                        <div class="table__cell table__cell--right u-hide-mobile text-faint" style="font-size:var(--font-size-label)"><?= $plugin['action'] !== '' ? $this->e($plugin['action']) . ' (v2)' : '' ?></div>
+            <form id="plugin-update" method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/pluginy/aktualizovat') ?>" data-selection data-pending>
+                <?php render_csrf($csrfToken) ?>
+                <div class="table table--plugins">
+                    <div class="table__head">
+                        <div><button class="checkbox" type="button" role="checkbox" aria-checked="false" aria-label="Vybrat vše k aktualizaci" data-selection-all><span class="checkbox__mark"></span></button></div>
+                        <div>Plugin</div><div>Stav</div><div>Verze</div><div>Dostupná</div><div class="table__cell table__cell--right">Akce</div>
                     </div>
-                <?php endforeach; ?>
-            </div>
+                    <?php foreach ($rows as $plugin): ?>
+                        <div class="table__row<?= $plugin['inactive'] ? ' table__row--error' : '' ?>">
+                            <div class="table__cell">
+                                <?php if ($plugin['updatable']): ?>
+                                    <label class="checkbox checkbox--input"><input type="checkbox" name="plugins[]" value="<?= $this->e((string) $plugin['file']) ?>" data-selection-item class="visually-hidden" aria-label="Vybrat <?= $this->e((string) $plugin['name']) ?>"<?= $updateBlocked !== null ? ' disabled' : '' ?>><span class="checkbox__mark"></span></label>
+                                <?php endif; ?>
+                            </div>
+                            <div class="table__cell">
+                                <div class="table__primary u-truncate"><?= $this->e((string) $plugin['name']) ?></div>
+                                <div class="table__secondary u-truncate"><?= $this->e((string) $plugin['author']) ?></div>
+                            </div>
+                            <div class="table__cell"><?= $plugin['inactive'] ? get_status('error', 'Neaktivní · riziko') : get_status('ok', 'Aktivní') ?></div>
+                            <div class="table__cell table__cell--mono u-hide-mobile"><?= $this->e((string) $plugin['version']) ?></div>
+                            <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>"><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
+                            <div class="table__cell table__cell--right u-hide-mobile">
+                                <?php if ($plugin['updatable'] && $updateBlocked === null): ?>
+                                    <button type="submit" name="plugin" value="<?= $this->e((string) $plugin['file']) ?>" class="btn--link" data-pending-label="Aktualizuji…">Aktualizovat</button>
+                                <?php elseif ($plugin['updatable']): ?>
+                                    <span class="text-faint" style="font-size:var(--font-size-label)" title="<?= $this->e($updateBlocked) ?>">Aktualizovat</span>
+                                <?php elseif ($plugin['deleteUrl'] !== null): ?>
+                                    <a href="<?= $plugin['deleteUrl'] ?>">Smazat</a>
+                                <?php elseif ($plugin['inactive'] && $deleteBlocked !== null): ?>
+                                    <span class="text-faint" style="font-size:var(--font-size-label)" title="<?= $this->e($deleteBlocked) ?>">Smazat</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </form>
         <?php endif; ?>
     </section>
 </div>

@@ -8,9 +8,11 @@ use App\Core\Events\EventLog;
 use App\Core\Monitor\AlertRepository;
 use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\SecurityAudit;
+use App\Core\Monitor\SnapshotImporter;
 use App\Core\Monitor\UptimeRepository;
 use App\Core\Service\ServiceRepository;
 use App\Core\Service\ServiceSchedule;
+use App\Core\Sites\ContentFreshness;
 use App\Core\Sites\SiteRepository;
 use DateTimeImmutable;
 
@@ -32,6 +34,7 @@ final class ReportBuilder
         private readonly EventLog $events,
         private readonly ServiceRepository $service,
         private readonly SecurityAudit $security,
+        private readonly SnapshotImporter $snapshots,
     ) {
     }
 
@@ -213,6 +216,7 @@ final class ReportBuilder
                 'noteLabel' => $coreUpdates !== [] ? 'včetně WordPressu' : ($updatesTotal > 0 ? 'doplňky webu' : 'nic nečekalo'),
             ],
             'done' => $done,
+            'content' => $this->content($siteId, $today),
             'services' => $services,
             'nextService' => $nextService,
             'recommendations' => $recommendations,
@@ -232,6 +236,68 @@ final class ReportBuilder
                 $outages !== [] ? get_count(count($outages), 'výpadek', 'výpadky', 'výpadků') : null,
                 $services !== [] ? get_count(count($services), 'servis', 'servisy', 'servisů') : null,
             ])),
+        ];
+    }
+
+    /**
+     * Sekce „Obsah webu": typy obsahu z posledních dat pluginu, kdy naposledy
+     * něco přibylo, a výzva ke spolupráci, když web obsahově stojí.
+     *
+     * Stáří se počítá k datu reportu (ne k datu načtení dat), měřítko je
+     * stejné jako na záložce Obsah (`ContentFreshness`). O celkovém stavu
+     * rozhoduje nejčerstvější typ — když klient píše aspoň novinky, web žije.
+     *
+     * @return array{types: array<int, array<string, mixed>>, freshestDays: ?int, tone: string, invite: ?array{title: string, text: string}}
+     */
+    private function content(int $siteId, string $today): array
+    {
+        $snapshot = $this->snapshots->snapshot($siteId);
+        $types = [];
+        $freshest = null;
+
+        foreach ((array) ($snapshot['data']['content']['post_types'] ?? []) as $type) {
+            $published = (int) ($type['published'] ?? 0);
+
+            // Prázdné typy (nepoužívané šablonou) klienta nezajímají.
+            if ($published === 0) {
+                continue;
+            }
+
+            $latest = is_array($type['latest'] ?? null) ? $type['latest'] : null;
+            $date = $latest !== null ? (string) ($latest['date'] ?? '') : '';
+            $days = $date !== '' ? ContentFreshness::daysSince($date, $today) : null;
+
+            $types[] = [
+                'label' => (string) ($type['label'] ?? $type['slug'] ?? ''),
+                'published' => $published,
+                'latestTitle' => $latest !== null ? ContentFreshness::title((string) ($latest['title'] ?? '')) : '',
+                'days' => $days,
+                'tone' => ContentFreshness::tone($days),
+                'ageLabel' => $days !== null ? 'naposledy ' . ContentFreshness::ageLabel($days) : 'bez data',
+            ];
+
+            if ($days !== null && ($freshest === null || $days < $freshest)) {
+                $freshest = $days;
+            }
+        }
+
+        $tone = ContentFreshness::tone($freshest);
+
+        return [
+            'types' => $types,
+            'freshestDays' => $freshest,
+            'tone' => $tone,
+            'invite' => match ($tone) {
+                'warning' => [
+                    'title' => 'Web by si zasloužil něco nového',
+                    'text' => 'Poslední obsah na webu přibyl před ' . $freshest . ' dny. Pravidelné novinky pomáhají ve vyhledávačích i u návštěvníků. Ozvěte se — rádi s vámi projdeme nápady, texty nebo fotky a na webu můžeme pracovat společně.',
+                ],
+                'error' => [
+                    'title' => 'Web obsahově stojí',
+                    'text' => 'Na webu už ' . $freshest . ' dní nepřibylo nic nového a návštěvníci i vyhledávače to poznají. Ozvěte se — domluvíme se, jak web oživit, a můžeme na něm pracovat společně.',
+                ],
+                default => null,
+            },
         ];
     }
 

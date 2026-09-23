@@ -34,7 +34,7 @@ $base = 'weby/' . (int) $site['id'];
             <span class="form__label">Jak často</span>
             <div class="segmented">
                 <?php foreach ($frequencies as $code => $frequency): ?>
-                    <label class="segmented__item<?= $report['frequency'] === $code ? ' segmented__item--active' : '' ?>"><input type="radio" name="frequency" value="<?= $this->e($code) ?>"<?= $report['frequency'] === $code ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($frequency['label']) ?></label>
+                    <label class="segmented__item"><input type="radio" name="frequency" value="<?= $this->e($code) ?>"<?= $report['frequency'] === $code ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($frequency['label']) ?></label>
                 <?php endforeach; ?>
             </div>
             <div class="form__hint"><?= $this->e($frequencies[$report['frequency']]['note'] ?? '') ?><?= $report['frequency'] !== 'manual' ? ' Odchází automaticky ' . $this->e(mb_strtolower(\App\Core\Reports\ReportSchedule::describe($report['frequency'], $report['send_day'], $report['send_hour']))) . '.' : '' ?></div>

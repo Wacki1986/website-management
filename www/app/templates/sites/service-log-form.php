@@ -1,16 +1,25 @@
 <?php
 /**
- * Zápis provedeného servisu — formulář (návrh ho nemá; skládá se z karty
- * plánu servisu). Po uložení se posune další termín plánu.
+ * Zápis servisu — nový i úprava (návrh ho nemá; skládá se z karty plánu
+ * servisu). Nový hotový servis posune další termín plánu, úprava ne.
+ *
+ * Checklist se vykreslí pro každý druh servisu; vidět je jen ten, jehož
+ * druh je vybraný (`.service-checklist` + `:has` v `app/_extras.scss`),
+ * takže přepnutí druhu funguje bez skriptu. Odešle se jen checklist
+ * vybraného druhu — ostatní controller zahodí.
  *
  * @var \App\Core\View\View  $this
  * @var array                $site
  * @var array<string, array{label: string, note: string, estimate: string, minutes: int, icon: string}> $kinds
  * @var array{performed_on: string, kind: string, description: string, minutes: ?int, status: string} $values
+ * @var array<string, array<int, array{label: string, done: bool}>> $checklists úkoly po druzích servisu
  * @var array<string,string> $errors
+ * @var bool                 $isEdit      úprava existujícího zápisu
+ * @var string               $formAction  adresa formuláře (už escapovaná)
+ * @var string               $editedNote  kdo a kdy zápis vytvořil / upravil (jen u úpravy)
  * @var string               $csrfToken
  */
-$this->extend('layout/shell', ['title' => $site['name'] . ' — Zapsat servis']);
+$this->extend('layout/shell', ['title' => $site['name'] . ' — ' . ($isEdit ? 'Upravit servis' : 'Zapsat servis')]);
 
 $form = $this->form($errors, array_key_first($errors));
 $base = 'weby/' . (int) $site['id'];
@@ -20,11 +29,11 @@ $base = 'weby/' . (int) $site['id'];
 <div class="app__content">
     <div class="split split--settings">
         <section class="card card--padded">
-            <form method="post" action="<?= get_url($base . '/servis/zapsat') ?>" class="form">
+            <form method="post" action="<?= $formAction ?>" class="form">
                 <?php render_csrf($csrfToken) ?>
                 <div>
-                    <div class="card__title">Zapsat provedený servis</div>
-                    <div class="card__note">Co napíšete, uvidí klient v reportu — pište lidsky, ne technicky.</div>
+                    <div class="card__title"><?= $isEdit ? 'Upravit záznam servisu' : 'Zapsat provedený servis' ?></div>
+                    <div class="card__note"><?= $isEdit ? $this->e($editedNote) : 'Co napíšete, uvidí klient v reportu — pište lidsky, ne technicky.' ?></div>
                 </div>
 
                 <?php if ($errors !== []): ?>
@@ -35,13 +44,29 @@ $base = 'weby/' . (int) $site['id'];
                     <span class="form__label">Druh servisu</span>
                     <div class="choice">
                         <?php foreach ($kinds as $code => $kind): ?>
-                            <label class="choice__item<?= $values['kind'] === $code ? ' choice__item--active' : '' ?>">
+                            <label class="choice__item">
                                 <input type="radio" name="kind" value="<?= $this->e($code) ?>"<?= $values['kind'] === $code ? ' checked' : '' ?> class="visually-hidden">
-                                <div class="choice__title"><?= get_icon($kind['icon'], 'icon--sm ' . ($values['kind'] === $code ? 'icon--brand' : 'icon--subtle')) ?><?= $this->e($kind['label']) ?></div>
+                                <div class="choice__title"><?= get_icon($kind['icon'], 'icon--sm icon--subtle') ?><?= $this->e($kind['label']) ?></div>
                                 <div class="text-caption"><?= $this->e($kind['estimate']) ?></div>
                             </label>
                         <?php endforeach; ?>
                     </div>
+                </div>
+
+                <div class="form__field">
+                    <span class="form__label">Co se má udělat</span>
+                    <?php foreach ($checklists as $code => $items): ?>
+                        <div class="service-checklist service-checklist--<?= $this->e($code) ?>">
+                            <div class="service-checklist__title"><?= $this->e($kinds[$code]['label']) ?></div>
+                            <?php if ($items === []): ?>
+                                <div class="form__hint">Tenhle druh servisu nemá seznam úkolů.</div>
+                            <?php endif; ?>
+                            <?php foreach ($items as $i => $item): ?>
+                                <label class="form__check"><input type="checkbox" name="done[<?= $this->e($code) ?>][]" value="<?= $i ?>"<?= $item['done'] ? ' checked' : '' ?>><span><?= $this->e($item['label']) ?></span></label>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
+                    <div class="form__hint">Seznam úkolů pro každý druh upravíte v <a href="<?= get_url('nastaveni/servis') ?>">Nastavení → Servis</a>. Co nestihnete teď, odškrtnete později úpravou zápisu.</div>
                 </div>
 
                 <div class="form__row">
@@ -56,21 +81,23 @@ $base = 'weby/' . (int) $site['id'];
                 <div class="form__field">
                     <span class="form__label form__label--caps">Stav</span>
                     <div class="segmented" style="max-width:320px">
-                        <label class="segmented__item<?= $values['status'] === 'done' ? ' segmented__item--active' : '' ?>"><input type="radio" name="status" value="done"<?= $values['status'] === 'done' ? ' checked' : '' ?> class="visually-hidden">Hotovo</label>
-                        <label class="segmented__item<?= $values['status'] === 'skipped' ? ' segmented__item--active' : '' ?>"><input type="radio" name="status" value="skipped"<?= $values['status'] === 'skipped' ? ' checked' : '' ?> class="visually-hidden">Přeskočeno</label>
+                        <label class="segmented__item"><input type="radio" name="status" value="done"<?= $values['status'] === 'done' ? ' checked' : '' ?> class="visually-hidden">Hotovo</label>
+                        <label class="segmented__item"><input type="radio" name="status" value="skipped"<?= $values['status'] === 'skipped' ? ' checked' : '' ?> class="visually-hidden">Přeskočeno</label>
                     </div>
                     <div class="form__hint">Přeskočený servis se do reportu nepíše a termín neposouvá — jen vysvětluje mezeru v historii.</div>
                 </div>
 
                 <div class="row">
-                    <button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Zapsat servis</button>
+                    <button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?><?= $isEdit ? 'Uložit změny' : 'Zapsat servis' ?></button>
                     <a class="btn btn--ghost" href="<?= get_url($base . '/servis') ?>">Zrušit</a>
                 </div>
             </form>
         </section>
 
         <aside class="split__aside">
-            <div class="card card--note">Hotový servis posune další termín plánu na nejbližší v rytmu. Zapsané minuty se sčítají do „Servisů letos" v přehledu.</div>
+            <div class="card card--note"><?= $isEdit
+                ? 'Úprava termín plánu neposouvá — ten posunul už původní zápis. Změny se projeví v příštím reportu, který ještě neodešel.'
+                : 'Hotový servis posune další termín plánu na nejbližší v rytmu. Zapsané minuty se sčítají do „Servisů letos" v přehledu.' ?></div>
         </aside>
     </div>
 </div>

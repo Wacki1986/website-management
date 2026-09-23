@@ -145,6 +145,29 @@ function get_avatar(string $name, string $seed = '', string $size = ''): string
 }
 
 /**
+ * Avatar webu: ikona (favicona nebo nahrané logo), jinak iniciály.
+ *
+ * `?v=` je kus jména souboru — nová ikona má nové jméno, takže výdejová
+ * routa může posílat roční cache.
+ *
+ * @param string $icon jméno souboru ikony (`sites.icon`), prázdné = iniciály
+ */
+function get_site_avatar(int $siteId, string $name, string $icon, string $size = ''): string
+{
+    if ($icon === '') {
+        return get_avatar($name, '', $size);
+    }
+
+    return sprintf(
+        '<img class="avatar avatar--icon%s" src="%s?v=%s" alt="" title="%s" loading="lazy">',
+        $size === 'sm' ? ' avatar--sm' : '',
+        get_url('weby/' . $siteId . '/ikona'),
+        Format::plain(substr(md5($icon), 0, 8)),
+        Format::plain($name),
+    );
+}
+
+/**
  * Prázdný stav tabulky nebo seznamu (`.empty` z návrhu).
  *
  * @param string $actions hotové HTML tlačítek pod textem (nebo prázdné)
@@ -246,18 +269,54 @@ function get_tabs(array $tabs, string $active): string
 }
 
 /**
+ * Krokovací číselné pole (`.stepper` z návrhu) s jednotkou za číslem.
+ *
+ * Návrh kreslí „30 dní" v jednom rámečku; skutečné `<input type="number">`
+ * text neumí, takže rámeček nese obal `label.stepper__field` a jednotka je
+ * vedle pole (klik na ni pole aktivuje, neodesílá se). Tlačítka +/−
+ * oživuje `stepper.js`, bez skriptu se píše rovnou do pole.
+ *
+ * @param string $unit  jednotka („dní", „h"), prázdná = jen číslo
+ * @param string $label popisek pro čtečky obrazovky
+ * @param string $class doplňkové třídy obalu (`stepper--sm`, `stepper--off`)
+ */
+function get_stepper(string $name, int $value, int $min, int $max, string $unit = '', string $label = '', int $step = 1, string $class = ''): string
+{
+    return '<div class="stepper' . ($class !== '' ? ' ' . Format::plain($class) : '') . '" data-stepper>'
+        . '<button class="stepper__btn" type="button" data-stepper-down aria-label="Snížit">' . get_icon('minus', 'icon--sm') . '</button>'
+        // --digits: pole je široké přesně na nejdelší povolenou hodnotu.
+        . '<label class="stepper__field" style="--digits:' . strlen((string) $max) . '">'
+        . sprintf(
+            '<input class="stepper__value" type="number" name="%s" value="%d" min="%d" max="%d" step="%d" aria-label="%s">',
+            Format::plain($name),
+            $value,
+            $min,
+            $max,
+            $step,
+            Format::plain(trim($label . ($unit !== '' ? ' (' . $unit . ')' : ''))),
+        )
+        . ($unit !== '' ? '<span class="stepper__unit" aria-hidden="true">' . Format::plain($unit) . '</span>' : '')
+        . '</label>'
+        . '<button class="stepper__btn" type="button" data-stepper-up aria-label="Zvýšit">' . get_icon('plus', 'icon--sm') . '</button>'
+        . '</div>';
+}
+
+/**
  * Přepínač zapnuto/vypnuto pro formulář bez JavaScriptu.
  *
  * Návrh má `.toggle` jako tlačítko; tady je to `<label>` se skrytým
  * zaškrtávátkem, stav kreslí CSS přes `:has(:checked)`. Odesílá se jako
  * obyčejné pole formuláře — nic se neděje bez uložení.
+ *
+ * `$value` je potřeba u skupiny přepínačů se stejným jménem (`sections[]`):
+ * s výchozí „1" by server dostal jen `['1', '1']` a nepoznal, které jsou zapnuté.
  */
-function get_toggle(string $name, bool $on, string $label = ''): string
+function get_toggle(string $name, bool $on, string $label = '', string $value = '1'): string
 {
     return sprintf(
-        '<label class="toggle%s"><input class="toggle__input" type="checkbox" name="%s" value="1"%s aria-label="%s"><span class="toggle__knob"></span></label>',
-        $on ? ' toggle--on' : '',
+        '<label class="toggle"><input class="toggle__input" type="checkbox" name="%s" value="%s"%s aria-label="%s"><span class="toggle__knob"></span></label>',
         Format::plain($name),
+        Format::plain($value),
         $on ? ' checked' : '',
         Format::plain($label),
     );

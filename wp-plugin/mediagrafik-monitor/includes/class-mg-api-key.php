@@ -61,11 +61,11 @@ final class MG_Api_Key
     }
 
     /**
-     * Podpis mutujících požadavků (připraveno pro v2 — akce s pluginy).
+     * Podpis mutujících požadavků (aktualizace pluginů).
      *
      * `X-MG-Timestamp` + `X-MG-Signature` = HMAC-SHA256(klíč, metoda \n cesta
-     * \n timestamp \n tělo). Okno ±5 minut. V1 žádnou mutující routu
-     * neregistruje, takže se metoda zatím nevolá.
+     * \n timestamp \n tělo). Okno ±5 minut. Protějšek v hubu:
+     * `PluginClient::signature()`.
      *
      * @param WP_REST_Request $request
      * @param string          $key     čitelný klíč (jen hub ho zná — sem se

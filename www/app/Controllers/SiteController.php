@@ -11,10 +11,14 @@ use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\PluginClient;
 use App\Core\Reports\ReportSchedule;
 use App\Core\Security\RateLimiter;
 use App\Core\Service\ServiceSchedule;
 use App\Core\Sites\ApiKey;
+use App\Core\Sites\ContentFreshness;
+use App\Core\Sites\SiteActions;
+use App\Core\Sites\SiteIcons;
 use App\Core\Sites\SiteRepository;
 use App\Core\Sites\SiteStatus;
 use App\Core\Views\Pagination;
@@ -24,8 +28,8 @@ use App\Core\Views\Pagination;
  * `weby*.html`, `detail-webu-*.html`). Každá záložka je vlastní URL.
  *
  * Záložky Servis a Reporty mají vlastní controllery (etapy P3, P4).
- * Vzdálené akce na pluginech (aktualizovat, smazat) jsou v1 jen
- * neaktivní tlačítka — API pluginu na ně má připravený prostor.
+ * Akce, které na webu něco mění (aktualizace a mazání pluginů, aktualizace
+ * WordPressu), má vlastní `SiteActionController`; tady se jen nabízejí.
  */
 final class SiteController extends Controller
 {
@@ -132,12 +136,10 @@ final class SiteController extends Controller
         ];
         $errors = [];
 
-        if ($values['url'] === '') {
-            $errors['url'] = 'Zadejte adresu webu, třeba kavarnadobra.cz.';
-        } elseif (str_starts_with($values['url'], 'http://') && !$this->kernel->env('allow_insecure_sites', false)) {
-            $errors['url'] = 'Web musí běžet na https:// — přes http by API klíč šel po síti nešifrovaně.';
-        } elseif ($this->kernel->sites()->findByUrl($values['url']) !== null) {
-            $errors['url'] = 'Tenhle web už v monitoringu je.';
+        $urlError = $this->urlError($values['url']);
+
+        if ($urlError !== null) {
+            $errors['url'] = $urlError;
         }
 
         if ($values['name'] === '') {
@@ -201,7 +203,13 @@ final class SiteController extends Controller
         if ($snapshot !== null) {
             $phpEol = PhpSupport::isEol((string) $snapshot['php_version'], $now);
             $metrics = [
-                'wp' => ['value' => (string) $snapshot['wp_version'], 'update' => $snapshot['wp_update_version']],
+                'wp' => [
+                    'value' => (string) $snapshot['wp_version'],
+                    'update' => $snapshot['wp_update_version'],
+                    'updateUrl' => $snapshot['wp_update_version'] !== null && SiteActions::blocked($site, $snapshot, PluginClient::ACTION_CORE_UPDATE) === null
+                        ? get_url('weby/' . (int) $id . '/wordpress')
+                        : null,
+                ],
                 'php' => ['value' => (string) $snapshot['php_version'], 'eol' => $phpEol, 'daysLeft' => PhpSupport::daysLeft((string) $snapshot['php_version'], $now)],
                 'db' => ['value' => trim($snapshot['db_type'] . ' ' . PhpSupport::minor((string) $snapshot['db_version'])), 'size' => $snapshot['db_size_mb'] !== null ? $snapshot['db_size_mb'] . ' MB' : ''],
                 'theme' => ['value' => (string) $snapshot['theme_name'], 'note' => trim($snapshot['theme_version'] . ((int) $snapshot['theme_is_child'] === 1 ? ' · child theme' : ''))],
@@ -256,14 +264,22 @@ final class SiteController extends Controller
         $site = $this->siteOr404((int) $id);
         $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
         $q = $this->request()->string('q');
+        $plugins = $this->kernel->snapshots()->plugins((int) $id, $q);
+        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version());
+        $deleteBlocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_DELETE);
         $rows = [];
         $latestUpdate = null;
 
-        foreach ($this->kernel->snapshots()->plugins((int) $id, $q) as $plugin) {
-            $rows[] = $plugin + [
+        foreach ($plugins as $plugin) {
+            $file = (string) $plugin['file'];
+            $rows[] = [
                 'inactive' => (int) $plugin['is_active'] !== 1,
-                'action' => (int) $plugin['has_update'] === 1 ? 'Aktualizovat' : ((int) $plugin['is_active'] !== 1 ? 'Smazat' : ''),
-            ];
+                'updatable' => isset($updatable[$file]),
+                'new_version' => $updatable[$file]['new_version'] ?? $plugin['new_version'],
+                'deleteUrl' => $deleteBlocked === null && SiteActions::isDeletable($plugin)
+                    ? get_url('weby/' . (int) $id . '/pluginy/smazat?plugin=' . rawurlencode($file))
+                    : null,
+            ] + $plugin;
 
             if ($plugin['version_changed_at'] !== null && ($latestUpdate === null || $plugin['version_changed_at'] > $latestUpdate['at'])) {
                 $latestUpdate = ['at' => (string) $plugin['version_changed_at'], 'name' => $plugin['name'] . ' ' . $plugin['version']];
@@ -285,6 +301,9 @@ final class SiteController extends Controller
                 'latestUpdate' => $latestUpdate,
             ],
             'hasSnapshot' => $snapshot !== null,
+            'updateBlocked' => SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_UPDATE),
+            'deleteBlocked' => $deleteBlocked,
+            'maxUpdates' => PluginClient::MAX_UPDATES,
         ]);
     }
 
@@ -303,10 +322,8 @@ final class SiteController extends Controller
                 'slug' => (string) ($type['slug'] ?? ''),
                 'published' => (int) ($type['published'] ?? 0),
                 'drafts' => (int) ($type['drafts'] ?? 0),
-                'latestTitle' => $latest !== null ? (string) ($latest['title'] ?? '') : '—',
-                'age' => $daysAgo === null ? ['tone' => 'muted', 'label' => 'bez obsahu']
-                    : ['tone' => $daysAgo < 30 ? 'ok' : ($daysAgo < 90 ? 'warning' : 'error'),
-                        'label' => $daysAgo === 0 ? 'dnes' : ($daysAgo === 1 ? 'včera' : 'před ' . $daysAgo . ' dny')],
+                'latestTitle' => $latest !== null ? ContentFreshness::title((string) ($latest['title'] ?? '')) : '—',
+                'age' => ['tone' => ContentFreshness::tone($daysAgo), 'label' => $daysAgo === null ? 'bez obsahu' : ContentFreshness::ageLabel($daysAgo)],
             ];
         }
 
@@ -397,18 +414,40 @@ final class SiteController extends Controller
             'intervals' => SiteRepository::INTERVALS,
             'pluginVersion' => $this->kernel->pluginDistribution()->version(),
             'pluginInfoUrl' => $this->kernel->appUrl('plugin/mediagrafik-monitor/plugin-info.json'),
+            'defaultLoginUser' => $this->kernel->settings()->get(SiteActions::LOGIN_USER_SETTING),
+            'iconNote' => match (true) {
+                (string) $site['icon_source'] === SiteIcons::SOURCE_MANUAL => 'Nahrané logo — v seznamech místo favicony.',
+                (string) $site['icon'] !== '' => 'Favicona stažená z webu' . ($site['icon_checked_at'] !== null ? ' ' . get_when((string) $site['icon_checked_at']) : '') . '. Obnovuje se jednou týdně.',
+                $site['icon_checked_at'] !== null => 'Web žádnou ikonu nemá — v seznamech jsou iniciály. Můžete nahrát logo.',
+                default => 'Zatím nezjištěno — favicona se stáhne při příští kontrole.',
+            },
         ]);
     }
 
+    /**
+     * Uložení nastavení webu včetně změny adresy. Web zůstává týž záznam —
+     * historie, uptime, servis, reporty i API klíč se změnou adresy
+     * nemění (plugin na webu adresu nezná). Vynulují se jen údaje vázané
+     * na doménu (certifikát, registrace), ať je monitor ověří znovu.
+     */
     public function update(string $id): Response
     {
         $site = $this->siteOr404((int) $id);
         $request = $this->request();
+        $url = SiteRepository::normalizeUrl($request->string('url'));
+        $urlChanged = $url !== (string) $site['url'];
+        $urlError = $urlChanged ? $this->urlError($url, (int) $id) : null;
+
+        if ($urlError !== null) {
+            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', $urlError, 'error');
+        }
+
         $data = [
             'name' => mb_substr($request->string('name'), 0, 150) ?: (string) $site['name'],
             'client_id' => $request->int('client_id'),
             'check_interval_min' => isset(SiteRepository::INTERVALS[$request->int('check_interval_min', 15)]) ? $request->int('check_interval_min', 15) : 15,
             'admin_url' => mb_substr($request->string('admin_url'), 0, 255),
+            'wp_login_user' => mb_substr($request->string('wp_login_user'), 0, 100),
             'hosting_note' => mb_substr($request->string('hosting_note'), 0, 120),
             'backup_note' => mb_substr($request->string('backup_note'), 0, 120),
         ];
@@ -417,10 +456,34 @@ final class SiteController extends Controller
             $data['client_id'] = null;
         }
 
-        $this->kernel->sites()->update((int) $id, $data);
-        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Upraveno nastavení webu');
+        if ($urlChanged) {
+            $data += [
+                'url' => $url,
+                'ssl_valid_to' => null,
+                'ssl_issuer' => null,
+                'ssl_checked_at' => null,
+                'ssl_error' => null,
+                'domain_expires_on' => null,
+                'domain_checked_at' => null,
+                'last_error' => null,
+                // Favicona se ověří znovu na nové adrese (nahrané logo zůstává).
+                'icon_checked_at' => null,
+            ];
+        }
 
-        return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Nastavení webu je uložené.');
+        $this->kernel->sites()->update((int) $id, $data);
+
+        if (!$urlChanged) {
+            $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Upraveno nastavení webu');
+
+            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Nastavení webu je uložené.');
+        }
+
+        $change = (string) $site['url'] . ' → ' . $url;
+        $this->kernel->events()->record((int) $id, EventLog::KIND_SETTINGS, 'ok', 'Adresa webu změněna: ' . $change, ['from' => $site['url'], 'to' => $url], $this->actorName());
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Změněna adresa webu: ' . $change);
+
+        return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Adresa webu je změněná na ' . $url . '. Historie zůstala; klikněte na „Zkontrolovat teď", ať se nová adresa hned ověří.');
     }
 
     /** Přepínače hlídání — tři samostatné toggle, jeden formulář. */
@@ -454,6 +517,74 @@ final class SiteController extends Controller
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_KEY, true, 'Nový API klíč');
 
         return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Nový klíč je vygenerovaný. Starý přestal platit — vložte nový do pluginu na webu.');
+    }
+
+    // -----------------------------------------------------------------
+    // Ikona webu
+    // -----------------------------------------------------------------
+
+    /** Výdej ikony — jen přihlášeným; `?v=` v adrese se mění s každou novou ikonou. */
+    public function icon(string $id): Response
+    {
+        $site = $this->kernel->sites()->find((int) $id);
+        $fileName = (string) ($site['icon'] ?? '');
+        $path = $fileName !== '' ? $this->kernel->siteIcons()->absolutePath($fileName) : '';
+
+        if ($path === '' || !is_file($path)) {
+            throw HttpException::notFound('Web ikonu nemá.');
+        }
+
+        return Response::stream(
+            static function () use ($path): void {
+                readfile($path);
+            },
+            [
+                'Content-Type' => SiteIcons::mimeOf($fileName),
+                'Content-Length' => (string) filesize($path),
+                'Cache-Control' => 'private, max-age=31536000, immutable',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+        );
+    }
+
+    public function uploadIcon(string $id): Response
+    {
+        $site = $this->siteOr404((int) $id);
+
+        try {
+            $this->kernel->siteIcons()->upload((int) $id, $this->request()->files['icon'] ?? null);
+        } catch (HttpException $e) {
+            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', $e->getMessage(), 'error');
+        }
+
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Nahráno logo webu');
+
+        return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Logo je nahrané — v seznamech ho uvidíte místo favicony.');
+    }
+
+    /** „Stáhnout z webu" — i přes ručně nahrané logo (to se tím nahradí). */
+    public function refreshIcon(string $id): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $icons = $this->kernel->siteIcons();
+
+        if ((string) $site['icon_source'] === SiteIcons::SOURCE_MANUAL) {
+            $icons->remove((int) $id);
+            $site = $this->siteOr404((int) $id);
+        }
+
+        return $icons->refresh($site)
+            ? $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Ikona je stažená z webu.')
+            : $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Web žádnou ikonu nemá (nebo neodpověděl) — nahrajte logo ručně, nebo zůstanou iniciály.', 'warning');
+    }
+
+    public function removeIcon(string $id): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $this->kernel->siteIcons()->remove((int) $id);
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Odebrána ikona webu');
+
+        return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Ikona je odebraná. Při příští kontrole se zkusí stáhnout favicona z webu.');
     }
 
     public function removeForm(string $id): Response
@@ -497,6 +628,12 @@ final class SiteController extends Controller
         $limiter->record('site-check', (string) $id, false);
 
         $result = $this->kernel->monitor()->checkOne($site);
+
+        // Nový web (nebo nová adresa) dostane ikonu hned, ne až v cronu.
+        if ($site['icon_checked_at'] === null && $result['uptime']['ok']) {
+            $this->kernel->siteIcons()->refresh($site);
+        }
+
         $parts = [
             $result['uptime']['ok'] ? 'HTTP ' . $result['uptime']['status'] . ' · ' . $result['uptime']['ms'] . ' ms' : 'nedostupný (' . (string) $result['uptime']['error'] . ')',
         ];
@@ -611,6 +748,32 @@ final class SiteController extends Controller
             'kindLabel' => EventLog::KINDS[(string) $event['kind']] ?? (string) $event['kind'],
             'when' => get_when((string) $event['created_at']),
         ];
+    }
+
+    /**
+     * Proč adresu nejde použít (null = jde) — pro přidání webu i změnu adresy.
+     *
+     * @param int|null $siteId web, kterému adresa patří (při změně adresy)
+     */
+    private function urlError(string $url, ?int $siteId = null): ?string
+    {
+        if ($url === '') {
+            return 'Zadejte adresu webu, třeba kavarnadobra.cz.';
+        }
+
+        if (str_starts_with($url, 'http://') && !$this->kernel->env('allow_insecure_sites', false)) {
+            return 'Web musí běžet na https:// — přes http by API klíč šel po síti nešifrovaně.';
+        }
+
+        $owner = $this->kernel->sites()->findByUrl($url);
+
+        if ($owner !== null && (int) $owner['id'] !== $siteId) {
+            return $owner['removed_at'] !== null
+                ? 'Tuhle adresu má odebraný web „' . $owner['name'] . '" (v archivu) — adresa jde použít až po jeho smazání z archivu.'
+                : 'Tuhle adresu už má v monitoringu web „' . $owner['name'] . '".';
+        }
+
+        return null;
     }
 
     private function actorName(): string

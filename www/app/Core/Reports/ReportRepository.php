@@ -13,14 +13,20 @@ use App\Core\Db\Connection;
  */
 final class ReportRepository
 {
-    /** @var array<string, array{label: string, note: string, default: bool}> pořadí = pořadí v náhledu */
+    /**
+     * Sekce reportu. Pořadí = pořadí v e-mailu (`ReportRenderer::body()`),
+     * aby přepínače v náhledu šly shora dolů stejně jako list vedle nich.
+     *
+     * @var array<string, array{label: string, note: string, default: bool}>
+     */
     public const SECTIONS = [
-        'uptime_chart' => ['label' => 'Graf dostupnosti', 'note' => 'sloupce po dnech za celé období', 'default' => true],
         'updates' => ['label' => 'Seznam aktualizací', 'note' => 'co jsme na webu udělali', 'default' => true],
         'services' => ['label' => 'Provedený servis', 'note' => 'co jsme na webu odpracovali', 'default' => true],
+        'content' => ['label' => 'Obsah webu', 'note' => 'kdy naposledy přibyl obsah; když stojí, výzva ke spolupráci', 'default' => true],
         'recommendations' => ['label' => 'Doporučení', 'note' => 'na co si dát pozor (PHP, certifikáty)', 'default' => true],
-        'cta' => ['label' => 'Výzva ke kontaktu', 'note' => 'tlačítko Napište nám', 'default' => true],
+        'uptime_chart' => ['label' => 'Graf dostupnosti', 'note' => 'sloupce po dnech za celé období', 'default' => true],
         'technical' => ['label' => 'Technická příloha', 'note' => 'verze pluginů a PHP — jen pro techniky', 'default' => false],
+        'cta' => ['label' => 'Výzva ke kontaktu', 'note' => 'tlačítko Napište nám', 'default' => true],
     ];
 
     public const STATUS_LABELS = [
@@ -236,7 +242,7 @@ final class ReportRepository
     public function find(int $id): ?array
     {
         $row = $this->db->selectOne(
-            'SELECT r.*, s.name AS site_name, s.url AS site_url, s.client_id, c.name AS client_name FROM reports r
+            'SELECT r.*, s.name AS site_name, s.url AS site_url, s.icon AS site_icon, s.client_id, c.name AS client_name FROM reports r
              JOIN sites s ON s.id = r.site_id LEFT JOIN clients c ON c.id = s.client_id WHERE r.id = :id',
             ['id' => $id],
         );
@@ -306,7 +312,7 @@ final class ReportRepository
         }
 
         return array_map([self::class, 'decodeReport'], $this->db->select(
-            'SELECT r.*, s.name AS site_name, s.url AS site_url, c.name AS client_name FROM reports r
+            'SELECT r.*, s.name AS site_name, s.url AS site_url, s.icon AS site_icon, c.name AS client_name FROM reports r
              JOIN sites s ON s.id = r.site_id LEFT JOIN clients c ON c.id = s.client_id
              WHERE ' . implode(' AND ', $where) . '
              ORDER BY COALESCE(r.sent_at, r.scheduled_for, r.created_at) DESC, r.id DESC LIMIT 300',
@@ -318,7 +324,7 @@ final class ReportRepository
     public function pendingApproval(?string $until = null): array
     {
         return array_map([self::class, 'decodeReport'], $this->db->select(
-            "SELECT r.*, s.name AS site_name, s.url AS site_url FROM reports r JOIN sites s ON s.id = r.site_id
+            "SELECT r.*, s.name AS site_name, s.url AS site_url, s.icon AS site_icon FROM reports r JOIN sites s ON s.id = r.site_id
              WHERE r.status = 'pending_approval'" . ($until !== null ? ' AND (r.scheduled_for IS NULL OR r.scheduled_for <= :until)' : '') . '
              ORDER BY r.scheduled_for',
             $until !== null ? ['until' => $until] : [],

@@ -21,11 +21,11 @@
  */
 $this->extend('layout/shell', ['title' => $title]);
 
-$url = static fn (array $override): string => get_url('reporty') . '?' . http_build_query(array_filter([
+$url = static fn (array $override): string => get_url('reporty') . '?' . http_build_query(array_filter(array_merge([
     'stav' => $status === 'pending' ? null : $status,
     'q' => $q,
     'obdobi' => $period,
-] + $override, static fn ($v): bool => $v !== null && $v !== ''));
+], $override), static fn ($v): bool => $v !== null && $v !== ''));
 
 $segments = [
     ['key' => 'pending', 'label' => 'Naplánované', 'count' => $counts['scheduled']],
@@ -115,7 +115,7 @@ $periodLabel = static function (string $ym): string {
                     <?php foreach ($rows as $row): ?>
                         <div class="table__row<?= $row['isProblem'] ? ' table__row--error' : '' ?>">
                             <a class="table__cell row" style="flex-wrap:nowrap;gap:11px;color:var(--color-text-primary);text-decoration:none" href="<?= get_url('weby/' . $row['siteId'] . '/reporty') ?>">
-                                <?= get_avatar($row['siteName'], '', 'sm') ?>
+                                <?= get_site_avatar($row['siteId'], $row['siteName'], $row['siteIcon'], 'sm') ?>
                                 <div style="min-width:0"><div class="table__primary u-truncate" style="font-size:var(--font-size-label)"><?= $this->e($row['siteName']) ?></div><div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($row['summaryLine'] !== '' ? $row['summaryLine'] : $row['host']) ?></div></div>
                             </a>
                             <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($row['clientName'] !== '' ? $row['clientName'] : '—') ?></div>

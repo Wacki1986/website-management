@@ -2,10 +2,10 @@
  * Výběr řádků v tabulce (pluginy, alerty) — `.checkbox` z návrhu.
  *
  * Dva druhy položek:
- *  - `<button data-selection-item>` (pluginy) — stav drží jen třída
- *    `checkbox--checked`; bez skriptu nemá funkci (v1 na výběr nic nenavazuje),
  *  - `<input type="checkbox" data-selection-item>` uvnitř `<label class="checkbox">`
- *    (alerty) — skutečné pole formuláře, odešle se i bez skriptu.
+ *    (pluginy, alerty) — skutečné pole formuláře, odešle se i bez skriptu,
+ *  - `<button data-selection-item>` — stav drží jen třída `checkbox--checked`
+ *    (pro výběr, na který nenavazuje žádný formulář).
  *
  * Skript doplňuje hlavičkové zaškrtávátko (vše / částečný výběr), pruh
  * hromadných akcí `[data-selection-bar]` s počtem a tlačítko

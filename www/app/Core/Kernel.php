@@ -15,6 +15,7 @@ use App\Controllers\ReportController;
 use App\Controllers\TrackingController;
 use App\Controllers\ServiceController;
 use App\Controllers\SettingsController;
+use App\Controllers\SiteActionController;
 use App\Controllers\SiteController;
 use App\Core\Monitor\AlertEngine;
 use App\Core\Monitor\AlertRepository;
@@ -39,7 +40,9 @@ use App\Core\Reports\ReportBuilder;
 use App\Core\Reports\ReportRenderer;
 use App\Core\Reports\ReportRepository;
 use App\Core\Reports\ReportSender;
+use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceRepository;
+use App\Core\Sites\SiteIcons;
 use App\Core\Sites\SiteRepository;
 use App\Core\Auth\Auth;
 use App\Core\Auth\Avatars;
@@ -81,7 +84,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.4.0';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -442,6 +445,18 @@ final class Kernel
         return $this->service ??= new ServiceRepository($this->db());
     }
 
+    /** Ikony webů do seznamů — favicona z webu nebo nahrané logo. */
+    public function siteIcons(): SiteIcons
+    {
+        return new SiteIcons($this->db(), $this->sites(), $this->storagePath());
+    }
+
+    /** Seznamy úkolů k druhům servisu (Nastavení → Servis). */
+    public function serviceChecklists(): ServiceChecklists
+    {
+        return new ServiceChecklists($this->settings());
+    }
+
     public function dashboard(): DashboardData
     {
         return $this->dashboard ??= new DashboardData($this->sites(), $this->uptime(), $this->alerts(), $this->service(), $this->monitorSettings());
@@ -454,7 +469,7 @@ final class Kernel
 
     public function reportBuilder(): ReportBuilder
     {
-        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit());
+        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit(), $this->snapshots());
     }
 
     public function reportRenderer(): ReportRenderer
@@ -515,6 +530,14 @@ final class Kernel
 
         // Reporty: den před termínem příprava ke schválení, v termínu odeslání.
         $this->monitor->addStep('reports', fn (int $now, float $deadline): int => $this->reportSender()->step($now));
+
+        // Ikony webů až po reportech — nikam nespěchají. Vrací 0: součet
+        // kroků se v souhrnu běhu počítá jako odeslané reporty.
+        $this->monitor->addStep('icons', function (int $now, float $deadline): int {
+            $this->siteIcons()->refreshStale($now, $deadline);
+
+            return 0;
+        });
 
         return $this->monitor;
     }
@@ -942,6 +965,12 @@ final class Kernel
         $router->add('GET', '/weby/{id}', [SiteController::class, 'overview'], name: 'sites.detail');
         $router->add('GET', '/weby/{id}/prehled', [SiteController::class, 'overview'], name: 'sites.overview');
         $router->add('GET', '/weby/{id}/pluginy', [SiteController::class, 'plugins'], name: 'sites.plugins');
+        $router->add('POST', '/weby/{id}/pluginy/aktualizovat', [SiteActionController::class, 'updatePlugins'], Router::AUTH_ONLY, 'sites.plugins.update');
+        $router->add('GET', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deleteForm'], name: 'sites.plugins.delete.form');
+        $router->add('POST', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deletePlugin'], Router::AUTH_ONLY, 'sites.plugins.delete');
+        $router->add('GET', '/weby/{id}/wordpress', [SiteActionController::class, 'coreForm'], name: 'sites.core.form');
+        $router->add('POST', '/weby/{id}/wordpress', [SiteActionController::class, 'updateCore'], Router::AUTH_ONLY, 'sites.core.update');
+        $router->add('POST', '/weby/{id}/prihlasit', [SiteActionController::class, 'login'], Router::AUTH_ONLY, 'sites.login');
         $router->add('GET', '/weby/{id}/obsah', [SiteController::class, 'content'], name: 'sites.content');
         $router->add('GET', '/weby/{id}/zabezpeceni', [SiteController::class, 'security'], name: 'sites.security');
         $router->add('POST', '/weby/{id}/zabezpeceni/overit', [SiteController::class, 'securityCheck'], Router::AUTH_ONLY, 'sites.security.check');
@@ -951,6 +980,8 @@ final class Kernel
         $router->add('POST', '/weby/{id}/servis/posunout', [ServiceController::class, 'postpone'], Router::AUTH_ONLY, 'sites.service.postpone');
         $router->add('GET', '/weby/{id}/servis/zapsat', [ServiceController::class, 'logForm'], name: 'sites.service.log');
         $router->add('POST', '/weby/{id}/servis/zapsat', [ServiceController::class, 'storeLog'], Router::AUTH_ONLY, 'sites.service.log.store');
+        $router->add('GET', '/weby/{id}/servis/{logId}/upravit', [ServiceController::class, 'editForm'], name: 'sites.service.log.edit');
+        $router->add('POST', '/weby/{id}/servis/{logId}/upravit', [ServiceController::class, 'updateLog'], Router::AUTH_ONLY, 'sites.service.log.update');
         $router->add('POST', '/weby/{id}/servis/{logId}/smazat', [ServiceController::class, 'removeLog'], Router::AUTH_ONLY, 'sites.service.log.remove');
         $router->add('GET', '/weby/{id}/reporty', [ReportController::class, 'site'], name: 'sites.reports');
         $router->add('POST', '/weby/{id}/reporty/nastaveni', [ReportController::class, 'saveSettings'], Router::AUTH_ONLY, 'sites.reports.settings');
@@ -974,6 +1005,10 @@ final class Kernel
         $router->add('POST', '/weby/{id}/nastaveni', [SiteController::class, 'update'], Router::AUTH_ONLY, 'sites.update');
         $router->add('POST', '/weby/{id}/nastaveni/klic', [SiteController::class, 'regenerateKey'], Router::AUTH_ONLY, 'sites.key');
         $router->add('POST', '/weby/{id}/nastaveni/hlidani', [SiteController::class, 'updateWatch'], Router::AUTH_ONLY, 'sites.watch');
+        $router->add('GET', '/weby/{id}/ikona', [SiteController::class, 'icon'], name: 'sites.icon');
+        $router->add('POST', '/weby/{id}/ikona', [SiteController::class, 'uploadIcon'], Router::AUTH_ONLY, 'sites.icon.upload');
+        $router->add('POST', '/weby/{id}/ikona/stahnout', [SiteController::class, 'refreshIcon'], Router::AUTH_ONLY, 'sites.icon.refresh');
+        $router->add('POST', '/weby/{id}/ikona/smazat', [SiteController::class, 'removeIcon'], Router::AUTH_ONLY, 'sites.icon.remove');
         $router->add('GET', '/weby/{id}/odebrat', [SiteController::class, 'removeForm'], name: 'sites.remove.form');
         $router->add('POST', '/weby/{id}/odebrat', [SiteController::class, 'remove'], Router::AUTH_ONLY, 'sites.remove');
         $router->add('POST', '/weby/{id}/zkontrolovat', [SiteController::class, 'checkNow'], Router::AUTH_ONLY, 'sites.check');
@@ -1026,6 +1061,8 @@ final class Kernel
         $router->add('POST', '/nastaveni/monitoring', [SettingsController::class, 'saveMonitoring'], Router::AUTH_ONLY, 'settings.monitoring');
         $router->add('POST', '/nastaveni/monitoring/token', [SettingsController::class, 'regenerateCronToken'], Router::AUTH_ONLY, 'settings.monitoring.token');
         $router->add('POST', '/nastaveni/monitoring/spustit', [SettingsController::class, 'runMonitorNow'], Router::AUTH_ONLY, 'settings.monitoring.run');
+        $router->add('GET', '/nastaveni/servis', [SettingsController::class, 'service'], name: 'settings.service.show');
+        $router->add('POST', '/nastaveni/servis', [SettingsController::class, 'saveService'], Router::AUTH_ONLY, 'settings.service');
         $router->add('GET', '/nastaveni/alerty', [SettingsController::class, 'alerts'], name: 'settings.alerts.show');
         $router->add('POST', '/nastaveni/alerty', [SettingsController::class, 'saveAlerts'], Router::AUTH_ONLY, 'settings.alerts');
 

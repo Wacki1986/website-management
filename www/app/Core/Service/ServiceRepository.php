@@ -118,19 +118,40 @@ final class ServiceRepository
     // Historie
     // -----------------------------------------------------------------
 
-    /** @param array{performed_on: string, kind: string, description: string, minutes: ?int, status: string, user_name: string} $log */
+    /**
+     * @param array{performed_on: string, kind: string, description: string, minutes: ?int, status: string, user_name: string, checklist?: array<int, array{label: string, done: bool}>} $log
+     */
     public function addLog(int $siteId, array $log): int
     {
-        return $this->db->insert('service_logs', [
+        return $this->db->insert('service_logs', self::logColumns($log) + [
             'site_id' => $siteId,
-            'performed_on' => $log['performed_on'],
-            'kind' => isset(ServiceSchedule::KINDS[$log['kind']]) ? $log['kind'] : 'small',
-            'description' => $log['description'],
-            'minutes' => $log['minutes'],
-            'status' => $log['status'] === 'skipped' ? 'skipped' : 'done',
             'user_name' => mb_substr($log['user_name'], 0, 100),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
+    }
+
+    /**
+     * Úprava zápisu. Autor zůstává původní, `updated_at` říká, že se na
+     * zápis sahalo — plán servisu se úpravou neposouvá.
+     *
+     * @param array{performed_on: string, kind: string, description: string, minutes: ?int, status: string, checklist?: array<int, array{label: string, done: bool}>} $log
+     */
+    public function updateLog(int $siteId, int $logId, array $log): void
+    {
+        $this->db->update('service_logs', self::logColumns($log) + ['updated_at' => date('Y-m-d H:i:s')], ['id' => $logId, 'site_id' => $siteId]);
+    }
+
+    /** @param array<string, mixed> $log @return array<string, mixed> */
+    private static function logColumns(array $log): array
+    {
+        return [
+            'performed_on' => $log['performed_on'],
+            'kind' => isset(ServiceSchedule::KINDS[$log['kind']]) ? $log['kind'] : 'small',
+            'description' => $log['description'],
+            'checklist' => ServiceChecklists::encode($log['checklist'] ?? []),
+            'minutes' => $log['minutes'],
+            'status' => $log['status'] === 'skipped' ? 'skipped' : 'done',
+        ];
     }
 
     /** @return array<string, mixed>|null */

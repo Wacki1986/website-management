@@ -60,7 +60,9 @@ textarea.form__control {
 input.form__control[type="file"] { padding: 8px 10px; }
 
 // Segmentovaný přepínač jako skupina rádií: popisek nese `.segmented__item`,
-// rádio je schované a stav kreslí `:has(:checked)`.
+// rádio je schované a stav kreslí jen `:has(:checked)`. Třídu
+// `segmented__item--active` šablony u rádií nevypisují — po kliknutí na
+// jinou položku by zůstala viset a svítily by dvě.
 .segmented__item:has(input:checked) {
   background: var(--color-surface-card-solid);
   color: var(--color-text-primary);
@@ -315,32 +317,75 @@ label.checkbox { cursor: pointer; }
 // Pruh hromadných akcí schovaný, dokud není výběr (skript ho ukáže).
 .bulk-bar[hidden] { display: none; }
 
-// Krokovací pole se skutečným číselným vstupem.
-input.stepper__value {
-  font: inherit;
+// Krokovací pole se skutečným číselným vstupem a jednotkou (get_stepper).
+// Návrh kreslí „30 dní" v jednom rámečku (`.stepper__value`); číselné pole
+// text neumí, takže rámeček nese obal `.stepper__field` a pole uvnitř je
+// bez rámečku, široké jen na počet číslic maxima (`--digits`).
+.stepper__field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 9px 13px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--border-radius-medium);
+  background: var(--color-surface-card-solid);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-body-large);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  cursor: text;
+
+  &:focus-within { @include focus-ring; }
+}
+
+.stepper--sm .stepper__field {
+  flex: none;
+  min-width: 96px;
+  padding: 7px 12px;
+  font-size: var(--font-size-label);
+}
+
+.stepper__field input.stepper__value {
+  flex: none;
+  width: calc(var(--digits, 3) * 1ch + 2px);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  text-align: right;
   appearance: textfield;
   -moz-appearance: textfield;
 
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button { appearance: none; margin: 0; }
-  &:focus-visible { @include focus-ring; }
+  &:focus-visible { outline: none; }
 }
 
-.stepper--sm input.stepper__value { font-size: var(--font-size-label); width: 96px; }
+// Bez jednotky číslo na střed rámečku.
+.stepper__field:not(:has(.stepper__unit)) input.stepper__value { text-align: center; }
+
+.stepper__unit {
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
 
 // Den bez kontrol v pásku uptime.
 .uptime__day--none { background: var(--color-surface-muted); }
 
-// Druh servisu jako skupina rádií: zvýraznění podle zaškrtnutí, ne jen
-// podle třídy ze serveru (přepnutí bez JS před odesláním formuláře).
+// Druh servisu jako skupina rádií: zvýraznění (i barva ikony) jen podle
+// zaškrtnutí — třída `--active` ze serveru by po přepnutí zůstala viset.
 .choice__item:has(input:checked) {
   border-color: var(--color-brand);
   background: var(--color-brand-soft);
 }
+.choice__item:has(input:checked) .choice__title .icon { background-color: var(--color-brand); }
 .choice__item:has(input:focus-visible) { @include focus-ring; }
 .choice__item .text-caption { margin-top: var(--spacing-xxsmall); }
 
@@ -383,3 +428,70 @@ form.pill { margin: 0; }
 
 // Avatar webu v hero kartě je o chlup větší než v tabulce (návrh 34 px).
 .hero__item .avatar { width: 34px; height: 34px; font-size: var(--font-size-caption); }
+
+// --- servis: checklist u zápisu --------------------------------------
+
+// Návrh checklist nemá. Formulář vykreslí seznam úkolů pro každý druh
+// servisu a vidět je jen ten, jehož rádio `kind` je zaškrtnuté — přepnutí
+// druhu tak funguje bez skriptu. Prohlížeč bez `:has` ukáže všechny
+// seznamy, proto má každý nadpis s druhem.
+.service-checklist {
+  display: grid;
+  gap: 8px;
+}
+.service-checklist + .service-checklist { margin-top: var(--spacing-small); }
+.service-checklist__title {
+  font-size: var(--font-size-caption);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+form:has(input[name="kind"]:checked) {
+  .service-checklist { display: none; margin-top: 0; }
+  .service-checklist__title { display: none; }
+}
+
+@each $kind in small, medium, large {
+  form:has(input[name="kind"][value="#{$kind}"]:checked) .service-checklist--#{$kind} { display: grid; }
+}
+
+// --- ikona webu místo iniciál ----------------------------------------
+
+// Favicona nebo nahrané logo (get_site_avatar). Celá, ne oříznutá, na
+// bílém podkladu — i v tmavém motivu, protože favicony počítají se
+// světlou záložkou prohlížeče.
+.avatar--icon {
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
+}
+
+// Atribut `hidden` musí vyhrát i nad třídami s vlastním `display`
+// (`.btn`, `.row`…) — jinak skriptem schovaný prvek zůstane vidět.
+[hidden] { display: none !important; }
+
+// --- segmenty a tlačítka-odkazy --------------------------------------
+
+// Položky segmentu podle obsahu, ne stejným dílem: „V pořádku 2" se jinak
+// zalomí a u delších popisků se tečka s počtem nalepí na okraj. Co se do
+// řádku nevejde, zalomí se celou položkou (`.segmented` má flex-wrap).
+.segmented__item {
+  flex: 1 0 auto;
+  white-space: nowrap;
+}
+
+// Filtry (odkazy s tečkou a počtem) potřebují víc vzduchu po stranách.
+a.segmented__item { padding-inline: 14px; }
+
+// Odkaz vypadající jako tlačítko: obecné `a:hover` z resetu (barva odkazu
+// + podtržení) by přebilo barvu varianty — z modrého tlačítka by se stal
+// tmavě modrý text na modré. Tlačítko při najetí jen zjasní (`.btn:hover`).
+a.btn,
+a.btn:hover { text-decoration: none; }
+a.btn--primary:hover { color: var(--color-brand-contrast); }
+a.btn--secondary:hover { color: var(--color-text-primary); }
+a.btn--ghost:hover { color: var(--color-text-secondary); }
+a.btn--danger:hover { color: #fff; }
+a.btn--inverse:hover { color: #1b1e38; }
+a.btn--ghost-inverse:hover { color: var(--color-text-inverse-subtle); }

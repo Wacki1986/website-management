@@ -23,7 +23,7 @@ function reportsFixture(): array
     $f = monitorFixture();
     $reports = new ReportRepository($f['db']);
     $service = new ServiceRepository($f['db']);
-    $builder = new ReportBuilder($f['sites'], $f['uptime'], $f['alerts'], $f['events'], $service, $f['security']);
+    $builder = new ReportBuilder($f['sites'], $f['uptime'], $f['alerts'], $f['events'], $service, $f['security'], $f['importer']);
     $renderer = new ReportRenderer();
     $sender = new ReportSender($reports, $builder, $renderer, $f['sites'], $f['mailer'], $f['mailSettings'], $f['settings'], $f['events'], $f['notifier'], $f['logger'], 'https://sprava.test');
 
@@ -247,5 +247,61 @@ return [
         assertTrue($result['ok']);
         assertSame([], $f['reports']->pendingApproval());
         assertSame('sent', $f['reports']->forSite($a)[0]['status']);
+    },
+
+    'obsah webu: stáří k datu reportu, výzva jen když web obsahově stojí' => function (): void {
+        $f = reportsFixture();
+        $id = $f['sites']->create(['name' => 'Kavárna Dobrá', 'url' => 'https://kavarnadobra.cz']);
+        $types = static fn (string $postDate): array => [
+            ['slug' => 'post', 'label' => 'Příspěvky', 'published' => 148, 'drafts' => 3, 'latest' => ['title' => 'Pekárna &#8222;Hanka&#8220; slaví 50 let. K&nbsp;výročí', 'date' => $postDate]],
+            ['slug' => 'page', 'label' => 'Stránky', 'published' => 12, 'drafts' => 0, 'latest' => ['title' => 'Kontakt', 'date' => '2026-01-10 10:00:00']],
+            ['slug' => 'product', 'label' => 'Produkty', 'published' => 0, 'drafts' => 0, 'latest' => null],
+        ];
+        $import = static function (string $postDate) use ($f, $id, $types): void {
+            $f['importer']->import($f['sites']->find($id), ['ok' => true, 'code' => 'ok', 'status' => 200, 'error' => null, 'plugin_version' => '1.3.0',
+                'data' => ['wordpress' => ['version' => '6.8.2'], 'server' => ['php_version' => '8.3.1'], 'theme' => [], 'plugins' => ['items' => []], 'content' => ['post_types' => $types($postDate)]]]);
+        };
+        $sections = ['sections' => ['content']];
+
+        // Příspěvek před 45 dny (k datu reportu, ne k datu načtení): žlutá a výzva.
+        $import('2026-08-17 09:00:00');
+        $summary = $f['builder']->build($f['sites']->findWithSnapshot($id), '2026-09-01', '2026-09-30', 'Září 2026', '2026-10-01');
+        assertSame(45, $summary['content']['freshestDays']);
+        assertSame('warning', $summary['content']['tone']);
+        assertSame(2, count($summary['content']['types']), 'Prázdné typy obsahu se do reportu nepíšou');
+        assertSame('error', $summary['content']['types'][1]['tone'], 'Stránky naposledy v lednu');
+
+        $html = $f['renderer']->body($summary, $sections + ['contactUrl' => 'mailto:studio@mediagrafik.cz']);
+        assertContainsString('Obsah webu', $html);
+        assertContainsString('naposledy před 45 dny', $html);
+        // Název z WordPressu přichází s HTML entitami — v e-mailu jako text.
+        assertContainsString('Pekárna „Hanka“ slaví 50 let. K' . "\u{00A0}" . 'výročí', $html);
+        assertFalse(str_contains($html, '&amp;#8222;') || str_contains($html, '&amp;nbsp;'));
+        assertContainsString('Web by si zasloužil něco nového', $html);
+        assertContainsString('Ozvěte se nám', $html);
+        assertContainsString('Web by si zasloužil něco nového', $f['renderer']->text($summary, $sections));
+
+        // Čerstvý příspěvek: bez výzvy, i když stránky jsou staré.
+        $import('2026-09-28 09:00:00');
+        $fresh = $f['builder']->build($f['sites']->findWithSnapshot($id), '2026-09-01', '2026-09-30', 'Září 2026', '2026-10-01');
+        assertSame('ok', $fresh['content']['tone']);
+        assertSame(null, $fresh['content']['invite']);
+        assertFalse(str_contains($f['renderer']->body($fresh, $sections), 'Ozvěte se nám'));
+
+        // Souhrn uložený před opravou má název ještě s entitami — dekóduje ho i vykreslení.
+        $stale = $summary;
+        $stale['content']['types'][0]['latestTitle'] = 'Pekárna &#8222;Hanka&#8220;';
+        assertContainsString('Pekárna „Hanka“', $f['renderer']->body($stale, $sections));
+
+        // Pořadí přepínačů sekcí (SECTIONS) = pořadí sekcí v e-mailu.
+        preg_match_all('/data-report-section="([a-z_]+)"/', $f['renderer']->body($summary, ['sections' => [], 'preview' => true]), $order);
+        $expected = array_values(array_intersect(array_keys(ReportRepository::SECTIONS), $order[1]));
+        assertSame($expected, $order[1]);
+        assertTrue(count($order[1]) >= 5, 'V náhledu mají být vykreslené i vypnuté sekce');
+
+        // Vypnutá sekce a starý report bez části „content" v souhrnu.
+        assertFalse(str_contains($f['renderer']->body($summary, ['sections' => ['cta']]), 'Obsah webu'));
+        unset($summary['content']);
+        assertFalse(str_contains($f['renderer']->body($summary, $sections), 'Obsah webu'));
     },
 ];
