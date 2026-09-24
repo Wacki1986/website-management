@@ -33,8 +33,10 @@ final class ReportRenderer
      * @param array<string, mixed> $summary  z `ReportBuilder::build()`
      * @param array{note?: string, sections?: array<int, string>, pixelUrl?: string, logoUrl?: string,
      *     studio?: array{name: string, email: string, phone: string}, contactUrl?: string, mobile?: bool, preview?: bool,
-     *     texts?: array<string, string>} $options
-     *     `texts` = texty šablony (`ReportTemplate::texts()`), bez nich výchozí znění
+     *     texts?: array<string, string>, editable?: bool, order?: array<int, string>} $options
+     *     `order` = pořadí posouvatelných sekcí (`ReportTemplate::order()`);
+     *     `texts` = texty šablony (`ReportTemplate::texts()`), bez nich výchozí znění;
+     *     `editable` = texty šablony obalit `data-tpl` pro editor v Nastavení (nikdy do e-mailu)
      *     `preview` = vykreslit i vypnuté sekce (skryté, s `data-report-section`) pro přepínání v náhledu
      */
     public function body(array $summary, array $options = []): string
@@ -47,7 +49,11 @@ final class ReportRenderer
         // klientovi jdou jen zapnuté.
         $preview = (bool) ($options['preview'] ?? false);
         $show = static fn (string $key): bool => $preview || $on($key);
-        $row = static fn (string $key): string => $preview ? '<tr data-report-section="' . $key . '"' . ($on($key) ? '' : ' hidden') . '>' : '<tr>';
+        $editable = (bool) ($options['editable'] ?? false);
+        // `$toggle` = sekce jde v náhledu vypnout (poznámka ne — ta je jen, když je napsaná).
+        $row = static fn (string $key, bool $toggle = true): string => '<tr'
+            . ($preview && $toggle ? ' data-report-section="' . $key . '"' . ($on($key) ? '' : ' hidden') : '')
+            . ($editable ? ' data-tpl-section="' . $key . '"' : '') . '>';
         $studio = $options['studio'] ?? ['name' => 'MEDIAGRAFIK', 'email' => '', 'phone' => ''];
         $logoUrl = $options['logoUrl'] ?? '';
         $mobile = (bool) ($options['mobile'] ?? false);
@@ -56,6 +62,7 @@ final class ReportRenderer
         $uptime = $summary['uptime'];
         $pad = $mobile ? '20px' : '30px';
         $t = self::texts($summary, $options);
+        $ed = static fn (string $key, string $html): string => $editable ? '<span data-tpl="' . $key . '">' . $html . '</span>' : $html;
 
         $h = '';
 
@@ -70,7 +77,7 @@ final class ReportRenderer
         $h .= '<tr><td style="padding:28px ' . $pad . ' 8px;">'
             . '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:' . self::MUTED . ';">' . $e(mb_strtoupper('Zpráva o vašem webu · ' . $period['label'])) . '</div>'
             . '<h2 style="margin:10px 0 0;font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.2;color:' . self::TEXT . ';">' . $e($summary['headline']) . '</h2>'
-            . '<p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:' . self::BODY . ';">' . self::bold(nl2br($e($t('intro'))), $e($summary['site']['host'])) . '</p>'
+            . '<p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:' . self::BODY . ';">' . $ed('intro', self::bold(nl2br($e($t('intro'))), $e($summary['site']['host']))) . '</p>'
             . '</td></tr>';
 
         // Tři metriky.
@@ -94,10 +101,14 @@ final class ReportRenderer
             . ($mobile ? '<tr>' . $metrics[0] . '</tr><tr><td style="height:12px;"></td></tr><tr>' . $metrics[1] . '</tr><tr><td style="height:12px;"></td></tr><tr>' . $metrics[2] . '</tr>' : '<tr>' . implode('', $metrics) . '</tr>')
             . '</table></td></tr>';
 
+        // Posouvatelné sekce se skládají do bloků a vypíšou podle pořadí
+        // ze šablony (`ReportTemplate::order()`); každá je jeden <tr>.
+        $blocks = [];
+
         // Poznámka od studia.
         if ($note !== '') {
-            $h .= '<tr><td style="padding:20px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#eef1fd;border:1px solid rgba(56,88,233,.22);">'
-                . '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:' . self::BRAND . ';">' . $e(mb_strtoupper($t('note_label'))) . '</div>'
+            $blocks['note'] = $row('note', false) . '<td style="padding:20px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#eef1fd;border:1px solid rgba(56,88,233,.22);">'
+                . '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:' . self::BRAND . ';">' . $ed('note_label', $e(mb_strtoupper($t('note_label')))) . '</div>'
                 . '<div style="font-size:14px;line-height:1.55;color:' . self::TEXT . ';margin-top:6px;">' . nl2br($e($note)) . '</div>'
                 . '</td></tr></table></td></tr>';
         }
@@ -107,13 +118,12 @@ final class ReportRenderer
             $items = '';
 
             foreach ($summary['done'] as $item) {
-                $items .= '<tr><td width="18" valign="top" style="padding:0 11px 9px 0;">'
-                    . '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="18" height="18" align="center" bgcolor="' . self::OK . '" style="width:18px;height:18px;border-radius:999px;background:' . self::OK . ';color:#ffffff;font-size:12px;font-weight:700;line-height:18px;">&#10003;</td></tr></table></td>'
+                $items .= '<tr><td width="22" valign="top" style="padding:0 0 9px;color:' . self::OK . ';font-size:15px;font-weight:700;line-height:1.4;">&#10003;</td>'
                     . '<td valign="top" style="padding:0 0 9px;font-size:14px;line-height:1.5;color:' . self::BODY . ';"><b style="font-weight:600;color:' . self::TEXT . ';">' . $e($item['strong']) . '</b> ' . $e($item['text']) . '</td></tr>';
             }
 
-            $h .= $row('updates') . '<td style="padding:26px ' . $pad . ' 0;">'
-                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $e($t('heading_updates')) . '</h3>'
+            $blocks['updates'] = $row('updates') . '<td style="padding:26px ' . $pad . ' 0;">'
+                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $ed('heading_updates', $e($t('heading_updates'))) . '</h3>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $items . '</table></td></tr>';
         }
 
@@ -132,8 +142,8 @@ final class ReportRenderer
                     . '</tr></table></td></tr>';
             }
 
-            $h .= $row('services') . '<td style="padding:26px ' . $pad . ' 0;">'
-                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $e($t('heading_services')) . '</h3>'
+            $blocks['services'] = $row('services') . '<td style="padding:26px ' . $pad . ' 0;">'
+                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $ed('heading_services', $e($t('heading_services'))) . '</h3>'
                 . ($rows !== ''
                     ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ' . self::BORDER . ';border-radius:12px;border-collapse:separate;">' . $rows . '</table>'
                     : '<div style="font-size:14px;color:' . self::BODY . ';line-height:1.55;">V tomto období nebyl plánovaný žádný servis — web jsme jen průběžně hlídali.</div>')
@@ -175,14 +185,14 @@ final class ReportRenderer
                     . '<div style="font-size:14px;line-height:1.55;color:' . self::BODY . ';margin-top:5px;">' . $e($content['invite']['text']) . '</div>'
                     . ($contactUrl !== ''
                         ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:12px;"><tr><td bgcolor="' . self::BRAND . '" style="border-radius:10px;background:' . self::BRAND . ';">'
-                            . '<a href="' . $e($contactUrl) . '" style="display:inline-block;color:#ffffff;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none;">' . $e($t('content_button')) . '</a>'
+                            . '<a href="' . $e($contactUrl) . '" style="display:inline-block;color:#ffffff;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none;">' . $ed('content_button', $e($t('content_button'))) . '</a>'
                             . '</td></tr></table>'
                         : '')
                     . '</td></tr></table>';
             }
 
-            $h .= $row('content') . '<td style="padding:26px ' . $pad . ' 0;">'
-                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $e($t('heading_content')) . '</h3>'
+            $blocks['content'] = $row('content') . '<td style="padding:26px ' . $pad . ' 0;">'
+                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $ed('heading_content', $e($t('heading_content'))) . '</h3>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ' . self::BORDER . ';border-radius:12px;border-collapse:separate;">' . $rows . '</table>'
                 . $invite
                 . '</td></tr>';
@@ -196,8 +206,8 @@ final class ReportRenderer
                 $items .= '<div style="font-size:14px;line-height:1.55;color:' . self::BODY . ';margin-top:5px;"><b style="font-weight:600;color:#9e5300;">' . $e($rec['title']) . '.</b> ' . $e($rec['text']) . '</div>';
             }
 
-            $h .= $row('recommendations') . '<td style="padding:24px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#fef4da;border:1px solid rgba(226,144,10,.35);">'
-                . '<div style="font-size:14px;font-weight:600;color:#9e5300;">' . $e($t('heading_recommendations')) . '</div>' . $items
+            $blocks['recommendations'] = $row('recommendations') . '<td style="padding:24px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#fef4da;border:1px solid rgba(226,144,10,.35);">'
+                . '<div style="font-size:14px;font-weight:600;color:#9e5300;">' . $ed('heading_recommendations', $e($t('heading_recommendations'))) . '</div>' . $items
                 . '</td></tr></table></td></tr>';
         }
 
@@ -220,7 +230,7 @@ final class ReportRenderer
             $middle = $uptime['days'][intdiv($dayCount, 2)]['day'];
             $last = $uptime['days'][$dayCount - 1]['day'];
 
-            $h .= $row('uptime_chart') . '<td style="padding:26px ' . $pad . ' 0;">'
+            $blocks['uptime_chart'] = $row('uptime_chart') . '<td style="padding:26px ' . $pad . ' 0;">'
                 . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">Dostupnost ' . $e(str_starts_with($period['phrase'], 'celý ') ? 'v ' . get_czech_month((int) date('n', strtotime($period['from'])), 'locative') : 'v období') . '</h3>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;"><tr>' . $cells . '</tr></table>'
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:7px;"><tr>'
@@ -250,7 +260,7 @@ final class ReportRenderer
                     $items .= '<tr><td style="padding:6px 0;font-size:13px;color:' . self::MUTED . ';border-bottom:1px solid ' . self::BORDER . ';">' . $e($label) . '</td><td align="right" style="padding:6px 0;font-size:13px;color:' . self::TEXT . ';border-bottom:1px solid ' . self::BORDER . ';font-family:Consolas,\'Courier New\',monospace;">' . $e($value) . '</td></tr>';
                 }
 
-                $h .= $row('technical') . '<td style="padding:26px ' . $pad . ' 0;">'
+                $blocks['technical'] = $row('technical') . '<td style="padding:26px ' . $pad . ' 0;">'
                     . '<h3 style="margin:0 0 8px;font-size:15px;font-weight:600;color:' . self::TEXT . ';">Technická příloha</h3>'
                     . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $items . '</table></td></tr>';
             }
@@ -258,18 +268,25 @@ final class ReportRenderer
 
         // Výzva ke kontaktu.
         if ($show('cta')) {
-            $h .= $row('cta') . '<td style="padding:26px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:18px;border-radius:12px;background:#f3f5fc;">'
-                . '<div style="font-size:14px;color:' . self::BODY . ';line-height:1.55;">' . nl2br($e($t('cta_text'))) . '</div>'
+            $blocks['cta'] = $row('cta') . '<td style="padding:26px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:18px;border-radius:12px;background:#f3f5fc;">'
+                . '<div style="font-size:14px;color:' . self::BODY . ';line-height:1.55;">' . $ed('cta_text', nl2br($e($t('cta_text')))) . '</div>'
                 . '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin-top:10px;"><tr><td align="center" bgcolor="' . self::BRAND . '" style="border-radius:10px;background:' . self::BRAND . ';">'
-                . '<a href="' . $e($contactUrl !== '' ? $contactUrl : '#') . '" style="display:inline-block;color:#ffffff;padding:11px 20px;font-size:14px;font-weight:600;text-decoration:none;">' . $e($t('cta_button')) . '</a>'
+                . '<a href="' . $e($contactUrl !== '' ? $contactUrl : '#') . '" style="display:inline-block;color:#ffffff;padding:11px 20px;font-size:14px;font-weight:600;text-decoration:none;">' . $ed('cta_button', $e($t('cta_button'))) . '</a>'
                 . '</td></tr></table></td></tr></table></td></tr>';
         }
+
+        foreach (self::order($options) as $key) {
+            $h .= $blocks[$key] ?? '';
+        }
+
+        // Mezera před patičkou — poslední sekce by se jí jinak dotýkala.
+        $h .= '<tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>';
 
         // Patka.
         $contact = implode(' · ', array_filter([$studio['email'], $studio['phone']]));
         $h .= '<tr><td style="padding:20px ' . $pad . ' 26px;border-top:1px solid ' . self::BORDER . ';background:#fafbfe;">'
-            . '<div style="font-size:12px;color:' . self::MUTED . ';line-height:1.6;">' . $e($t('signature')) . ($contact !== '' ? '<br>' . $e($contact) : '') . '</div>'
-            . '<div style="font-size:11px;color:' . self::MUTED . ';margin-top:10px;">' . nl2br($e($t('footer'))) . '</div>'
+            . '<div style="font-size:12px;color:' . self::MUTED . ';line-height:1.6;">' . $ed('signature', $e($t('signature'))) . ($contact !== '' ? '<br>' . $e($contact) : '') . '</div>'
+            . '<div style="font-size:11px;color:' . self::MUTED . ';margin-top:10px;">' . $ed('footer', nl2br($e($t('footer')))) . '</div>'
             . (($options['pixelUrl'] ?? '') !== '' ? '<img src="' . $e($options['pixelUrl']) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;">' : '')
             . '</td></tr>';
 
@@ -316,37 +333,40 @@ final class ReportRenderer
             'Kontrol webu: ' . $summary['uptime']['checksLabel'] . ' (' . $summary['uptime']['intervalLabel'] . ')',
         ];
 
+        // Bloky jako v HTML, vypsané podle pořadí ze šablony. Graf, technická
+        // příloha a výzva v textové variantě nejsou.
+        $blocks = [];
         $note = trim((string) ($options['note'] ?? ''));
 
         if ($note !== '') {
-            array_push($lines, '', $t('note_label') . ': ' . $note);
+            $blocks['note'] = ['', $t('note_label') . ': ' . $note];
         }
 
         if (in_array('updates', $sections, true) && $summary['done'] !== []) {
-            array_push($lines, '', $t('heading_updates') . ':');
+            $blocks['updates'] = ['', $t('heading_updates') . ':'];
 
             foreach ($summary['done'] as $item) {
-                $lines[] = '- ' . $item['strong'] . ' ' . $item['text'];
+                $blocks['updates'][] = '- ' . $item['strong'] . ' ' . $item['text'];
             }
         }
 
         if (in_array('services', $sections, true) && $summary['services'] !== []) {
-            array_push($lines, '', $t('heading_services') . ':');
+            $blocks['services'] = ['', $t('heading_services') . ':'];
 
             foreach ($summary['services'] as $service) {
                 if (($service['tasks'] ?? []) === []) {
-                    $lines[] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ': ' . $service['description'];
+                    $blocks['services'][] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ': ' . $service['description'];
                     continue;
                 }
 
-                $lines[] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ':';
+                $blocks['services'][] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ':';
 
                 foreach ($service['tasks'] as $task) {
-                    $lines[] = '  ✓ ' . $task;
+                    $blocks['services'][] = '  ✓ ' . $task;
                 }
 
                 if ($service['note'] !== '') {
-                    $lines[] = '  ' . $service['note'];
+                    $blocks['services'][] = '  ' . $service['note'];
                 }
             }
         }
@@ -354,23 +374,27 @@ final class ReportRenderer
         $content = $summary['content'] ?? null;
 
         if (in_array('content', $sections, true) && is_array($content) && $content['types'] !== []) {
-            array_push($lines, '', $t('heading_content') . ':');
+            $blocks['content'] = ['', $t('heading_content') . ':'];
 
             foreach ($content['types'] as $type) {
-                $lines[] = '- ' . $type['label'] . ' (' . get_count((int) $type['published'], 'publikovaný', 'publikované', 'publikovaných') . '): ' . $type['ageLabel'];
+                $blocks['content'][] = '- ' . $type['label'] . ' (' . get_count((int) $type['published'], 'publikovaný', 'publikované', 'publikovaných') . '): ' . $type['ageLabel'];
             }
 
             if (($content['invite'] ?? null) !== null) {
-                $lines[] = $content['invite']['title'] . '. ' . $content['invite']['text'];
+                $blocks['content'][] = $content['invite']['title'] . '. ' . $content['invite']['text'];
             }
         }
 
         if (in_array('recommendations', $sections, true) && $summary['recommendations'] !== []) {
-            array_push($lines, '', $t('heading_recommendations') . ':');
+            $blocks['recommendations'] = ['', $t('heading_recommendations') . ':'];
 
             foreach ($summary['recommendations'] as $rec) {
-                $lines[] = '- ' . $rec['title'] . '. ' . $rec['text'];
+                $blocks['recommendations'][] = '- ' . $rec['title'] . '. ' . $rec['text'];
             }
+        }
+
+        foreach (self::order($options) as $key) {
+            array_push($lines, ...($blocks[$key] ?? []));
         }
 
         array_push($lines, '', $summary['uptime']['note'], '', $t('signature'), implode(' · ', array_filter([$studio['email'], $studio['phone']])));
@@ -391,6 +415,20 @@ final class ReportRenderer
         $values = ReportTemplate::values($summary, (string) ($options['studio']['name'] ?? 'MEDIAGRAFIK'));
 
         return static fn (string $key): string => ReportTemplate::fill((string) ($texts[$key] ?? ''), $values);
+    }
+
+    /**
+     * Pořadí posouvatelných sekcí: ze šablony (`order` ve volbách), chybějící
+     * klíče na konec v základním pořadí.
+     *
+     * @param array<string, mixed> $options
+     * @return array<int, string>
+     */
+    private static function order(array $options): array
+    {
+        $order = array_values(array_intersect((array) ($options['order'] ?? []), ReportTemplate::SECTION_ORDER));
+
+        return array_values(array_unique(array_merge($order, ReportTemplate::SECTION_ORDER)));
     }
 
     /** Adresa webu v úvodu tučně (text je už escapovaný). */

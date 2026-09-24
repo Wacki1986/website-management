@@ -42,6 +42,11 @@ final class SiteStatus
             return self::make('problem', 'error', 'SSL vypršel');
         }
 
+        // Plugin stažený z adresáře kvůli bezpečnostní chybě: známá díra, oprava nepřijde.
+        if ((int) ($site['snap_plugins_insecure'] ?? 0) > 0) {
+            return self::make('problem', 'error', 'Nebezpečný plugin');
+        }
+
         // Plugin neodpovídá po třech pokusech: data jsou zastaralá, ale web
         // sám běží — pozornost, ne problém.
         if (($site['api_status'] ?? 'unknown') !== 'ok' && (int) ($site['api_failures'] ?? 0) >= 3) {
@@ -61,12 +66,20 @@ final class SiteStatus
             return self::make('attention', 'warning', DbSupport::label($dbType, $db) . ' EOL');
         }
 
+        if ((int) ($site['snap_plugins_closed'] ?? 0) > 0) {
+            return self::make('attention', 'warning', 'Plugin stažen z adresáře');
+        }
+
         if (($site['snap_wp_update_version'] ?? null) !== null && (string) $site['snap_wp_update_version'] !== '') {
             return self::make('attention', 'warning', 'Zastaralé WP');
         }
 
         if ($sslTs !== false && $sslTs - $now < 30 * 86400) {
             return self::make('attention', 'warning', 'SSL brzy vyprší');
+        }
+
+        if ((int) ($site['snap_plugins_abandoned'] ?? 0) > 0) {
+            return self::make('attention', 'warning', 'Opuštěný plugin');
         }
 
         // Podpora skončí do roka: ještě nehoří, ale je čas domluvit s klientem

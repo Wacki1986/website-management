@@ -20,6 +20,7 @@ use App\Core\Monitor\SupportTables;
 use App\Core\Notifications\EmailMessage;
 use App\Core\Notifications\MailSettings;
 use App\Core\Notifications\PushSubscriptions;
+use App\Core\Reports\ReportRepository;
 use App\Core\Reports\ReportTemplate;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceSchedule;
@@ -192,11 +193,12 @@ final class SettingsController extends Controller
 
     /** Pravidla alertů — pořadí a texty podle návrhu. */
     private const RULES = [
-        ['key' => 'rule_updates', 'label' => 'Čekající aktualizace', 'text' => 'Alert, když web překročí tento počet nenainstalovaných aktualizací.', 'unit' => '', 'min' => 1, 'max' => 100, 'note' => ''],
-        ['key' => 'rule_ssl', 'label' => 'Platnost SSL', 'text' => 'Upozornit, kolik dní před vypršením certifikátu.', 'unit' => 'dní', 'min' => 1, 'max' => 90, 'note' => 'Prošlý certifikát se hlásí vždy.'],
-        ['key' => 'rule_backup', 'label' => 'Stáří zálohy', 'text' => 'Alert, když poslední úspěšná záloha je starší.', 'unit' => 'h', 'min' => 6, 'max' => 720, 'note' => 'Jen u webů, kde plugin datum zálohy zjistí (UpdraftPlus, BackWPup).'],
-        ['key' => 'rule_service', 'label' => 'Nezapsaný servis', 'text' => 'Alert, když se naplánovaný servis nezapíše do historie.', 'unit' => 'h', 'min' => 1, 'max' => 720, 'note' => ''],
-        ['key' => 'rule_domain', 'label' => 'Expirace domény', 'text' => 'Upozornit, kolik dní před koncem registrace domény.', 'unit' => 'dní', 'min' => 7, 'max' => 365, 'note' => 'Zjišťuje se přes RDAP jednou týdně.'],
+        ['key' => 'rule_updates', 'valueKey' => 'rule_updates_max', 'label' => 'Čekající aktualizace', 'text' => 'Alert, když web překročí tento počet nenainstalovaných aktualizací.', 'unit' => '', 'min' => 1, 'max' => 100, 'note' => ''],
+        ['key' => 'rule_ssl', 'valueKey' => 'rule_ssl_days', 'label' => 'Platnost SSL', 'text' => 'Upozornit, kolik dní před vypršením certifikátu.', 'unit' => 'dní', 'min' => 1, 'max' => 90, 'note' => 'Prošlý certifikát se hlásí vždy.'],
+        ['key' => 'rule_backup', 'valueKey' => 'rule_backup_hours', 'label' => 'Stáří zálohy', 'text' => 'Alert, když poslední úspěšná záloha je starší.', 'unit' => 'h', 'min' => 6, 'max' => 720, 'note' => 'Jen u webů, kde plugin datum zálohy zjistí (UpdraftPlus, BackWPup).'],
+        ['key' => 'rule_service', 'valueKey' => 'rule_service_hours', 'label' => 'Nezapsaný servis', 'text' => 'Alert, když se naplánovaný servis nezapíše do historie.', 'unit' => 'h', 'min' => 1, 'max' => 720, 'note' => ''],
+        ['key' => 'rule_domain', 'valueKey' => 'rule_domain_days', 'label' => 'Expirace domény', 'text' => 'Upozornit, kolik dní před koncem registrace domény.', 'unit' => 'dní', 'min' => 7, 'max' => 365, 'note' => 'Zjišťuje se přes RDAP jednou týdně.'],
+        ['key' => 'rule_abandoned', 'valueKey' => 'rule_abandoned_months', 'label' => 'Opuštěné pluginy', 'text' => 'Alert, když plugin na webu nemá nové vydání déle než tolik měsíců, nebo ho wordpress.org stáhl.', 'unit' => 'měs.', 'min' => 6, 'max' => 120, 'note' => 'Data z wordpress.org se ověřují jednou týdně; placené pluginy mimo adresář se nehodnotí. Práh platí i pro označení „Opuštěný" u pluginů.'],
     ];
 
     public function alerts(): Response
@@ -205,7 +207,7 @@ final class SettingsController extends Controller
         $rules = [];
 
         foreach (self::RULES as $rule) {
-            $valueKey = $rule['key'] === 'rule_updates' ? 'rule_updates_max' : ($rule['key'] === 'rule_ssl' || $rule['key'] === 'rule_domain' ? $rule['key'] . '_days' : $rule['key'] . '_hours');
+            $valueKey = $rule['valueKey'];
             $rules[] = $rule + ['value' => $settings->int($valueKey), 'on' => $settings->bool($rule['key'] . '_on')];
         }
 
@@ -225,7 +227,7 @@ final class SettingsController extends Controller
         $values = [];
 
         foreach (self::RULES as $rule) {
-            $valueKey = $rule['key'] === 'rule_updates' ? 'rule_updates_max' : ($rule['key'] === 'rule_ssl' || $rule['key'] === 'rule_domain' ? $rule['key'] . '_days' : $rule['key'] . '_hours');
+            $valueKey = $rule['valueKey'];
             $values[$valueKey] = $body[$rule['key'] . '_max'] ?? MonitorSettings::DEFAULTS[$valueKey];
             // Neodeslaný přepínač = vypnuto.
             $values[$rule['key'] . '_on'] = isset($body[$rule['key'] . '_on']) ? '1' : '0';
@@ -261,23 +263,57 @@ final class SettingsController extends Controller
     // Šablona klientského reportu
     // -----------------------------------------------------------------
 
+    /** Ukázková poznámka ve vzorovém reportu — ať je vidět (a jde upravit) i její nadpis. */
+    private const SAMPLE_NOTE = 'Tento měsíc jsme navíc zrychlili načítání webu.';
+
+    /**
+     * Editor šablony: náhled vzorového reportu, texty se upravují kliknutím
+     * přímo v něm (`report-template.js`). Vzorový report má všechny sekce,
+     * aby šel upravit každý nadpis; jméno studia, logo a kontakty jsou
+     * skutečné z Odchozí pošty.
+     */
     public function reportTemplate(): Response
     {
         $template = new ReportTemplate($this->kernel->settings());
+        $texts = $template->texts();
         $custom = $template->custom();
+        $summary = ReportTemplate::sampleSummary();
+        $options = $this->kernel->reportSender()->options($summary, self::SAMPLE_NOTE, array_keys(ReportRepository::SECTIONS)) + ['editable' => true];
+        // Tlačítka s odkazem na studio se kreslí jen s kontaktem — ve vzoru vždy.
+        $options['contactUrl'] = $options['contactUrl'] !== '' ? $options['contactUrl'] : '#';
+        $values = ReportTemplate::values($summary, (string) $options['studio']['name']);
         $fields = [];
 
         foreach (ReportTemplate::FIELDS as $key => $field) {
-            $fields[] = $field + ['key' => $key, 'value' => $custom[$key] ?? '', 'changed' => isset($custom[$key])];
+            $fields[$key] = ['label' => $field['label'], 'default' => $field['default'], 'rows' => $field['rows'], 'max' => $field['max']];
+        }
+
+        $subjects = [];
+
+        foreach (['subject_ok' => 'Předmět, když bylo vše v pořádku', 'subject' => 'Předmět v ostatních případech'] as $key => $label) {
+            $subjects[] = ['key' => $key, 'label' => $label, 'text' => ReportTemplate::fill($texts[$key], $values)];
         }
 
         return $this->view('settings/report-template', [
             'title' => 'Nastavení',
             'activeTab' => 'reporty',
-            'fields' => $fields,
-            'placeholders' => ReportTemplate::PLACEHOLDERS,
-            'changedCount' => count($custom),
-        ] + $this->templatePreview($template));
+            'emailBody' => $this->kernel->reportRenderer()->body($summary, $options),
+            'subjects' => $subjects,
+            'texts' => $texts,
+            'changedCount' => count($custom) + ($template->hasCustomOrder() ? 1 : 0),
+            'sectionOrder' => implode(',', $template->order()),
+            'editorConfig' => (string) json_encode([
+                'fields' => $fields,
+                'texts' => $texts,
+                'saved' => $texts,
+                'values' => $values,
+                'placeholders' => ReportTemplate::PLACEHOLDERS,
+                'bold' => ['intro' => $values['{web}']],
+                'upper' => ['note_label'],
+                'order' => $template->order(),
+                'sections' => ReportTemplate::SECTION_LABELS + array_map(static fn (array $section): string => $section['label'], ReportRepository::SECTIONS),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP),
+        ]);
     }
 
     public function saveReportTemplate(): Response
@@ -298,29 +334,6 @@ final class SettingsController extends Controller
         }
 
         return $this->redirectWithFlash('nastaveni/reporty', $reset ? 'Šablona používá zase výchozí texty.' : 'Šablona reportu je uložená. Platí pro reporty, které ještě neodešly.');
-    }
-
-    /**
-     * Náhled šablony na posledním reportu (souhrn z něj, texty aktuální).
-     *
-     * @return array{previewBody: string, previewSubject: string, previewNote: string}
-     */
-    private function templatePreview(ReportTemplate $template): array
-    {
-        $latest = $this->kernel->reports()->all()[0] ?? null;
-        $report = $latest !== null ? $this->kernel->reports()->find((int) $latest['id']) : null;
-
-        if ($report === null || !is_array($report['summary'] ?? null)) {
-            return ['previewBody' => '', 'previewSubject' => '', 'previewNote' => 'Náhled se ukáže, až vznikne první report.'];
-        }
-
-        $options = $this->kernel->reportSender()->options($report['summary'], (string) $report['note'], $report['sections']);
-
-        return [
-            'previewBody' => $this->kernel->reportRenderer()->body($report['summary'], $options),
-            'previewSubject' => ReportTemplate::subject($report['summary'], $options['texts'], $options['studio']['name']),
-            'previewNote' => 'Náhled na reportu ' . $report['site_name'] . ' · ' . $report['period_label'] . ' — data z něj, texty podle šablony.',
-        ];
     }
 
     public function saveService(): Response

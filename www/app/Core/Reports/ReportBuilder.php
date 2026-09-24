@@ -7,6 +7,7 @@ namespace App\Core\Reports;
 use App\Core\Events\EventLog;
 use App\Core\Monitor\AlertRepository;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\SecurityAudit;
 use App\Core\Monitor\SnapshotImporter;
 use App\Core\Monitor\UptimeRepository;
@@ -36,6 +37,7 @@ final class ReportBuilder
         private readonly ServiceRepository $service,
         private readonly SecurityAudit $security,
         private readonly SnapshotImporter $snapshots,
+        private readonly ?PluginDirectory $directory = null,
     ) {
     }
 
@@ -161,6 +163,19 @@ final class ReportBuilder
 
         if ($php !== '' && PhpSupport::isEol($php, strtotime($today))) {
             $recommendations[] = ['title' => 'Novější verze PHP', 'text' => 'Váš hosting stále běží na starší verzi PHP (' . PhpSupport::minor($php) . '), pro kterou už nevycházejí bezpečnostní opravy. Přechod na novější verzi zabere zhruba hodinu a doporučujeme ho udělat co nejdřív. Ozvěte se, domluvíme termín.'];
+        }
+
+        // Opuštěné a stažené pluginy (data z wordpress.org).
+        $issues = $this->directory?->issues($siteId, strtotime($today)) ?? [];
+
+        if ($issues !== []) {
+            $insecure = array_filter($issues, static fn (array $issue): bool => $issue['security']);
+            $recommendations[] = [
+                'title' => $insecure !== [] ? 'Doplněk s bezpečnostní chybou' : 'Zastaralé doplňky',
+                'text' => implode(' ', array_map([PluginDirectory::class, 'issueText'], array_slice($issues, 0, 3)))
+                    . (count($issues) > 3 ? ' A ' . get_count(count($issues) - 3, 'další', 'další', 'dalších') . '.' : '')
+                    . ' Náhradu vybereme a vyměníme v rámci servisu.',
+            ];
         }
 
         if ($sslDays !== null && $sslDays < 0) {

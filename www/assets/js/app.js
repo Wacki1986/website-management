@@ -24,6 +24,7 @@ import { initPending } from './modules/pending.js';
 import { initPluginUpdate } from './modules/plugin-update.js';
 import { initConfirmDialogs } from './modules/confirm-dialog.js';
 import { initServiceTasks } from './modules/service-tasks.js';
+import { initReportTemplate } from './modules/report-template.js';
 
 initToasts();
 initThemeToggle();
@@ -41,3 +42,4 @@ initPending();
 initPluginUpdate();
 initConfirmDialogs();
 initServiceTasks();
+initReportTemplate();

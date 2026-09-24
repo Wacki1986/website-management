@@ -54,9 +54,12 @@ později: `dev/docs/02-todo.md`.
 
 ## JavaScript
 
-- Všechno funguje bez skriptu (obyčejné GET/POST, `<details>`, odkazy);
-  skript přidává pohodlí. Moduly v `www/assets/js/modules/`, import mapu
-  verzuje `Kernel::jsImportMap()`.
+- **JavaScript je vždycky zapnutý** (rozhodnutí správce 24. 9. 2026).
+  Kde by stav bez skriptu omezoval funkci nebo pohodlí, má přednost řešení
+  se skriptem — záložní cesta bez JS se nemusí stavět. Základní věci
+  (odkazy, formuláře s obyčejným POST) ale dál nemají zbytečně záviset na
+  skriptu. Moduly v `www/assets/js/modules/`, import mapu verzuje
+  `Kernel::jsImportMap()`.
 
 ## Styl
 

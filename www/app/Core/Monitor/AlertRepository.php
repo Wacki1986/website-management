@@ -22,13 +22,14 @@ final class AlertRepository
         'service_overdue' => 'Servis po termínu',
         'backup_old' => 'Stará záloha',
         'domain_expiring' => 'Expirace domény',
+        'plugins_outdated' => 'Opuštěné pluginy',
     ];
 
     /** @var array<string, string> typ => ikona v seznamu */
     public const ICONS = [
         'down' => 'alert', 'ssl_expiring' => 'shield', 'ssl_expired' => 'alert', 'php_eol' => 'shield',
         'api_error' => 'plugin', 'updates' => 'shield', 'service_overdue' => 'clock', 'backup_old' => 'database',
-        'domain_expiring' => 'globe',
+        'domain_expiring' => 'globe', 'plugins_outdated' => 'plugin',
     ];
 
     public function __construct(private readonly Connection $db)

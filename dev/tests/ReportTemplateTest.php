@@ -55,22 +55,58 @@ return [
         assertContainsString('Odhlásit se můžete odpovědí na tento e-mail.', $html);
         assertFalse(str_contains($html, 'Napište nám'));
         assertContainsString('Ahoj, tady je přehled webu kavarnadobra.cz za září 2026.', $kernel->reportRenderer()->text($summary, $options));
+        assertFalse(str_contains($html, 'data-tpl'), 'Značky editoru nesmí do e-mailu klientovi');
 
-        // Rozpracovaný report: náhled na stránce nastavení z jeho dat.
-        $kernel->reportSender()->draft($kernel->sites()->findWithSnapshot($siteId), 'manual', '2026-09-01', '2026-09-30', 'Září 2026', today: '2026-10-01');
-
+        // Editor: vzorový report se všemi sekcemi, upravitelné texty s data-tpl.
         $page = kernelRequest($kernel, 'GET', '/nastaveni/reporty')->body();
-        assertContainsString('Náhled na reportu Kavárna · Září 2026', $page);
-        assertContainsString('Předmět: <b>Web kavarnadobra.cz', $page);
-        assertContainsString('email-paper__sheet', $page);
-        assertContainsString('Texty klientského reportu', $page);
-        assertContainsString('placeholder="Napište nám"', $page);
-        assertContainsString('value="Zavolejte nám"', $page);
+        assertContainsString('Šablona klientského reportu', $page);
+        assertContainsString('<span data-tpl="subject_ok">Web kavarnadobra.cz: celý ', $page);
+        assertContainsString('<span data-tpl="cta_button">Zavolejte nám</span>', $page);
+        assertContainsString('<span data-tpl="intro">Ahoj, tady je přehled webu', $page);
+        foreach (['heading_updates', 'heading_services', 'heading_content', 'heading_recommendations', 'note_label', 'content_button', 'cta_text', 'signature', 'footer', 'subject'] as $key) {
+            assertContainsString('data-tpl="' . $key . '"', $page);
+        }
+        assertContainsString('name="cta_button" value="Zavolejte nám" data-template-input="cta_button"', $page);
+        assertContainsString('data-config="{&quot;fields&quot;', $page);
         assertContainsString('name="reset" value="1"', $page);
         assertContainsString('href="/nastaveni/reporty">Upravit šablonu</a>', kernelRequest($kernel, 'GET', '/reporty')->body());
 
         kernelRequest($kernel, 'POST', '/nastaveni/reporty', ['_token' => $token, 'reset' => '1', 'cta_button' => 'Ignorováno']);
         assertSame([], (new ReportTemplate($kernel->settings()))->custom());
+
+        Urls::reset();
+    },
+    'pořadí sekcí: uloží se jen změněné, e-mail i textová varianta ho dodrží, editor má šipky' => function (): void {
+        [$kernel, $token] = loggedInKernel('Správce');
+        $template = new ReportTemplate($kernel->settings());
+
+        assertSame(ReportTemplate::SECTION_ORDER, $template->order());
+        assertSame(0, $template->save(['section_order' => implode(',', ReportTemplate::SECTION_ORDER)]), 'Základní pořadí se neukládá');
+        assertFalse($template->hasCustomOrder());
+
+        kernelRequest($kernel, 'POST', '/nastaveni/reporty', ['_token' => $token, 'section_order' => 'cta,recommendations,neznama,note']);
+        $order = (new ReportTemplate($kernel->settings()))->order();
+        assertSame(['cta', 'recommendations', 'note', 'updates'], array_slice($order, 0, 4), 'Neznámé klíče pryč, chybějící na konec');
+        assertSame(count(ReportTemplate::SECTION_ORDER), count($order));
+
+        $summary = ReportTemplate::sampleSummary(strtotime('2026-09-24'));
+        $options = $kernel->reportSender()->options($summary, 'Poznámka pro klienta.', array_keys(\App\Core\Reports\ReportRepository::SECTIONS));
+        $html = $kernel->reportRenderer()->body($summary, $options);
+
+        assertTrue(strpos($html, 'Napište nám') < strpos($html, 'Na co bychom se rádi domluvili'), 'Výzva ke kontaktu je teď první');
+        assertTrue(strpos($html, 'Na co bychom se rádi domluvili') < strpos($html, 'Co jsme pro vás udělali'));
+        assertFalse(str_contains($html, 'data-tpl-section'), 'Značky editoru nesmí do e-mailu');
+        assertContainsString('font-size:15px;font-weight:700;line-height:1.4;">&#10003;</td>', $html, 'Odrážka je fajfka, ne kolečko');
+        assertContainsString('<tr><td style="height:28px;font-size:0;line-height:0;">&nbsp;</td></tr>', $html, 'Mezera před patičkou');
+
+        $text = $kernel->reportRenderer()->text($summary, $options);
+        assertTrue(strpos($text, 'Na co bychom se rádi domluvili:') < strpos($text, 'Poznámka od studia:'));
+
+        $page = kernelRequest($kernel, 'GET', '/nastaveni/reporty')->body();
+        assertContainsString('<tr data-tpl-section="cta">', $page);
+        assertContainsString('name="section_order" value="cta,recommendations,note,', $page);
+        assertContainsString('class="template-preview"', $page);
+        assertContainsString('data-confirm="template-reset"', $page, 'Změněné pořadí = je co vracet');
 
         Urls::reset();
     },

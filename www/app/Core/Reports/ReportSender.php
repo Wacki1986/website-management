@@ -287,6 +287,7 @@ final class ReportSender
     {
         $mail = $this->mailSettings->current();
         $logo = $this->settings->get('mail_logo_url');
+        $template = new ReportTemplate($this->settings);
 
         return [
             'note' => $note,
@@ -300,7 +301,8 @@ final class ReportSender
                 'phone' => $this->settings->get('report_phone'),
             ],
             'contactUrl' => (string) $mail['from_address'] !== '' ? 'mailto:' . $mail['from_address'] : '',
-            'texts' => (new ReportTemplate($this->settings))->texts(),
+            'texts' => $template->texts(),
+            'order' => $template->order(),
         ];
     }
 }

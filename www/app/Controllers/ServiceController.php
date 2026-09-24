@@ -12,6 +12,7 @@ use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\PluginDirectory;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceSchedule;
 
@@ -159,6 +160,11 @@ final class ServiceController extends Controller
         if ($snapshot !== null) {
             $notes[] = PhpSupport::advice((string) $snapshot['php_version']);
             $notes[] = DbSupport::advice((string) $snapshot['db_type'], (string) $snapshot['db_version']);
+        }
+
+        // Opuštěné a z adresáře stažené pluginy — stejné věty jako v reportu.
+        foreach ($this->kernel->pluginDirectory()->issues((int) $id) as $issue) {
+            $notes[] = PluginDirectory::issueText($issue);
         }
 
         $description = implode("\n", array_filter($notes, static fn (?string $note): bool => $note !== null && $note !== ''));

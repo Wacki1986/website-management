@@ -1,5 +1,42 @@
 # Změny
 
+## 0.6.0 — 24. 9. 2026
+
+- **Opuštěné a z adresáře stažené pluginy** (`PluginDirectory`, data z API
+  wordpress.org, stejná jako u Wordfence): správa jednou týdně ověří každý
+  plugin z webů (nejvýš 40 za průchod cronu, jeden dotaz pro všechny weby),
+  uloží do nové tabulky `plugin_directory` a počty do `site_snapshots`
+  (migrace `2026_09_24_000000_plugin_directory`).
+  - Záložka Pluginy: sloupec **Vydáno** („před 2 roky", „staženo 1. 4. 2020",
+    „mimo adresář"), Stav „Aktivní · opuštěný" / „· stažen — bezpečnost",
+    vysvětlení v bublině, počet v metrice.
+  - Stav webu: plugin stažený kvůli bezpečnosti = Problém „Nebezpečný
+    plugin", jinak stažený / opuštěný = Pozornost.
+  - Alert „Opuštěné pluginy" (Nastavení → Alerty, práh 24 měsíců, jde
+    vypnout; se staženým pluginem vážný).
+  - Servis předvyplní poznámku, report přidá doporučení „Zastaralé doplňky" /
+    „Doplněk s bezpečnostní chybou".
+- Nastavení → Alerty: klíč hodnoty pravidla přímo u pravidla (`valueKey`).
+
+## 0.5.5 — 24. 9. 2026
+
+- **Šablona reportu se upravuje přímo v náhledu e-mailu** — vzorový report
+  se všemi sekcemi na celou šířku, upravitelné texty mají tužku; kliknutí
+  otevře pole se značkami a tlačítky pro jejich vložení, náhled se hned
+  překreslí se skutečnými údaji. Lišta „Neuložené změny: N · Zahodit ·
+  Uložit šablonu", u odchodu se neuloženými změnami varování, „Vrátit
+  výchozí texty" v potvrzovacím okně. Barva tužky: zelená = upravený text,
+  oranžová = neuložená změna (`report-template.js`, `app/_template-editor.scss`).
+- **Pořadí sekcí e-mailu** jde měnit v editoru šipkami (štítek sekce po
+  najetí myší): poznámka, aktualizace, servis, obsah, doporučení, graf,
+  technická příloha, výzva ke kontaktu. Pořadí je součást šablony a platí
+  pro HTML i textovou variantu (`ReportTemplate::order()`).
+- Report: odrážky „Co jsme pro vás udělali“ jako zelená fajfka místo
+  kolečka (Outlook zaoblení neumí), mezera mezi poslední sekcí a patičkou;
+  náhled v editoru bez rámu, jen odsazený.
+- CLAUDE.md: JavaScript je vždy zapnutý — řešení se skriptem má přednost
+  před záložní cestou bez JS.
+
 ## 0.5.4 — 24. 9. 2026
 
 - **Šablona klientského reportu** (Nastavení → Šablona reportu, tlačítko

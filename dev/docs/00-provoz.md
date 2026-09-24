@@ -67,7 +67,8 @@ Co jeden průchod dělá (v tomto pořadí, s časovým rozpočtem podle
 týdně, RDAP) → data z pluginu (interval v nastavení, výchozí 6 h) → denní
 blok (souhrn aktualizací e-mailem, servis po termínu, retence) → reporty
 (den před termínem příprava ke schválení, v termínu odeslání) → ikony webů
-→ konce podpory PHP a databází (1× za 30 dní, viz kapitola 7).
+→ pluginy na wordpress.org (nejvýš 40 za průchod, každý 1× týdně) → konce
+podpory PHP a databází (1× za 30 dní, viz kapitola 7).
 
 Stav posledního běhu je v patičce bočního menu a v Nastavení → Monitoring;
 když cron neběží déle než 3× interval, dashboard ukáže pruh „Monitor
@@ -125,6 +126,16 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   „aktualizaci nenabídl" — zkontrolovat licenci a aktualizovat ve wp-admin,
   případně plugin přestat sledovat (oko). Plugin 1.5.2+ zkusí nejdřív
   nabídku, kterou web ukazuje ve wp-admin.
+- **Opuštěné a stažené pluginy:** správa se jednou týdně zeptá wordpress.org
+  na každý plugin z webů (jeden dotaz platí pro všechny weby, plugin na webu
+  se neptá). Záložka Pluginy má sloupec **Vydáno** (kdy plugin naposledy
+  vyšel) a ve Stavu „opuštěný" (bez vydání déle než práh v Nastavení →
+  Alerty, výchozí 24 měsíců jako Wordfence) nebo „stažen z adresáře" /
+  „stažen — bezpečnost". Placené a vlastní pluginy („mimo adresář") se
+  nehodnotí. Web s opuštěným pluginem je ve stavu Pozornost, se staženým
+  kvůli bezpečnosti Problém („Nebezpečný plugin"); pravidlo alertu „Opuštěné
+  pluginy" jde vypnout. Nový zápis servisu i report (sekce Doporučení)
+  dostanou větu pro klienta s doporučením náhrady.
 - **Typy obsahu** (záložka Obsah): veřejné typy a od pluginu 1.5.1 i vlastní
   typy s vlastní položkou v menu wp-admin (šablony je často registrují jako
   neveřejné — Reference, Kurzy). Interní typy pluginů se nepočítají.
@@ -171,11 +182,14 @@ jde spouštět opakovaně.
   znaků) a přepínače sekcí se ukládají k reportu, sekce i jako výchozí pro
   příští reporty webu. „Poslat sobě na zkoušku" jde na e-mail přihlášeného.
 - **Šablona reportu** (Nastavení → Šablona reportu, na stránce Reporty
-  tlačítko „Upravit šablonu"): předmět, úvod, nadpisy sekcí, výzva ke
-  kontaktu, podpis a patička. Prázdné pole = výchozí text; značky `{web}`,
-  `{obdobi}`, `{kdy}`, `{studio}` se dosadí za údaje reportu. Uložení
-  přegeneruje reporty čekající ve frontě; odeslané zůstávají, jak odešly.
-  Náhled je na posledním reportu.
+  tlačítko „Upravit šablonu"): náhled vzorového reportu se všemi sekcemi,
+  texty s tužkou se upravují kliknutím přímo v něm (předmět, úvod, nadpisy,
+  tlačítka, výzva, podpis, patička). V poli jsou značky `{web}`, `{obdobi}`,
+  `{kdy}`, `{studio}` (vkládají se tlačítky pod polem), v náhledu už
+  skutečné údaje. Enter / Ctrl+Enter potvrdí, Esc zruší, „Výchozí text"
+  vrátí jedno pole. Sekce e-mailu jdou posouvat šipkami ve štítku, který
+  se nad sekcí ukáže po najetí myší. Ukládá se tlačítkem v liště. Uložení přegeneruje
+  reporty čekající ve frontě; odeslané zůstávají, jak odešly.
 - Otevření reportu klientem hlídá 1×1 obrázek `/r/<token>.gif` (musí být
   mimo Basic auth, viz kapitola 2). Kopie odeslaného HTML zůstává uložená.
 

@@ -47,7 +47,19 @@ final class ReportTemplate
         'footer' => ['label' => 'Drobný text v patičce', 'default' => 'Tuto zprávu dostáváte, protože se staráme o váš web. Frekvenci zpráv změníme na požádání.', 'rows' => 2, 'max' => 300],
     ];
 
+    /**
+     * Posouvatelné sekce e-mailu v základním pořadí. Hlavička, úvod
+     * s metrikami a patička stojí vždy na svém místě.
+     */
+    public const SECTION_ORDER = ['note', 'updates', 'services', 'content', 'recommendations', 'uptime_chart', 'technical', 'cta'];
+
+    /** Popisky sekcí v editoru (poznámka není přepínatelná sekce reportu). */
+    public const SECTION_LABELS = ['note' => 'Poznámka od studia'];
+
     private const SETTING = 'report_template';
+
+    /** Klíč pořadí sekcí v uloženém JSON (vedle přepsaných textů). */
+    private const ORDER_KEY = '_order';
 
     public function __construct(private readonly Settings $settings)
     {
@@ -73,12 +85,39 @@ final class ReportTemplate
         return array_merge(self::defaults(), $this->custom());
     }
 
+    /** Pořadí sekcí ze šablony (uložené, jinak základní). @return array<int, string> */
+    public function order(): array
+    {
+        $stored = json_decode($this->settings->get(self::SETTING), true);
+
+        return self::normalizeOrder(is_array($stored) ? (array) ($stored[self::ORDER_KEY] ?? []) : []);
+    }
+
+    public function hasCustomOrder(): bool
+    {
+        return $this->order() !== self::SECTION_ORDER;
+    }
+
+    /**
+     * Známé sekce v zadaném pořadí, chybějící na konec v základním pořadí.
+     *
+     * @param array<int, mixed> $order
+     * @return array<int, string>
+     */
+    public static function normalizeOrder(array $order): array
+    {
+        $order = array_values(array_intersect(array_map('strval', $order), self::SECTION_ORDER));
+
+        return array_values(array_unique(array_merge($order, self::SECTION_ORDER)));
+    }
+
     /**
      * Uložit z formuláře. Prázdné pole nebo text shodný s výchozím se
-     * neukládá (= výchozí znění).
+     * neukládá (= výchozí znění); pořadí sekcí (`section_order`, klíče
+     * oddělené čárkou) jen, když se liší od základního.
      *
      * @param array<string, mixed> $input
-     * @return int kolik textů se liší od výchozích
+     * @return int kolik textů se liší od výchozích (+1 za změněné pořadí)
      */
     public function save(array $input): int
     {
@@ -93,9 +132,17 @@ final class ReportTemplate
             }
         }
 
+        $changed = count($custom);
+        $order = self::normalizeOrder(explode(',', (string) ($input['section_order'] ?? '')));
+
+        if ($order !== self::SECTION_ORDER) {
+            $custom[self::ORDER_KEY] = $order;
+            $changed++;
+        }
+
         $this->settings->set(self::SETTING, $custom !== [] ? (string) json_encode($custom, JSON_UNESCAPED_UNICODE) : '');
 
-        return count($custom);
+        return $changed;
     }
 
     /**
@@ -118,6 +165,67 @@ final class ReportTemplate
     public static function fill(string $text, array $values): string
     {
         return strtr($text, $values);
+    }
+
+    /**
+     * Vzorový report pro editor šablony: všechny sekce vyplněné, ať jde
+     * upravit každý nadpis (skutečný poslední report nemusí mít servis,
+     * doporučení ani pozvánku k obsahu). Data jsou smyšlená, jen na ukázku.
+     *
+     * @return array<string, mixed> stejná struktura jako `ReportBuilder::build()`
+     */
+    public static function sampleSummary(?int $now = null): array
+    {
+        $now ??= time();
+        $from = date('Y-m-01', strtotime('first day of last month', $now));
+        $to = date('Y-m-t', strtotime($from));
+        $month = (int) date('n', strtotime($from));
+        $label = mb_convert_case(get_czech_month($month), MB_CASE_TITLE) . ' ' . date('Y', strtotime($from));
+        $days = [];
+
+        for ($day = strtotime($from); $day <= strtotime($to); $day += 86400) {
+            $days[] = ['day' => date('Y-m-d', $day), 'tone' => date('j', $day) === '12' ? 'warning' : 'ok'];
+        }
+
+        return [
+            'period' => ['from' => $from, 'to' => $to, 'label' => $label, 'phrase' => 'celý ' . get_czech_month($month), 'days' => count($days)],
+            'site' => ['name' => 'Kavárna Dobrá', 'host' => 'kavarnadobra.cz', 'url' => 'https://kavarnadobra.cz', 'client' => 'Kavárna Dobrá s.r.o.'],
+            'headline' => 'Váš web běžel celý ' . get_czech_month($month) . ' bez vážného problému',
+            'subject' => '',
+            'allGood' => true,
+            'uptime' => [
+                'percent' => 99.9, 'percentLabel' => '99,9 %', 'downtime_min' => 15, 'downtimeLabel' => '15 min mimo provoz',
+                'checks' => 2880, 'checksLabel' => '2 880', 'intervalLabel' => 'každých 15 minut', 'outages' => [], 'days' => $days,
+                'note' => 'Web byl nedostupný celkem 15 min, z toho nejdéle 12. ' . $month . '. (15 min). Ve zbytku období běžel bez problému.',
+            ],
+            'updates' => ['total' => 6, 'core' => ['6.9'], 'plugins' => [], 'installed' => [], 'noteLabel' => 'včetně WordPressu'],
+            'done' => [
+                ['strong' => 'WordPress', 'text' => 'jsme aktualizovali na verzi 6.9.'],
+                ['strong' => '5 doplňků', 'text' => 'dostalo novou verzi — mimo jiné kontaktní formulář a zálohování.'],
+                ['strong' => 'Zálohy', 'text' => 'běžely každý den, poslední je z konce měsíce.'],
+            ],
+            'content' => [
+                'types' => [
+                    ['label' => 'Příspěvky', 'published' => 24, 'latestTitle' => 'Nové menu na podzim', 'days' => 75, 'tone' => 'warning', 'ageLabel' => 'naposledy před 2 měsíci'],
+                    ['label' => 'Stránky', 'published' => 8, 'latestTitle' => 'Kontakt', 'days' => 200, 'tone' => 'error', 'ageLabel' => 'naposledy před půl rokem'],
+                ],
+                'freshestDays' => 75,
+                'tone' => 'warning',
+                'invite' => ['title' => 'Web by si zasloužil něco nového', 'text' => 'Poslední obsah na webu přibyl před 75 dny. Ozvěte se — rádi s vámi projdeme nápady, texty nebo fotky.'],
+            ],
+            'services' => [[
+                'date' => date('Y-m-20', strtotime($from)), 'kind' => 'small', 'kindLabel' => 'Malý servis',
+                'description' => '', 'tasks' => ['Aktualizace WordPressu', 'Aktualizace pluginů a šablony', 'Kontrola zálohy'],
+                'note' => 'Doporučujeme obnovit fotografie v galerii.', 'minutes' => 45,
+            ]],
+            'nextService' => ['date' => date('Y-m-20', strtotime('+1 month', strtotime($from))), 'kindLabel' => 'Malý servis'],
+            'recommendations' => [['title' => 'Novější verze PHP', 'text' => 'Hosting běží na PHP 8.2, kterému brzy končí podpora — přechod zařídíme s hostingem.']],
+            'technical' => [
+                'wp' => '6.9', 'php' => '8.2.28', 'theme' => 'Kavárna', 'plugins_total' => 18, 'plugins_active' => 17,
+                'plugins_updates' => 0, 'ssl_valid_to' => date('Y-m-d', strtotime('+70 days', $now)), 'hosting' => '',
+            ],
+            'summaryLine' => '',
+        ];
     }
 
     /**

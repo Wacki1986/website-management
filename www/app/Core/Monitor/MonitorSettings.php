@@ -33,6 +33,8 @@ final class MonitorSettings
         'rule_service_hours' => 24,
         'rule_domain_on' => 0,
         'rule_domain_days' => 90,
+        'rule_abandoned_on' => 1,
+        'rule_abandoned_months' => 24,
     ];
 
     /** @var array<string, array{0: int, 1: int}> meze hodnot */
@@ -48,6 +50,7 @@ final class MonitorSettings
         'rule_backup_hours' => [6, 720],
         'rule_service_hours' => [1, 720],
         'rule_domain_days' => [7, 365],
+        'rule_abandoned_months' => [6, 120],
     ];
 
     public function __construct(private readonly Settings $settings)

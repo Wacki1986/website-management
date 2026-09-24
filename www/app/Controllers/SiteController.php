@@ -272,12 +272,19 @@ final class SiteController extends Controller
         $rows = [];
         $latestUpdate = null;
         $ignoredCount = 0;
+        $outdated = 0;
+        $directory = $this->kernel->pluginDirectory();
+        $listing = $directory->forFiles(array_map(static fn (array $plugin): string => (string) $plugin['file'], $plugins));
 
         foreach ($plugins as $plugin) {
             $file = (string) $plugin['file'];
             $ignored = (int) ($plugin['updates_ignored'] ?? 0) === 1;
             $ignoredCount += $ignored ? 1 : 0;
+            $assessment = $directory->assess($listing[$file] ?? null);
+            $outdated += in_array($assessment['state'], ['abandoned', 'closed'], true) ? 1 : 0;
             $rows[] = [
+                'directory' => $assessment,
+                'status' => self::pluginStatus((int) $plugin['is_active'] !== 1, $assessment),
                 'inactive' => (int) $plugin['is_active'] !== 1,
                 'updatable' => isset($updatable[$file]),
                 'new_version' => $updatable[$file]['new_version'] ?? $plugin['new_version'],
@@ -317,6 +324,7 @@ final class SiteController extends Controller
                 'securityUpdates' => $snapshot !== null ? (int) $snapshot['security_updates'] : 0,
                 'latestUpdate' => $latestUpdate,
                 'ignored' => $ignoredCount,
+                'outdated' => $outdated,
             ],
             'hasSnapshot' => $snapshot !== null,
             'updateBlocked' => SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_UPDATE),
@@ -800,6 +808,25 @@ final class SiteController extends Controller
             ['value' => PhpSupport::minor($php), 'tone' => PhpSupport::tone($php), 'title' => PhpSupport::advice($php) ?? ''],
             ['value' => $db !== '' ? DbSupport::label($dbType, $db) : '', 'tone' => DbSupport::tone($dbType, $db), 'title' => DbSupport::advice($dbType, $db) ?? ''],
         ];
+    }
+
+    /**
+     * Sloupec Stav u pluginu: aktivní/neaktivní a k tomu hodnocení
+     * z wordpress.org — horší z obou určuje barvu.
+     *
+     * @param array{state: string, tone: string, label: string} $assessment z `PluginDirectory::assess()`
+     * @return array{tone: string, label: string}
+     */
+    private static function pluginStatus(bool $inactive, array $assessment): array
+    {
+        $label = $inactive ? 'Neaktivní' : 'Aktivní';
+
+        return match (true) {
+            $assessment['tone'] === 'error' => ['tone' => 'error', 'label' => $label . ' · ' . mb_strtolower($assessment['label'])],
+            $inactive => ['tone' => 'error', 'label' => 'Neaktivní · riziko'],
+            $assessment['tone'] === 'warning' => ['tone' => 'warning', 'label' => $label . ' · ' . mb_strtolower($assessment['label'])],
+            default => ['tone' => 'ok', 'label' => $label],
+        };
     }
 
     private static function minutesLabel(int $minutes): string

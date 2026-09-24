@@ -15,9 +15,10 @@
  * @var array               $site
  * @var array<int, array<string, mixed>> $rows  řádky `site_plugins` + `updatable`, `ignored`, `deleteUrl`, `watchAction`, `watchLabel`,
  *                                              `activeAction` (aktivovat/deaktivovat, null = nejde), `activeLabel`,
- *                                              `activeBusy`/`watchBusy` (text průběhu po kliknutí)
+ *                                              `activeBusy`/`watchBusy` (text průběhu po kliknutí),
+ *                                              `status` {tone, label} a `directory` (wordpress.org: released, title, tone)
  * @var string              $q
- * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int} $metrics
+ * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int, outdated: int} $metrics
  * @var bool                $hasSnapshot
  * @var ?string             $updateBlocked proč teď aktualizace nejde (null = jde)
  * @var ?string             $deleteBlocked proč teď mazání nejde (null = jde; řádek pak má `deleteUrl`)
@@ -33,7 +34,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
         <div class="metric">
             <div class="metric__label">Pluginů celkem</div>
             <div class="metric__value"><?= $hasSnapshot ? $metrics['total'] : '—' ?></div>
-            <div class="metric__note"><?= $hasSnapshot ? $metrics['active'] . ' aktivních · ' . $metrics['inactive'] . ' neaktivní' : 'čeká na data z pluginu' ?></div>
+            <div class="metric__note"><?= $hasSnapshot ? $metrics['active'] . ' aktivních · ' . $metrics['inactive'] . ' neaktivní' . ($metrics['outdated'] > 0 ? ' · ' . $metrics['outdated'] . ' opuštěné' : '') : 'čeká na data z pluginu' ?></div>
         </div>
         <div class="metric">
             <div class="metric__label">Čekající aktualizace</div>
@@ -74,7 +75,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                 <div class="table table--plugins">
                     <div class="table__head">
                         <div><button class="checkbox" type="button" role="checkbox" aria-checked="false" aria-label="Vybrat vše k aktualizaci" data-selection-all><span class="checkbox__mark"></span></button></div>
-                        <div>Plugin</div><div>Stav</div><div>Verze</div><div>Dostupná</div><div class="table__cell table__cell--right">Akce</div>
+                        <div>Plugin</div><div>Stav</div><div>Verze</div><div>Dostupná</div><div>Vydáno</div><div class="table__cell table__cell--right">Akce</div>
                     </div>
                     <?php foreach ($rows as $plugin): ?>
                         <div class="table__row<?= $plugin['inactive'] ? ' table__row--error' : '' ?>" data-plugin-row="<?= $this->e((string) $plugin['file']) ?>" data-plugin-name="<?= $this->e((string) $plugin['name']) ?>">
@@ -87,13 +88,14 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                                 <div class="table__primary u-truncate"><?= $this->e((string) $plugin['name']) ?></div>
                                 <div class="table__secondary u-truncate"><?= $this->e((string) $plugin['author']) ?></div>
                             </div>
-                            <div class="table__cell"><?= $plugin['inactive'] ? get_status('error', 'Neaktivní · riziko') : get_status('ok', 'Aktivní') ?></div>
+                            <div class="table__cell"<?= $plugin['directory']['tone'] !== '' ? ' title="' . $this->e($plugin['directory']['title']) . '"' : '' ?>><?= get_status($plugin['status']['tone'], $plugin['status']['label']) ?></div>
                             <div class="table__cell table__cell--mono u-hide-mobile" data-plugin-version><?= $this->e((string) $plugin['version']) ?></div>
                             <?php if ($plugin['ignored']): ?>
                                 <div class="table__cell table__cell--mono u-hide-mobile text-faint" title="Aktualizace tohoto pluginu se nesledují — nepočítají se do čekajících ani do alertu."><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) . ' · ' : '' ?>nesledováno</div>
                             <?php else: ?>
                                 <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>" data-plugin-new><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
                             <?php endif; ?>
+                            <div class="table__cell u-hide-mobile u-truncate<?= $plugin['directory']['tone'] !== '' ? ' text-' . $plugin['directory']['tone'] : ' text-subtle' ?>" style="font-size:var(--font-size-label)" title="<?= $this->e($plugin['directory']['title']) ?>"><?= $this->e($plugin['directory']['released']) ?></div>
                             <div class="table__cell table__cell--right u-hide-mobile">
                                 <div class="row-actions">
                                     <?php if ($plugin['activeAction'] !== null): ?>

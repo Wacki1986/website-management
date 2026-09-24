@@ -26,6 +26,7 @@ use App\Core\Monitor\MonitorRun;
 use App\Core\Monitor\MonitorSettings;
 use App\Core\Monitor\Notifier;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\SslChecker;
 use App\Core\Monitor\SupportTables;
 use App\Core\Monitor\UptimeClient;
@@ -89,7 +90,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.5.4';
+    public const VERSION = '0.6.0';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -130,6 +131,7 @@ final class Kernel
     private ?Notifier $notifier = null;
     private ?MonitorRun $monitor = null;
     private ?SupportTables $supportTables = null;
+    private ?PluginDirectory $pluginDirectory = null;
     private ?ServiceRepository $service = null;
     private ?ReportRepository $reports = null;
     private ?ReportBuilder $reportBuilder = null;
@@ -481,7 +483,7 @@ final class Kernel
 
     public function reportBuilder(): ReportBuilder
     {
-        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit(), $this->snapshots());
+        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit(), $this->snapshots(), $this->pluginDirectory());
     }
 
     public function reportRenderer(): ReportRenderer
@@ -509,10 +511,16 @@ final class Kernel
 
     public function alertEngine(): AlertEngine
     {
-        return $this->alertEngine ??= new AlertEngine($this->alerts(), $this->events(), $this->sites(), $this->notifier(), $this->monitorSettings());
+        return $this->alertEngine ??= new AlertEngine($this->alerts(), $this->events(), $this->sites(), $this->notifier(), $this->monitorSettings(), $this->pluginDirectory());
     }
 
     /** Jeden průchod monitoru — cron i tlačítka „Zkontrolovat". */
+    /** Pluginy v adresáři wordpress.org — opuštěné a stažené (krok cronu). */
+    public function pluginDirectory(): PluginDirectory
+    {
+        return $this->pluginDirectory ??= new PluginDirectory($this->db(), $this->monitorSettings());
+    }
+
     /** Konce podpory PHP a databází z endoflife.date (Nastavení → Monitoring, krok cronu). */
     public function supportTables(): SupportTables
     {
@@ -556,6 +564,13 @@ final class Kernel
         // kroků se v souhrnu běhu počítá jako odeslané reporty.
         $this->monitor->addStep('icons', function (int $now, float $deadline): int {
             $this->siteIcons()->refreshStale($now, $deadline);
+
+            return 0;
+        });
+
+        // Pluginy na wordpress.org: nejvýš 40 za průchod, každý jednou týdně.
+        $this->monitor->addStep('plugin-directory', function (int $now, float $deadline): int {
+            $this->pluginDirectory()->refresh($this->pluginDirectory()->dueSlugs($now), $now, $deadline);
 
             return 0;
         });

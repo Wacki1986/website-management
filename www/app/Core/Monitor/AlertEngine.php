@@ -22,6 +22,7 @@ final class AlertEngine
         private readonly SiteRepository $sites,
         private readonly Notifier $notifier,
         private readonly MonitorSettings $settings,
+        private readonly ?PluginDirectory $directory = null,
     ) {
     }
 
@@ -213,6 +214,18 @@ final class AlertEngine
         $this->toggle($site, 'updates', $tooMany, 'warning', get_count($updates, 'čekající aktualizace', 'čekající aktualizace', 'čekajících aktualizací'),
             'Web má ' . get_count($updates, 'nenainstalovanou aktualizaci', 'nenainstalované aktualizace', 'nenainstalovaných aktualizací') . ($snapshot['wp_update_version'] !== null ? ' včetně WordPressu ' . $snapshot['wp_update_version'] : '') . '.',
             'pravidlo: více než ' . $max . ' aktualizací', 'Aktualizace jsou pod prahem.', $now);
+
+        // Opuštěné a z adresáře stažené pluginy (data z wordpress.org).
+        if ($this->directory !== null) {
+            $this->directory->recount($siteId, $nowTs);
+            $issues = $this->directory->issues($siteId, $nowTs);
+            $closed = array_filter($issues, static fn (array $issue): bool => $issue['state'] === 'closed');
+            $names = implode(', ', array_map(static fn (array $issue): string => $issue['name'], $issues));
+            $this->toggle($site, 'plugins_outdated', $this->settings->bool('rule_abandoned_on') && $issues !== [], $closed !== [] ? 'error' : 'warning',
+                $closed !== [] ? get_count(count($closed), 'plugin stažený', 'pluginy stažené', 'pluginů stažených') . ' z wordpress.org' : get_count(count($issues), 'opuštěný plugin', 'opuštěné pluginy', 'opuštěných pluginů'),
+                'Na webu ' . (count($issues) === 1 ? 'je plugin, který se nevyvíjí nebo byl stažen z adresáře: ' : 'jsou pluginy, které se nevyvíjejí nebo byly staženy z adresáře: ') . $names . '. Nahraďte je, nedostávají opravy.',
+                'pravidlo: plugin bez vydání déle než ' . $this->directory->months() . ' měsíců nebo stažený z adresáře', 'Opuštěné pluginy jsou pryč.', $now);
+        }
 
         // Stará záloha — jen když plugin datum zálohy vůbec zjistil.
         $backupAt = $snapshot['last_backup_at'] ?? null;
