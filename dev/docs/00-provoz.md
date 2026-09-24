@@ -112,6 +112,10 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   neaktivního pluginu → potvrzovací stránka. Web plugin smaže jako wp-admin
   včetně odinstalace (plugin tím obvykle smaže i svá data). Aktivní plugin
   ani MEDIAGRAFIK Monitor smazat nejde.
+- **Deaktivace a aktivace pluginu** (plugin 1.5.0+): Pluginy → ikona
+  vypínače v řádku. Aktivní plugin se tím dá odebrat ve dvou krocích —
+  deaktivovat, zkontrolovat web, pak smazat ikonou koše; neaktivní plugin
+  jde stejnou ikonou znovu zapnout. MEDIAGRAFIK Monitor vypnout nejde.
 - **Aktualizace WordPressu** (plugin 1.2.0+): Přehled → „Aktualizovat" u
   verze WordPressu → potvrzovací stránka. Web aktualizuje jako wp-admin
   (stránka údržby, převod databáze). Potvrzuje se konkrétní verze; když

@@ -29,7 +29,7 @@ final class PhpSupport
     ];
 
     /** Doporučená verze do textů („Doporučen přechod na 8.3"). */
-    public const RECOMMENDED = '8.3';
+    public const RECOMMENDED = '8.4';
 
     /** `8.1.29` → `8.1`. */
     public static function minor(string $version): string
@@ -66,5 +66,40 @@ final class PhpSupport
         }
 
         return (int) floor((strtotime($end . ' 23:59:59') - ($now ?? time())) / 86400);
+    }
+
+    /** Kolik dní před koncem podpory se verze značí oranžově. */
+    public const WARN_DAYS = 365;
+
+    /** `error` bez podpory, `warning` do `WARN_DAYS` dní konec, jinak '' (i neznámá novější verze). */
+    public static function toneFor(?int $daysLeft): string
+    {
+        return match (true) {
+            $daysLeft === null => '',
+            $daysLeft < 0 => 'error',
+            $daysLeft <= self::WARN_DAYS => 'warning',
+            default => '',
+        };
+    }
+
+    public static function tone(string $version, ?int $now = null): string
+    {
+        if ($version === '') {
+            return '';
+        }
+
+        return self::isEol($version, $now) ? 'error' : self::toneFor(self::daysLeft($version, $now));
+    }
+
+    /** Věta pro klienta do poznámky servisu, nebo null, když je verze v pořádku. */
+    public static function advice(string $version, ?int $now = null): ?string
+    {
+        $minor = self::minor($version);
+
+        return match (self::tone($version, $now)) {
+            'error' => 'Web běží na PHP ' . $minor . ', které už nedostává bezpečnostní opravy — doporučujeme u hostingu přejít na PHP ' . self::RECOMMENDED . '.',
+            'warning' => 'PHP ' . $minor . ' přestane ' . get_czech_date((string) self::endOfLife($version)) . ' dostávat bezpečnostní opravy (za ' . self::daysLeft($version, $now) . ' dní) — doporučujeme včas přejít na PHP ' . self::RECOMMENDED . '.',
+            default => null,
+        };
     }
 }

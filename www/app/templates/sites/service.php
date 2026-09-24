@@ -9,13 +9,13 @@
  * @var \App\Core\View\View $this
  * @var array               $site
  * @var array{is_active: bool, kind: string, frequency: string, first_date: string} $values
- * @var array<string, array{label: string, note: string, estimate: string, minutes: int, icon: string}> $kinds
+ * @var array<string, array{label: string, note: string, icon: string}> $kinds
  * @var array<string, array{label: string, months: int}> $frequencies
  * @var array<int, array{date: string, countdown: string, tone: string}> $upcoming
  * @var array{date: string, countdown: string, overdue: bool, note: string}|null $next
  * @var string              $planNote
- * @var array{kind: string, frequency: string, estimate: string, year: string} $summary
- * @var array<int, array<string, mixed>> $logs  řádky historie; `progress` = „3 z 4 úkolů" (nebo ''), `editUrl` = úprava zápisu
+ * @var array{kind: string, frequency: string, year: string} $summary
+ * @var array<int, array<string, mixed>> $logs  řádky historie; `text` = popis, nebo odškrtnuté úkoly, `progress` = „3 z 4 úkolů" (nebo ''), `editUrl` = úprava zápisu
  * @var string              $logsNote
  * @var string              $prefill
  * @var string              $csrfToken
@@ -47,7 +47,6 @@ $base = 'weby/' . (int) $site['id'];
                                 <input type="radio" name="kind" value="<?= $this->e($code) ?>"<?= $values['kind'] === $code ? ' checked' : '' ?> class="visually-hidden">
                                 <div class="choice__title"><?= get_icon($kind['icon'], 'icon--sm icon--subtle') ?><?= $this->e($kind['label']) ?></div>
                                 <div class="choice__note"><?= $this->e($kind['note']) ?></div>
-                                <div class="text-caption"><?= $this->e($kind['estimate']) ?></div>
                             </label>
                         <?php endforeach; ?>
                     </div>
@@ -113,7 +112,6 @@ $base = 'weby/' . (int) $site['id'];
                 <div class="summary-list">
                     <div class="summary-list__row"><span class="summary-list__label">Druh</span><span class="summary-list__value"><?= $this->e($summary['kind']) ?></span></div>
                     <div class="summary-list__row"><span class="summary-list__label">Opakování</span><span class="summary-list__value"><?= $this->e($summary['frequency']) ?></span></div>
-                    <div class="summary-list__row"><span class="summary-list__label">Odhad času</span><span class="summary-list__value"><?= $this->e($summary['estimate']) ?></span></div>
                     <div class="summary-list__row"><span class="summary-list__label">Servisů letos</span><span class="summary-list__value"><?= $this->e($summary['year']) ?></span></div>
                 </div>
             </div>
@@ -129,16 +127,20 @@ $base = 'weby/' . (int) $site['id'];
             <?php render_empty('Zatím žádný servis', 'První zapsaný servis se objeví tady i v klientském reportu.', 'clock') ?>
         <?php else: ?>
             <div class="table table--service">
-                <div class="table__head"><div>Datum</div><div>Druh</div><div>Co jsme udělali</div><div class="table__cell table__cell--right">Čas</div><div>Stav</div></div>
+                <div class="table__head"><div>Datum</div><div>Druh</div><div>Co jsme udělali</div><div class="table__cell table__cell--right">Čas</div><div>Stav</div><div class="table__cell table__cell--right">Akce</div></div>
                 <?php foreach ($logs as $log): ?>
                     <div class="table__row">
                         <div class="table__cell table__cell--mono"><?= $this->e($log['date']) ?></div>
                         <div class="table__cell row" style="flex-wrap:nowrap;gap:9px"><?= get_icon($log['icon'], 'icon--sm ' . ($log['done'] ? 'icon--subtle' : 'icon--warning')) ?><span class="u-truncate"><?= $this->e($log['kindLabel']) ?></span></div>
-                        <div class="table__cell text-secondary" style="text-wrap:pretty"><?= $this->e((string) $log['description']) ?><?php if ((string) $log['user_name'] !== ''): ?><span class="text-caption"> · <?= $this->e((string) $log['user_name']) ?></span><?php endif; ?><?php if ($log['progress'] !== ''): ?><span class="text-caption"> · <?= $this->e($log['progress']) ?></span><?php endif; ?> <a class="text-caption" href="<?= $log['editUrl'] ?>">Upravit</a></div>
+                        <div class="table__cell text-secondary" style="text-wrap:pretty"><?= $this->e($log['text']) ?><?php if ((string) $log['user_name'] !== ''): ?><span class="text-caption"> · <?= $this->e((string) $log['user_name']) ?></span><?php endif; ?><?php if ($log['progress'] !== ''): ?><span class="text-caption"> · <?= $this->e($log['progress']) ?></span><?php endif; ?></div>
                         <div class="table__cell table__cell--mono table__cell--right text-subtle"><?= $this->e($log['time']) ?></div>
-                        <div class="table__cell row" style="justify-content:space-between;flex-wrap:nowrap">
-                            <?= $log['done'] ? get_status('ok', 'Hotovo') : get_status('warning', 'Přeskočeno') ?>
-                            <form method="post" action="<?= get_url($base . '/servis/' . (int) $log['id'] . '/smazat') ?>"><?php render_csrf($csrfToken) ?><button type="submit" class="btn--menu" title="Smazat záznam"><?= get_icon('trash', 'icon--sm icon--subtle') ?></button></form>
+                        <div class="table__cell"><?= $log['done'] ? get_status('ok', 'Hotovo') : get_status('warning', 'Přeskočeno') ?></div>
+                        <div class="table__cell table__cell--right">
+                            <form class="row-actions" method="post" action="<?= get_url($base . '/servis/' . (int) $log['id'] . '/smazat') ?>">
+                                <?php render_csrf($csrfToken) ?>
+                                <a class="btn btn--ghost btn--icon" href="<?= $log['editUrl'] ?>" title="Upravit záznam" aria-label="Upravit záznam z <?= $this->e($log['date']) ?>"><?= get_icon('edit', 'icon--sm') ?></a>
+                                <button type="submit" class="btn btn--ghost btn--icon" title="Smazat záznam" aria-label="Smazat záznam z <?= $this->e($log['date']) ?>"><?= get_icon('trash', 'icon--sm') ?></button>
+                            </form>
                         </div>
                     </div>
                 <?php endforeach; ?>

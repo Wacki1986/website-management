@@ -118,6 +118,7 @@ label.toggle { display: inline-block; cursor: pointer; }
 }
 
 .icon--ok { background-color: var(--color-status-ok-text); }
+.icon--warning { background-color: var(--color-status-warning-text); }
 
 // --- boční menu: telefon a nabídka účtu -------------------------------
 
@@ -377,7 +378,7 @@ label.checkbox { cursor: pointer; }
 }
 
 // Den bez kontrol v pásku uptime.
-.uptime__day--none { background: var(--color-surface-muted); }
+.uptime__day--none { background: var(--color-surface-muted); box-shadow: none; }
 
 // Druh servisu jako skupina rádií: zvýraznění (i barva ikony) jen podle
 // zaškrtnutí — třída `--active` ze serveru by po přepnutí zůstala viset.
@@ -456,6 +457,60 @@ form:has(input[name="kind"]:checked) {
   form:has(input[name="kind"][value="#{$kind}"]:checked) .service-checklist--#{$kind} { display: grid; }
 }
 
+// Úkoly servisu: rámeček s řádky, zaškrtávátko z návrhu (`.checkbox`,
+// stav kreslí :has výše). Vlastní úkoly mají místo textu pole a křížek.
+.task-list {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-medium);
+  background: var(--color-surface-card-solid);
+  overflow: hidden;
+}
+
+.task-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  transition: background var(--transition-fast) var(--easing-standard);
+
+  & + & { border-top: 1px solid var(--color-border-subtle); }
+  &:hover { background: var(--color-surface-hover); }
+
+  .checkbox { width: 18px; height: 18px; }
+  .checkbox__mark { width: 12px; height: 12px; }
+}
+
+.task-list__item:has(input[type="checkbox"]:focus-visible) .checkbox { @include focus-ring; }
+
+// Hotový úkol: text zůstává čitelný, jen zešedne — pořád je to „uděláno“, ne „škrtnuto“.
+.task-list__item:has(input[type="checkbox"]:checked) .task-list__label { color: var(--color-text-secondary); }
+
+.task-list__item--extra { cursor: default; }
+
+.task-list__label { flex: 1; min-width: 0; }
+
+.task-list__input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-small);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+
+  &:hover { border-color: var(--color-border-subtle); }
+  &:focus { outline: none; border-color: var(--color-brand); background: var(--color-surface-card-solid); }
+  &::placeholder { color: var(--color-text-faint); }
+}
+
+.task-list__remove { flex: none; }
+
+.task-list__add { justify-self: start; }
+
 // --- ikona webu místo iniciál ----------------------------------------
 
 // Favicona nebo nahrané logo (get_site_avatar). Celá, ne oříznutá, na
@@ -503,4 +558,115 @@ a.btn--ghost-inverse:hover { color: var(--color-text-inverse-subtle); }
 .table--library {
   --table-columns: minmax(0, 1.5fr) 110px minmax(0, 1.7fr) minmax(0, 1fr) 120px;
   min-width: 820px;
+}
+
+// --- akční ikony a průběh aktualizace pluginů --------------------------
+
+// Oko pro „Sledovat" / „Nesledovat" a vypínač pro aktivaci pluginu —
+// balíček návrhu je nemá (do jeho
+// partialů se nepíše), stejný zápis jako ikony v abstracts/_icons.scss.
+:root {
+  --icon-eye: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2.5%2012S6%205.5%2012%205.5%2021.5%2012%2021.5%2012%2018%2018.5%2012%2018.5%202.5%2012%202.5%2012z%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22%2F%3E%3C%2Fsvg%3E");
+  --icon-eye-off: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2.5%2012S6%205.5%2012%205.5%2021.5%2012%2021.5%2012%2018%2018.5%2012%2018.5%202.5%2012%202.5%2012z%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22%2F%3E%3Cpath%20d%3D%22M4%204l16%2016%22%2F%3E%3C%2Fsvg%3E");
+  --icon-power: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203.5v8%22%2F%3E%3Cpath%20d%3D%22M6.3%206.8a8%208%200%201%200%2011.4%200%22%2F%3E%3C%2Fsvg%3E");
+  --icon-edit: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%2020h4L19%209a2.83%202.83%200%200%200-4-4L4%2016v4z%22%2F%3E%3Cpath%20d%3D%22M13.5%206.5l4%204%22%2F%3E%3C%2Fsvg%3E");
+  --icon-download: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%204v11%22%2F%3E%3Cpath%20d%3D%22M7.5%2010.5L12%2015l4.5-4.5%22%2F%3E%3Cpath%20d%3D%22M5%2019.5h14%22%2F%3E%3C%2Fsvg%3E");
+}
+
+// Ikona kolečka se šipkou se točí, dokud se plugin aktualizuje (plugin-update.js).
+.icon--spin { animation: icon-spin 0.9s linear infinite; }
+
+@keyframes icon-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .icon--spin { animation-duration: 2.4s; }
+}
+
+// Pruh průběhu nad tabulkou pluginů: text a tenká lišta.
+.plugin-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px var(--spacing-large, 20px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-label);
+}
+
+.plugin-progress__bar {
+  height: 6px;
+  border-radius: var(--border-radius-pill);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.plugin-progress__fill {
+  height: 100%;
+  width: 0;
+  background: var(--color-brand);
+  transition: width var(--transition-fast) var(--easing-standard);
+}
+
+.plugin-progress--done .plugin-progress__fill { background: var(--color-status-ok); }
+
+// Akce s neznámou délkou (vypínač, oko): pruh přejíždí, místo aby se plnil.
+.plugin-progress--indeterminate .plugin-progress__fill {
+  width: 35%;
+  animation: progress-slide 1.2s var(--easing-standard) infinite alternate;
+}
+
+@keyframes progress-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(285%); }
+}
+
+// Řádek, se kterým se právě něco děje: obsah ztlumený, akce vpravo
+// zůstávají plně vidět (točí se tam kolečko); dokud akce neskončí,
+// nejde kliknout na nic dalšího v tabulce.
+.table__row[aria-busy="true"] { cursor: progress; }
+.table__row[aria-busy="true"] > .table__cell:not(:last-child) { opacity: 0.45; }
+form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-progress--indeterminate .plugin-progress__fill { animation-duration: 3s; }
+}
+
+// Akce v řádku tabulky (pravidlo z CLAUDE.md): ikony vedle sebe v posledním
+// sloupci „Akce", zarovnané vpravo — ne odkazy schované v textu řádku.
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+// Historie servisů: návrh nemá sloupec akcí, přidává se za „Stav".
+.table--service { --table-columns: 110px 170px minmax(0, 1fr) 84px 130px 84px; }
+
+@media (max-width: 1100px) {
+  .table--service { --table-columns: 100px 150px minmax(0, 1fr) 74px 120px 84px; }
+}
+
+@media (max-width: 768px) {
+  .table--service { --table-columns: minmax(0, 1fr) 120px; }
+}
+
+// Výpis webů: WP, PHP a Databáze ve vlastních sloupcích (návrh má jeden
+// sloupec „WP / PHP“). Přepisuje sady sloupců z `components/_list.scss`.
+.table--sites { --table-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) 126px 74px 58px 50px 112px 94px 132px 92px 34px; }
+
+@media (max-width: 1100px) {
+  .table--sites { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 116px 68px 54px 46px 104px 84px 124px 80px 34px; }
+}
+
+@media (max-width: 768px) {
+  .table--sites { --table-columns: minmax(0, 1fr) 110px; }
+}
+
+@media (min-width: 769px) {
+  .table--sites { min-width: 1100px; }
+}
+
+// Hláška přímo v kartě bez vnitřního okraje (karta s tabulkou): odsadit
+// od krajů karty jako obsah, ne roztáhnout přes celou šířku.
+.card:not(.card--padded):not(.card--danger) > .alert {
+  margin: var(--spacing-medium) var(--layout-card-padding);
 }

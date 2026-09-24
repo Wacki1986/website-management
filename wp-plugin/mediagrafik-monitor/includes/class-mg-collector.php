@@ -162,13 +162,23 @@ final class MG_Collector
         );
     }
 
-    /** Veřejné typy obsahu: počty a poslední publikovaný kus. */
+    /**
+     * Typy obsahu: počty a poslední publikovaný kus.
+     *
+     * Bere veřejné typy a k nim vlastní typy s vlastní položkou v hlavním
+     * menu wp-admin — šablony je často registrují jako neveřejné (Reference,
+     * Kurzy vypsané na stránce shortcodem), a přesto je klient spravuje.
+     * Interní typy pluginů (šablony Elementoru, pole ACF, objednávky) mají
+     * menu pod svým pluginem (`show_in_menu` = řetězec) nebo žádné.
+     */
     public function content()
     {
         $types = array();
 
-        foreach (get_post_types(array('public' => true), 'objects') as $type) {
-            if ($type->name === 'attachment') {
+        foreach (get_post_types(array(), 'objects') as $type) {
+            $managed = !$type->_builtin && $type->show_ui && $type->show_in_menu === true;
+
+            if ($type->name === 'attachment' || (!$type->public && !$managed)) {
                 continue;
             }
 

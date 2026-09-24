@@ -47,7 +47,7 @@ function withUpdatableWp(int $port, array $env, callable $test): void
 /** Zapomenout, co falešný web „udělal" (aktualizace, smazání, jádro). */
 function puForget(string $state): void
 {
-    foreach ([$state, $state . '.deleted', $state . '.core'] as $file) {
+    foreach ([$state, $state . '.deleted', $state . '.core', $state . '.active'] as $file) {
         @unlink($file);
     }
 }
@@ -161,6 +161,42 @@ return [
         });
     },
 
+    'průběh ze skriptu: plugin po jednom, JSON odpověď, data z webu až po posledním' => function (): void {
+        withUpdatableWp(8244, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.1.0'], function (string $url): void {
+            [$kernel, $token, $siteId] = puKernel($url);
+            $post = static fn (array $body): App\Core\Http\Response => $kernel->handle(new App\Core\Http\Request(
+                method: 'POST',
+                path: '/weby/' . $siteId . '/pluginy/aktualizovat',
+                query: [],
+                body: $body + ['_token' => $token],
+                files: [],
+                cookies: [],
+                headers: ['accept' => 'application/json', 'x-requested-with' => 'XMLHttpRequest'],
+                server: ['SCRIPT_NAME' => '/index.php', 'REMOTE_ADDR' => '127.0.0.1'],
+            ));
+
+            // Není poslední (refresh=0): výsledek v JSONu, data z webu se ještě nenačítají.
+            $first = $post(['plugin' => 'elementor/elementor.php', 'refresh' => '0']);
+            assertSame(200, $first->status());
+            $data = json_decode($first->body(), true);
+            assertTrue($data['ok'] === true);
+            assertSame('updated', $data['items'][0]['status']);
+            assertSame('3.24.0', $data['items'][0]['to']);
+            assertSame('3.23.1', puPlugin($kernel, $siteId, 'elementor/elementor.php')['version'], 'Bez refresh se data z webu nenačítají');
+
+            // Poslední (refresh=1): čerstvá data z webu.
+            $post(['plugin' => 'elementor/elementor.php', 'refresh' => '1']);
+            assertSame('3.24.0', puPlugin($kernel, $siteId, 'elementor/elementor.php')['version']);
+
+            // Chyba jako JSON, ne přesměrování.
+            $none = $post(['plugin' => 'woocommerce/woocommerce.php']);
+            assertSame(422, $none->status());
+            assertContainsString('dostupnou aktualizaci', (string) json_decode($none->body(), true)['error']);
+
+            Urls::reset();
+        });
+    },
+
     'MEDIAGRAFIK Monitor: správa nabídne svou novější verzi, i když o ní web ještě neví' => function (): void {
         withUpdatableWp(8237, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.1.0'], function (string $url): void {
             [$kernel, , $siteId] = puKernel($url);
@@ -192,7 +228,7 @@ return [
 
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
             assertContainsString('potřebuje MEDIAGRAFIK Monitor 1.1.0', $html);
-            assertFalse(str_contains($html, 'data-pending-label="Aktualizuji…">Aktualizovat</button>'), 'Řádkové tlačítko Aktualizovat nemá být aktivní');
+            assertFalse(str_contains($html, 'data-plugin-update-one'), 'Řádkové tlačítko Aktualizovat nemá být aktivní');
 
             $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/aktualizovat', [
                 '_token' => $token,
@@ -237,6 +273,11 @@ return [
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
             assertContainsString('pluginy/smazat?plugin=contact-form-7%2Fwp-contact-form-7.php', $html);
             assertFalse(str_contains($html, 'smazat?plugin=woocommerce'), 'Aktivní plugin se mazat nenabízí');
+
+            // Se skriptem potvrzení v modálním okně: odkaz ho otevře, formulář dialogu posílá na smazání.
+            assertContainsString('data-confirm="plugin-delete" data-confirm-value="' . $cf7 . '" data-confirm-title="Smazat plugin Contact Form 7 5.9.3"', $html);
+            assertContainsString('<dialog class="modal modal--danger" id="plugin-delete"', $html);
+            assertContainsString('action="/weby/' . $siteId . '/pluginy/smazat" data-pending', $html);
 
             $confirm = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy/smazat', [], ['plugin' => $cf7]);
             assertSame(200, $confirm->status());
@@ -349,7 +390,7 @@ return [
             assertSame(1, $updates());
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
             assertContainsString('formaction="/weby/' . $siteId . '/pluginy/nesledovat" name="plugin" value="' . $elementor . '"', $html);
-            assertFalse(str_contains($html, 'value="mediagrafik-monitor/mediagrafik-monitor.php" class="btn--link text-subtle"'), 'Vlastní plugin nejde přestat sledovat');
+            assertFalse(str_contains($html, 'value="mediagrafik-monitor/mediagrafik-monitor.php" class="btn btn--ghost btn--icon"'), 'Vlastní plugin nejde přestat sledovat');
 
             kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/nesledovat', ['_token' => $token, 'plugin' => $elementor]);
             assertSame(1, (int) puPlugin($kernel, $siteId, $elementor)['updates_ignored']);
@@ -380,6 +421,66 @@ return [
             assertFalse(str_contains(kernelRequest($kernel, 'GET', '/weby/' . $siteId)->body(), '/prihlasit"'));
             $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/prihlasit', ['_token' => $token]);
             assertSame($url . '/wp-admin/', (string) ($response->headers()['Location'] ?? ''));
+
+            Urls::reset();
+        });
+    },
+    'deaktivace: aktivní plugin vypne, pak nabídne koš; aktivace ho zase zapne' => function (): void {
+        withUpdatableWp(8245, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.5.0'], function (string $url): void {
+            [$kernel, $token, $siteId] = puKernel($url);
+            $woo = 'woocommerce/woocommerce.php';
+
+            $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+            assertContainsString('formaction="/weby/' . $siteId . '/pluginy/deaktivovat" name="plugin" value="' . $woo . '"', $html);
+            assertContainsString('formaction="/weby/' . $siteId . '/pluginy/aktivovat" name="plugin" value="contact-form-7/wp-contact-form-7.php"', $html);
+            assertFalse(str_contains($html, 'value="mediagrafik-monitor/mediagrafik-monitor.php" class="btn btn--ghost btn--icon" title="Deaktivovat'), 'Monitor se vypnout nesmí');
+
+            $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/deaktivovat', ['_token' => $token, 'plugin' => $woo]);
+            assertSame(302, $response->status());
+            assertSame(0, (int) puPlugin($kernel, $siteId, $woo)['is_active']);
+
+            $event = $kernel->db()->selectOne("SELECT * FROM events WHERE site_id = :id AND message LIKE 'WooCommerce deaktivován%'", ['id' => $siteId]);
+            assertTrue($event !== null, 'Historie nemá záznam o deaktivaci');
+            $audit = $kernel->db()->selectOne("SELECT * FROM audit_log WHERE action = 'plugin-aktivace'");
+            assertTrue($audit !== null && (int) $audit['success'] === 1);
+            assertContainsString('Deaktivován plugin WooCommerce', (string) $audit['description']);
+
+            // Druhý krok odebrání: vypnutý plugin má koš.
+            $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+            assertContainsString('pluginy/smazat?plugin=' . rawurlencode($woo), $html);
+
+            kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/aktivovat', ['_token' => $token, 'plugin' => $woo]);
+            assertSame(1, (int) puPlugin($kernel, $siteId, $woo)['is_active']);
+
+            // Znovu aktivovat aktivní nejde — požadavek na web ani neodejde.
+            $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/aktivovat', ['_token' => $token, 'plugin' => $woo]);
+            assertSame(302, $response->status());
+            assertSame(2, count($kernel->db()->select("SELECT id FROM audit_log WHERE action = 'plugin-aktivace'")));
+
+            Urls::reset();
+        });
+    },
+
+    'deaktivace: MEDIAGRAFIK Monitor ani ručně poslaným požadavkem' => function (): void {
+        withUpdatableWp(8246, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.5.0'], function (string $url, string $state): void {
+            [$kernel, $token, $siteId] = puKernel($url);
+
+            kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/deaktivovat', ['_token' => $token, 'plugin' => 'mediagrafik-monitor/mediagrafik-monitor.php']);
+            assertFalse(is_file($state . '.active'), 'Požadavek na vypnutí Monitoru neměl odejít');
+            assertSame(1, (int) puPlugin($kernel, $siteId, 'mediagrafik-monitor/mediagrafik-monitor.php')['is_active']);
+
+            Urls::reset();
+        });
+    },
+
+    'deaktivace: plugin 1.4.0 na webu akci nezná — ikona chybí, požadavek neodejde' => function (): void {
+        withUpdatableWp(8247, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.4.0'], function (string $url, string $state): void {
+            [$kernel, $token, $siteId] = puKernel($url);
+
+            assertFalse(str_contains(kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body(), 'data-plugin-activation'));
+            kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/deaktivovat', ['_token' => $token, 'plugin' => 'woocommerce/woocommerce.php']);
+            assertFalse(is_file($state . '.active'));
+            assertSame(1, (int) puPlugin($kernel, $siteId, 'woocommerce/woocommerce.php')['is_active']);
 
             Urls::reset();
         });

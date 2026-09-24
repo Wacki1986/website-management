@@ -122,6 +122,54 @@ final class MG_Site_Actions
     }
 
     /**
+     * Aktivace / deaktivace pluginu — jako odkaz ve wp-admin, včetně háčků
+     * pluginu (aktivační a deaktivační kód se spustí). Sebe sama plugin
+     * vypnout nedovolí: správa by k webu ztratila přístup.
+     *
+     * @param string $file   cesta pluginu (`slozka/soubor.php`)
+     * @param bool   $active true = aktivovat, false = deaktivovat
+     * @return array|WP_Error `{file, name, active}`
+     */
+    public static function set_active($file, $active)
+    {
+        self::load_admin();
+
+        $file = (string) $file;
+        $installed = get_plugins();
+
+        if (!isset($installed[$file])) {
+            return new WP_Error('plugin_missing', 'Plugin na webu není — načtěte data znovu.', array('status' => 404));
+        }
+
+        if ($file === plugin_basename(dirname(__DIR__) . '/mediagrafik-monitor.php')) {
+            return new WP_Error('plugin_self', 'MEDIAGRAFIK Monitor se ze správy vypnout nedá — správa by k webu ztratila přístup.', array('status' => 409));
+        }
+
+        if (is_multisite() && is_plugin_active_for_network($file)) {
+            return new WP_Error('activation_failed', 'Plugin je zapnutý pro celou síť webů — přepněte ho ve správě sítě.', array('status' => 409));
+        }
+
+        $name = isset($installed[$file]['Name']) ? (string) $installed[$file]['Name'] : $file;
+
+        if ($active) {
+            // activate_plugin() vypisuje případný výstup pluginu — do JSON nesmí.
+            ob_start();
+            $result = activate_plugin($file);
+            ob_end_clean();
+
+            if (is_wp_error($result)) {
+                return new WP_Error('activation_failed', $name . ' se nepodařilo aktivovat: ' . $result->get_error_message(), array('status' => 409));
+            }
+        } else {
+            deactivate_plugins($file);
+        }
+
+        delete_transient('mg_monitor_updates_checked');
+
+        return array('file' => $file, 'name' => $name, 'active' => is_plugin_active($file));
+    }
+
+    /**
      * Aktualizace WordPressu na verzi, kterou web nabízí (a kterou viděl
      * člověk ve správě — `$expected`). Když web mezitím nabízí jinou, nic
      * se nestane: potvrzoval se konkrétní skok, ne „cokoli nového".

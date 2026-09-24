@@ -143,11 +143,11 @@ return [
         assertContainsString('/knihovna/flipbook-pro/stahnout', $page);
 
         $current = kernelRequest($kernel, 'GET', '/weby/' . $sites['1.4.0'] . '/pluginy')->body();
-        assertContainsString('name="plugin" value="flipbook-pro/flipbook-pro.php" class="btn--link" data-pending-label', $current);
+        assertContainsString('name="plugin" value="flipbook-pro/flipbook-pro.php" class="btn btn--secondary btn--icon"', $current);
         assertContainsString('12.6.3', $current);
 
         $older = kernelRequest($kernel, 'GET', '/weby/' . $sites['1.3.1'] . '/pluginy')->body();
-        assertFalse(str_contains($older, 'value="flipbook-pro/flipbook-pro.php" class="btn--link" data-pending-label'), 'Web s Monitorem < 1.4.0 si ZIP z knihovny stáhnout neumí');
+        assertFalse(str_contains($older, 'value="flipbook-pro/flipbook-pro.php" class="btn btn--secondary btn--icon"'), 'Web s Monitorem < 1.4.0 si ZIP z knihovny stáhnout neumí');
 
         Urls::reset();
     },

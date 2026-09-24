@@ -18,6 +18,7 @@ use App\Core\Sites\SiteActions;
  * plugin MEDIAGRAFIK Monitor:
  *
  *  - aktualizace pluginů (záložka Pluginy, hromadně i z řádku),
+ *  - aktivace a deaktivace pluginu (ikona v řádku),
  *  - smazání neaktivního pluginu (potvrzovací stránka),
  *  - aktualizace WordPressu (odkaz na Přehledu → potvrzovací stránka),
  *  - přihlášení do administrace jedním klikem (tlačítko „wp-admin").
@@ -37,15 +38,20 @@ final class SiteActionController extends Controller
     /**
      * Hromadně (`plugins[]`) nebo jeden z řádku (`plugin`). Posílají se jen
      * pluginy z `SiteActions::updatable()`, ostatní se tiše vynechají.
+     *
+     * Skript (`plugin-update.js`) posílá pluginy po jednom a čeká JSON —
+     * kvůli průběhu v tabulce; data z webu se pak načtou jen po posledním
+     * (`refresh=1`). Bez skriptu jde všechno najednou a stránka se překreslí.
      */
     public function updatePlugins(string $id): Response
     {
         $site = $this->siteOr404((int) $id);
         $back = 'weby/' . $id . '/pluginy';
+        $json = $this->request()->wantsJson();
         $blocked = SiteActions::blocked($site, $this->kernel->snapshots()->snapshot((int) $id), PluginClient::ACTION_PLUGIN_UPDATE);
 
         if ($blocked !== null) {
-            return $this->redirectWithFlash($back, $blocked, 'warning');
+            return $json ? Response::json(['ok' => false, 'error' => $blocked], 422) : $this->redirectWithFlash($back, $blocked, 'warning');
         }
 
         $single = $this->request()->string('plugin');
@@ -54,12 +60,10 @@ final class SiteActionController extends Controller
         $updatable = SiteActions::updatable($this->kernel->snapshots()->plugins((int) $id), $this->kernel->pluginDistribution()->version(), $library);
         $files = array_values(array_intersect(array_unique($requested), array_keys($updatable)));
 
-        if ($files === []) {
-            return $this->redirectWithFlash($back, 'Vyberte plugin, který má dostupnou aktualizaci.', 'warning');
-        }
+        if ($files === [] || count($files) > PluginClient::MAX_UPDATES) {
+            $why = $files === [] ? 'Vyberte plugin, který má dostupnou aktualizaci.' : 'Najednou jde aktualizovat nejvýš ' . PluginClient::MAX_UPDATES . ' pluginů — vyberte méně.';
 
-        if (count($files) > PluginClient::MAX_UPDATES) {
-            return $this->redirectWithFlash($back, 'Najednou jde aktualizovat nejvýš ' . PluginClient::MAX_UPDATES . ' pluginů — vyberte méně.', 'warning');
+            return $json ? Response::json(['ok' => false, 'error' => $why], 422) : $this->redirectWithFlash($back, $why, 'warning');
         }
 
         $this->keepRunning();
@@ -67,7 +71,9 @@ final class SiteActionController extends Controller
         $names = implode(', ', array_map(static fn (string $file): string => $updatable[$file]['name'], $files));
 
         if (!$result['ok']) {
-            return $this->failed($site, $back, AuditLog::ACTION_PLUGIN_UPDATE, 'Aktualizace se nezdařila (' . $names . ')', (string) $result['error']);
+            $failure = $this->failed($site, $back, AuditLog::ACTION_PLUGIN_UPDATE, 'Aktualizace se nezdařila (' . $names . ')', (string) $result['error']);
+
+            return $json ? Response::json(['ok' => false, 'error' => (string) $result['error']], 502) : $failure;
         }
 
         $updated = [];
@@ -84,7 +90,11 @@ final class SiteActionController extends Controller
             }
         }
 
-        $this->refresh((int) $id);
+        // Čerstvá data z webu: bez skriptu vždy, ze skriptu jen po posledním pluginu.
+        if (!$json || $this->request()->bool('refresh')) {
+            $this->refresh((int) $id);
+        }
+
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_PLUGIN_UPDATE, $failed === [],
             'Aktualizace pluginů: ' . ($updated !== [] ? implode(', ', $updated) : 'nic') . ($failed !== [] ? ' · selhalo: ' . implode(', ', $failed) : ''),
             ['plugins' => $result['data']['plugins'] ?? []]);
@@ -95,7 +105,69 @@ final class SiteActionController extends Controller
             $message .= ' · Nepodařilo se: ' . implode(', ', $failed);
         }
 
+        if ($json) {
+            return Response::json(['ok' => true, 'items' => array_values((array) ($result['data']['plugins'] ?? [])), 'message' => $message]);
+        }
+
         return $this->redirectWithFlash($back, $message, $failed === [] ? 'success' : 'warning');
+    }
+
+    // -----------------------------------------------------------------
+    // Aktivace a deaktivace pluginu
+    // -----------------------------------------------------------------
+
+    /**
+     * Deaktivace je první krok odebrání pluginu: web se zkontroluje, a teprve
+     * pak se neaktivní plugin smaže košem. Obojí jde vrátit „Aktivovat".
+     */
+    public function deactivatePlugin(string $id): Response
+    {
+        return $this->setPluginActive($id, false);
+    }
+
+    public function activatePlugin(string $id): Response
+    {
+        return $this->setPluginActive($id, true);
+    }
+
+    private function setPluginActive(string $id, bool $active): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $back = 'weby/' . $id . '/pluginy';
+        $blocked = SiteActions::blocked($site, $this->kernel->snapshots()->snapshot((int) $id), PluginClient::ACTION_PLUGIN_ACTIVATION);
+
+        if ($blocked !== null) {
+            return $this->redirectWithFlash($back, $blocked, 'warning');
+        }
+
+        $file = $this->request()->string('plugin');
+        $plugin = null;
+
+        foreach ($this->kernel->snapshots()->plugins((int) $id) as $row) {
+            if ((string) $row['file'] === $file && SiteActions::canToggleActive($row)) {
+                $plugin = $row;
+            }
+        }
+
+        if ($plugin === null || ((int) $plugin['is_active'] === 1) === $active) {
+            return $this->redirectWithFlash($back, $active ? 'Aktivovat jde jen neaktivní plugin, který na webu je.' : 'Deaktivovat jde jen aktivní plugin (kromě MEDIAGRAFIK Monitoru).', 'warning');
+        }
+
+        $name = (string) $plugin['name'];
+        $what = $active ? 'aktivovat' : 'deaktivovat';
+        $result = $this->kernel->pluginClient()->setPluginActive((string) $site['url'], $this->apiKey($site), $file, $active);
+
+        if (!$result['ok']) {
+            return $this->failed($site, $back, AuditLog::ACTION_PLUGIN_ACTIVATION, $name . ' se nepodařilo ' . $what, (string) $result['error']);
+        }
+
+        // Událost „X aktivován / deaktivován" zapíše import z rozdílu.
+        $this->refresh((int) $id);
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_PLUGIN_ACTIVATION, true, ($active ? 'Aktivován plugin ' : 'Deaktivován plugin ') . $name);
+
+        return $this->redirectWithFlash($back, $active
+            ? 'Plugin ' . $name . ' je aktivní.'
+            : 'Plugin ' . $name . ' je deaktivovaný. Zkontrolujte, že web funguje — pak ho můžete smazat ikonou koše, nebo znovu aktivovat.');
     }
 
     // -----------------------------------------------------------------

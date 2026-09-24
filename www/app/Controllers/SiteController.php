@@ -10,6 +10,7 @@ use App\Core\Events\EventLog;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
+use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\PluginClient;
 use App\Core\Reports\ReportSchedule;
@@ -70,9 +71,7 @@ final class SiteController extends Controller
                 'uptime' => $percent !== null ? number_format($percent, $percent >= 99.95 ? 0 : 1, ',', ' ') . ' %' : '—',
                 'uptimeTone' => $percent === null ? 'faint' : ($percent < 99 ? 'error' : ($percent < 99.9 ? 'warning' : '')),
                 'host' => SiteRepository::host((string) $site['url']),
-                'phpEol' => (string) ($site['snap_php_version'] ?? '') !== '' && PhpSupport::isEol((string) $site['snap_php_version']),
-                'phpMinor' => PhpSupport::minor((string) ($site['snap_php_version'] ?? '')),
-                'wpMinor' => (string) ($site['snap_wp_version'] ?? ''),
+                'versions' => self::versionCells($site),
                 'updates' => (int) ($site['snap_plugins_updates'] ?? 0) + (($site['snap_wp_update_version'] ?? null) !== null ? 1 : 0),
                 'service' => ServiceSchedule::cell($plans[(int) $site['id']] ?? null, $today),
                 'report' => self::reportCell($reportSettings[(int) $site['id']] ?? null),
@@ -267,6 +266,9 @@ final class SiteController extends Controller
         $plugins = $this->kernel->snapshots()->plugins((int) $id, $q);
         $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version(), SiteActions::libraryFor($snapshot, $this->kernel->pluginLibrary()->versions()));
         $deleteBlocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_DELETE);
+        // Starší plugin na webu zapínání neumí — ikona se pak vůbec neukáže
+        // (byla by u každého řádku, jen šedá).
+        $activationAllowed = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_ACTIVATION) === null;
         $rows = [];
         $latestUpdate = null;
         $ignoredCount = 0;
@@ -287,6 +289,13 @@ final class SiteController extends Controller
                 'watchAction' => SiteActions::canToggleWatch($plugin)
                     ? get_url('weby/' . (int) $id . '/pluginy/' . ($ignored ? 'sledovat' : 'nesledovat'))
                     : null,
+                'watchLabel' => $ignored ? 'Sledovat aktualizace (znovu je počítat)' : 'Nesledovat aktualizace (např. plugin bez licence)',
+                'activeAction' => $activationAllowed && SiteActions::canToggleActive($plugin)
+                    ? get_url('weby/' . (int) $id . '/pluginy/' . ((int) $plugin['is_active'] === 1 ? 'deaktivovat' : 'aktivovat'))
+                    : null,
+                'activeLabel' => (int) $plugin['is_active'] === 1 ? 'Deaktivovat plugin (první krok k odebrání)' : 'Aktivovat plugin',
+                'activeBusy' => ((int) $plugin['is_active'] === 1 ? 'Deaktivuji ' : 'Aktivuji ') . $plugin['name'] . ' na webu…',
+                'watchBusy' => ($ignored ? 'Znovu sleduji aktualizace ' : 'Přestávám sledovat aktualizace ') . $plugin['name'] . '…',
             ] + $plugin;
 
             if ($plugin['version_changed_at'] !== null && ($latestUpdate === null || $plugin['version_changed_at'] > $latestUpdate['at'])) {
@@ -771,6 +780,28 @@ final class SiteController extends Controller
     }
 
     /** „20 h 9 min" z minut. */
+    /**
+     * Sloupce WP, PHP a Databáze ve výpisu webů: text, barva (`warning` =
+     * čeká aktualizace / podpora končí do roka, `error` = bez podpory)
+     * a vysvětlení do bubliny.
+     *
+     * @param array<string, mixed> $site řádek výpisu se sloupci `snap_*`
+     * @return array<int, array{value: string, tone: string, title: string}>
+     */
+    private static function versionCells(array $site): array
+    {
+        $wpUpdate = $site['snap_wp_update_version'] ?? null;
+        $php = (string) ($site['snap_php_version'] ?? '');
+        $dbType = (string) ($site['snap_db_type'] ?? '');
+        $db = (string) ($site['snap_db_version'] ?? '');
+
+        return [
+            ['value' => (string) ($site['snap_wp_version'] ?? ''), 'tone' => $wpUpdate !== null ? 'warning' : '', 'title' => $wpUpdate !== null ? 'Čeká aktualizace na WordPress ' . $wpUpdate : ''],
+            ['value' => PhpSupport::minor($php), 'tone' => PhpSupport::tone($php), 'title' => PhpSupport::advice($php) ?? ''],
+            ['value' => $db !== '' ? DbSupport::label($dbType, $db) : '', 'tone' => DbSupport::tone($dbType, $db), 'title' => DbSupport::advice($dbType, $db) ?? ''],
+        ];
+    }
+
     private static function minutesLabel(int $minutes): string
     {
         return $minutes >= 60 ? intdiv($minutes, 60) . ' h' . ($minutes % 60 > 0 ? ' ' . ($minutes % 60) . ' min' : '') : $minutes . ' min';

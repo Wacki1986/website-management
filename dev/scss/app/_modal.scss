@@ -1,0 +1,35 @@
+// Potvrzovací modální okno (návrh ho nemá) — nativní <dialog>, otevírá ho
+// `confirm-dialog.js`. Bez skriptu se dialog nikdy neotevře a odkaz vede
+// na samostatnou potvrzovací stránku, takže tady stačí vzhled.
+
+.modal {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--border-radius-card);
+  background: var(--color-surface-card-solid);
+  color: inherit;
+  box-shadow: var(--shadow-popover);
+  overflow: auto;
+}
+
+.modal::backdrop {
+  background: rgb(15 18 25 / 45%);
+  backdrop-filter: blur(2px);
+}
+
+.modal__body {
+  display: grid;
+  gap: var(--spacing-large);
+  padding: var(--spacing-xlarge) var(--spacing-xxlarge);
+}
+
+.modal--danger .modal__title { color: var(--color-status-error-text); }
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-small);
+}

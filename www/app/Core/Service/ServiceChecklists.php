@@ -14,6 +14,10 @@ use App\Core\Settings\Settings;
  * jak se v nastavení píše. Zápis servisu si při uložení vezme **kopii**
  * seznamu i s odškrtnutím (`service_logs.checklist`), takže pozdější
  * úprava seznamu starý zápis nezmění.
+ *
+ * K seznamu jde u zápisu přidat vlastní úkoly („Oprava formuláře
+ * poptávky“) — v checklistu mají `extra: true`, ve formuláři se dají
+ * přepsat i odebrat; úkoly ze seznamu jen odškrtnout.
  */
 final class ServiceChecklists
 {
@@ -50,6 +54,7 @@ final class ServiceChecklists
 
     public const MAX_ITEMS = 30;
     public const MAX_LENGTH = 150;
+    public const MAX_EXTRA = 20;
 
     private const KEY = 'service_checklist_';
 
@@ -117,7 +122,7 @@ final class ServiceChecklists
     /**
      * @param array<int, string> $labels úkoly
      * @param array<int, mixed>  $done   indexy odškrtnutých (z formuláře)
-     * @return array<int, array{label: string, done: bool}>
+     * @return array<int, array{label: string, done: bool, extra: bool}>
      */
     public static function build(array $labels, array $done): array
     {
@@ -125,13 +130,49 @@ final class ServiceChecklists
         $items = [];
 
         foreach (array_values($labels) as $i => $label) {
-            $items[] = ['label' => $label, 'done' => in_array($i, $done, true)];
+            $items[] = ['label' => $label, 'done' => in_array($i, $done, true), 'extra' => false];
         }
 
         return $items;
     }
 
-    /** @return array<int, array{label: string, done: bool}>|null null = zápis bez checklistu */
+    /**
+     * Vlastní úkoly z formuláře: `extra[][label]`, `extra[][done]`.
+     * Prázdný text = odebraný úkol (tak se odebírá i bez skriptu).
+     *
+     * @param array<int|string, mixed> $posted
+     * @return array<int, array{label: string, done: bool, extra: bool}>
+     */
+    public static function extras(array $posted): array
+    {
+        $items = [];
+
+        foreach ($posted as $row) {
+            $label = is_array($row) ? mb_substr(trim((string) ($row['label'] ?? '')), 0, self::MAX_LENGTH) : '';
+
+            if ($label !== '') {
+                $items[] = ['label' => $label, 'done' => !empty($row['done']), 'extra' => true];
+            }
+        }
+
+        return array_slice($items, 0, self::MAX_EXTRA);
+    }
+
+    /** Hotové úkoly — do reportu pod sebe. @param array<int, array{label: string, done: bool}>|null $items @return array<int, string> */
+    public static function doneLabels(?array $items): array
+    {
+        $done = [];
+
+        foreach ($items ?? [] as $item) {
+            if ($item['done']) {
+                $done[] = $item['label'];
+            }
+        }
+
+        return $done;
+    }
+
+    /** @return array<int, array{label: string, done: bool, extra: bool}>|null null = zápis bez checklistu */
     public static function decode(?string $json): ?array
     {
         if ($json === null || $json === '') {
@@ -148,7 +189,7 @@ final class ServiceChecklists
 
         foreach ($decoded as $item) {
             if (is_array($item) && isset($item['label'])) {
-                $items[] = ['label' => (string) $item['label'], 'done' => !empty($item['done'])];
+                $items[] = ['label' => (string) $item['label'], 'done' => !empty($item['done']), 'extra' => !empty($item['extra'])];
             }
         }
 
@@ -159,6 +200,30 @@ final class ServiceChecklists
     public static function encode(array $items): ?string
     {
         return $items === [] ? null : (string) json_encode(array_values($items), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Co se v servisu udělalo, jednou větou (historie servisů) — poznámka, a když chybí,
+     * odškrtnuté úkoly („Aktualizace WordPressu, kontrola zálohy"). Popis
+     * je nepovinný, protože checklist už řekne totéž.
+     *
+     * @param array<int, array{label: string, done: bool}>|null $items
+     */
+    public static function text(string $description, ?array $items): string
+    {
+        $description = trim($description);
+
+        if ($description !== '') {
+            return $description;
+        }
+
+        $done = [];
+
+        foreach (self::doneLabels($items) as $label) {
+            $done[] = $done === [] ? $label : mb_strtolower(mb_substr($label, 0, 1)) . mb_substr($label, 1);
+        }
+
+        return implode(', ', $done);
     }
 
     /** „3 z 4 úkolů" — prázdný řetězec, když zápis checklist nemá. @param array<int, array{label: string, done: bool}>|null $items */

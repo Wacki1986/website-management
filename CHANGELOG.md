@@ -1,5 +1,66 @@
 # Změny
 
+## 0.5.2 — 24. 9. 2026
+
+- **Deaktivace a aktivace pluginu ze správy** — ikona vypínače v řádku
+  pluginu na záložce Pluginy. Odebrání pluginu je tím dvoukrokové:
+  deaktivovat → zkontrolovat, že web funguje → smazat ikonou koše
+  (nebo vrátit aktivací). Výsledek je v Historii webu a v auditu
+  („Aktivace pluginu"). MEDIAGRAFIK Monitor vypnout nejde (správa by
+  k webu ztratila přístup) — hlídá hub i plugin.
+- **Plugin MEDIAGRAFIK Monitor 1.5.0** — nová podepsaná akce
+  `plugin-activation` (`MG_Site_Actions::set_active()`); weby se starším
+  pluginem ikonu vypínače nemají.
+- **Průběh u vypínače a oka** — po kliknutí se ikona změní na točící se
+  kolečko, řádek se ztlumí, pruh nad tabulkou řekne, co se děje
+  („Deaktivuji WooCommerce na webu…"), a další kliknutí se do návratu
+  stránky zahodí.
+- **Smazání pluginu v modálním okně** — koš na záložce Pluginy otevře
+  potvrzení v okně nad tabulkou (nativní `<dialog>`, `confirm-dialog.js`)
+  místo přechodu na novou stránku; bez JavaScriptu zůstává potvrzovací
+  stránka.
+- **Servis bez povinného popisu** — stačí odškrtnutý seznam úkolů; bez
+  popisu uvidí klient v reportu (i historie servisů) odškrtnuté úkoly.
+  Musí být vyplněné aspoň jedno z obou. Odhady času u druhů servisu
+  („45–60 min" apod.) a předvyplněné minuty jsou pryč, skutečný čas se
+  zapisuje dál.
+- **Akce v řádku tabulky vpravo jako ikony** (nové pravidlo v CLAUDE.md,
+  třída `.row-actions`): historie servisů má sloupec Akce s tužkou
+  a košem, knihovna pluginů ikonu stažení místo odkazu „Stáhnout".
+
+- **Úkoly servisu** — zaškrtávátka jako v návrhu v rámečku s řádky;
+  pod seznamem „Přidat další úkol“ (vlastní úkol jen pro tento zápis, jde
+  přepsat i odebrat křížkem; bez skriptu prázdný řádek na konci).
+  „Co jsme udělali“ je teď „Poznámka k servisu“. Report vypíše hotové
+  úkoly pod sebou s fajfkou a poznámku pod nimi (uložené starší reporty
+  beze změny).
+- **Plugin MEDIAGRAFIK Monitor 1.5.1** — typy obsahu berou i vlastní
+  typy s vlastní položkou v menu wp-admin, i když je šablona registruje
+  jako neveřejné (Reference, Kurzy u mamavkondici.cz).
+
+- **Výpis webů: WP, PHP a Databáze ve vlastních sloupcích** (návrh měl
+  jeden „WP / PHP“). Červeně verze bez bezpečnostní podpory, oranžově
+  verze, které podpora skončí do roka (PHP 8.2 → 31. 12. 2026), vysvětlení
+  v bublině. Nová tabulka konců podpory MySQL a MariaDB (`DbSupport`,
+  jen LTS verze; krátkodobé starší než nejnovější LTS = bez podpory).
+  Doporučené PHP v textech posunuto z 8.3 na 8.4.
+- **Servis předvyplní poznámku** větou pro klienta, když web běží na
+  zastaralém PHP nebo databázi (smazat ji jde jako běžný text).
+
+## 0.5.1 — 24. 9. 2026
+
+- **Akce v řádku pluginu jako ikony** — aktualizovat (kolečko se šipkou),
+  nesledovat / sledovat (přeškrtnuté / otevřené oko, ikony doplněné do
+  `app/_extras.scss`), smazat (koš); popis v `title` a `aria-label`.
+- **Průběh aktualizace pluginů** — skript (`plugin-update.js`) posílá pluginy
+  po jednom: pruh „Aktualizuji 2 z 5…" nad tabulkou, točící se ikona
+  u aktualizovaného pluginu, ✓ a nová verze u hotového, × s důvodem
+  u neúspěšného. Data z webu se načtou jen po posledním pluginu. Bez
+  JavaScriptu odejde formulář najednou jako dřív.
+- `SiteActionController::updatePlugins()` odpovídá skriptu JSONem
+  (`X-Requested-With`), jinak přesměruje jako dřív.
+- Doplněná třída `icon--warning` (používaná v textu pravidel, v CSS chyběla).
+
 ## 0.5.0 — 23. 9. 2026
 
 - **Knihovna pluginů** (nová položka menu) — placené a vlastní pluginy mimo

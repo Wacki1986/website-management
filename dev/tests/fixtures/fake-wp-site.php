@@ -84,6 +84,7 @@ function fake_action(string $action, string $mode, string $key): void
         'plugin-delete' => ['plugins' => fake_plugin_delete((array) ($request['plugins'] ?? []))],
         'core-update' => ['core' => fake_core_update((string) ($request['version'] ?? ''))],
         'login-link' => ['login' => fake_login_link((string) ($request['user'] ?? ''))],
+        'plugin-activation' => ['plugin' => fake_plugin_activation((string) ($request['plugin'] ?? ''), !empty($request['active']))],
         default => null,
     };
 
@@ -149,7 +150,50 @@ function fake_login_link(string $user): array
     return ['url' => 'http://' . ($_SERVER['HTTP_HOST'] ?? '127.0.0.1') . '/?mg_login=' . str_repeat('ab', 32), 'user' => $user, 'expires_in' => 60];
 }
 
+/** Zapnuté/vypnuté pluginy (akce plugin-activation) — přebíjí výchozí stav v souhrnu. */
+function fake_active_overrides(): array
+{
+    $file = fake_state('active');
+
+    return $file !== '' && is_file($file) ? (array) json_decode((string) file_get_contents($file), true) : [];
+}
+
+/** Jako `MG_Site_Actions::set_active()`: sebe sama nevypne, neznámý plugin odmítne. */
+function fake_plugin_activation(string $file, bool $active): array
+{
+    $known = ['woocommerce/woocommerce.php' => 'WooCommerce', 'elementor/elementor.php' => 'Elementor', 'contact-form-7/wp-contact-form-7.php' => 'Contact Form 7'];
+
+    if ($file === 'mediagrafik-monitor/mediagrafik-monitor.php') {
+        fake_wp_error(409, 'plugin_self', 'MEDIAGRAFIK Monitor se ze správy vypnout nedá — správa by k webu ztratila přístup.');
+    }
+
+    if (!isset($known[$file])) {
+        fake_wp_error(404, 'plugin_missing', 'Plugin na webu není — načtěte data znovu.');
+    }
+
+    $overrides = fake_active_overrides();
+    $overrides[$file] = $active;
+    file_put_contents(fake_state('active'), json_encode($overrides));
+
+    return ['file' => $file, 'name' => $known[$file], 'active' => $active];
+}
+
 function fake_summary(): array
+{
+    $summary = fake_summary_base();
+    $active = 0;
+
+    foreach ($summary['plugins']['items'] as $i => $item) {
+        $summary['plugins']['items'][$i]['is_active'] = fake_active_overrides()[$item['file']] ?? $item['is_active'];
+        $active += $summary['plugins']['items'][$i]['is_active'] ? 1 : 0;
+    }
+
+    $summary['plugins']['active'] = $active;
+
+    return $summary;
+}
+
+function fake_summary_base(): array
 {
     $pluginVersion = getenv('FAKE_WP_PLUGIN_VERSION') ?: '9.3.0';
     $elementor = fake_happened('elementor')

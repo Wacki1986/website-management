@@ -10,7 +10,7 @@
  * @var \App\Core\View\View $this
  * @var string              $title
  * @var string              $activeTab
- * @var array<int, array{code: string, label: string, note: string, estimate: string, icon: string, text: string, count: int}> $kinds
+ * @var array<int, array{code: string, label: string, note: string, icon: string, text: string, count: int}> $kinds
  * @var int                 $maxItems
  * @var string              $csrfToken
  */
@@ -29,7 +29,7 @@ $this->extend('layout/shell', ['title' => $title]);
 
             <?php foreach ($kinds as $kind): ?>
                 <div class="form__field">
-                    <label class="form__label" for="checklist_<?= $this->e($kind['code']) ?>"><?= get_icon($kind['icon'], 'icon--sm icon--subtle') ?> <?= $this->e($kind['label']) ?> <span class="text-caption">· <?= $this->e($kind['estimate']) ?></span></label>
+                    <label class="form__label" for="checklist_<?= $this->e($kind['code']) ?>"><?= get_icon($kind['icon'], 'icon--sm icon--subtle') ?> <?= $this->e($kind['label']) ?></label>
                     <textarea class="form__control" id="checklist_<?= $this->e($kind['code']) ?>" name="checklist_<?= $this->e($kind['code']) ?>" rows="<?= max(4, $kind['count'] + 1) ?>"><?= $this->e($kind['text']) ?></textarea>
                     <div class="form__hint"><?= $this->e(mb_strtoupper(mb_substr($kind['note'], 0, 1)) . mb_substr($kind['note'], 1)) ?>. Úkol na řádek, nejvýš <?= $maxItems ?>.</div>
                 </div>

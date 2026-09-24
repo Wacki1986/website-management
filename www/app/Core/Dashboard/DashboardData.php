@@ -173,7 +173,7 @@ final class DashboardData
             'wp' => (string) ($site['snap_wp_version'] ?? ''),
             'wpTone' => $wpUpdate ? 'warning' : '',
             'php' => PhpSupport::minor($php),
-            'phpTone' => $php !== '' && PhpSupport::isEol($php, $now) ? 'error' : '',
+            'phpTone' => PhpSupport::tone($php, $now),
             'db' => trim((string) ($site['snap_db_type'] ?? '') . ' ' . PhpSupport::minor((string) ($site['snap_db_version'] ?? ''))),
             'updates' => $updates,
             'service' => $service['label'],

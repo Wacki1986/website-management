@@ -7,7 +7,8 @@ if (!defined('ABSPATH')) {
 
 /**
  * REST endpointy pro hub: `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`
- * (GET) a akce `POST /actions/{plugin-update,plugin-delete,core-update,login-link}`.
+ * (GET) a akce `POST /actions/{plugin-update,plugin-delete,plugin-activation,
+ * core-update,login-link}`.
  *
  * Všechno za klíčem v hlavičce `X-MG-Key`. Odpověď má vždy obálku
  * `{ok, plugin_version, generated_at, data}` nebo
@@ -43,6 +44,7 @@ final class MG_Rest_Controller
             'plugin-delete' => 'plugin_delete',
             'core-update' => 'core_update',
             'login-link' => 'login_link',
+            'plugin-activation' => 'plugin_activation',
         );
 
         foreach ($actions as $path => $callback) {
@@ -208,6 +210,25 @@ final class MG_Rest_Controller
         }
 
         return self::respond(array('core' => $result));
+    }
+
+    /**
+     * @param WP_REST_Request $request tělo `{"plugin": "slozka/soubor.php", "active": true}`
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function plugin_activation($request)
+    {
+        $body = json_decode((string) $request->get_body(), true);
+        $result = MG_Site_Actions::set_active(
+            is_array($body) && isset($body['plugin']) ? (string) $body['plugin'] : '',
+            is_array($body) && !empty($body['active'])
+        );
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return self::respond(array('plugin' => $result));
     }
 
     /**

@@ -6,7 +6,7 @@
  *
  * @var \App\Core\View\View $this
  * @var string              $title
- * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `updates`…
+ * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `updates`, `versions` (WP, PHP, Databáze: value, tone, title)…
  * @var array<string, array<int, array<string, mixed>>> $groups   při seskupení: klient => řádky
  * @var bool                $grouped
  * @var string              $q
@@ -50,14 +50,9 @@ $renderRow = function (array $site) use ($csrfToken): void {
         <div class="table__cell u-truncate text-secondary"><?= $this->e((string) ($site['client_name'] ?? '—')) ?></div>
         <div class="table__cell"><?= get_status($site['state']['tone'], $site['state']['label']) ?></div>
         <div class="table__cell table__cell--mono table__cell--right<?= $site['uptimeTone'] === 'faint' ? ' text-faint' : ($site['uptimeTone'] !== '' ? ' text-' . $site['uptimeTone'] : '') ?>"><?= $this->e($site['uptime']) ?></div>
-        <div class="table__cell table__cell--mono">
-            <?php if ($site['wpMinor'] !== ''): ?>
-                <span<?= ($site['snap_wp_update_version'] ?? null) !== null ? ' class="text-warning"' : '' ?>><?= $this->e($site['wpMinor']) ?></span>
-                · <span<?= $site['phpEol'] ? ' class="text-error"' : '' ?>><?= $this->e($site['phpMinor']) ?></span>
-            <?php else: ?>
-                <span class="text-faint">—</span>
-            <?php endif; ?>
-        </div>
+        <?php foreach ($site['versions'] as $version): ?>
+            <div class="table__cell table__cell--mono u-truncate<?= $version['value'] === '' ? ' text-faint' : ($version['tone'] !== '' ? ' text-' . $version['tone'] : '') ?>"<?= $version['title'] !== '' ? ' title="' . $this->e($version['title']) . '"' : '' ?>><?= $version['value'] !== '' ? $this->e($version['value']) : '—' ?></div>
+        <?php endforeach; ?>
         <div class="table__cell table__cell--right"><?= $site['updates'] > 0 ? get_badge((string) $site['updates'], $site['updates'] >= 5 ? 'warning' : '') : '<span class="text-faint">–</span>' ?></div>
         <div class="table__cell<?= $site['service']['tone'] !== '' ? ' text-' . $site['service']['tone'] : '' ?>" style="font-size:var(--font-size-label)"><?= $this->e($site['service']['label']) ?></div>
         <div class="table__cell<?= $site['report']['tone'] !== '' ? ' text-' . $site['report']['tone'] : ' text-secondary' ?>" style="font-size:var(--font-size-label)"><?= $this->e($site['report']['label']) ?></div>
@@ -102,7 +97,7 @@ $renderRow = function (array $site) use ($csrfToken): void {
         </form>
 
         <div class="table table--sites">
-            <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP / PHP</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div>Report</div><div></div></div>
+            <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP</div><div>PHP</div><div>Databáze</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div>Report</div><div></div></div>
 
             <?php if ($rows === []): ?>
                 <?php if ($counts['all'] === 0 && $q === '' && $clientId === null): ?>

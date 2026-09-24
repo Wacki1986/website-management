@@ -10,6 +10,8 @@ use App\Core\Events\EventLog;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
+use App\Core\Monitor\DbSupport;
+use App\Core\Monitor\PhpSupport;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceSchedule;
 
@@ -47,13 +49,15 @@ final class ServiceController extends Controller
 
         foreach ($service->logs((int) $id, 12) as $log) {
             $logKind = ServiceSchedule::KINDS[(string) $log['kind']] ?? ServiceSchedule::KINDS['small'];
+            $checklist = ServiceChecklists::decode($log['checklist'] ?? null);
             $logs[] = $log + [
+                'text' => ServiceChecklists::text((string) $log['description'], $checklist),
                 'date' => get_czech_date((string) $log['performed_on']),
                 'kindLabel' => $logKind['label'],
                 'icon' => $logKind['icon'],
                 'time' => $log['minutes'] !== null ? self::minutesLabel((int) $log['minutes']) : '—',
                 'done' => $log['status'] === 'done',
-                'progress' => ServiceChecklists::progress(ServiceChecklists::decode($log['checklist'] ?? null)),
+                'progress' => ServiceChecklists::progress($checklist),
                 'editUrl' => get_url('weby/' . (int) $id . '/servis/' . (int) $log['id'] . '/upravit'),
             ];
         }
@@ -75,7 +79,6 @@ final class ServiceController extends Controller
             'summary' => [
                 'kind' => $kind['label'],
                 'frequency' => ServiceSchedule::FREQUENCIES[$values['frequency']]['label'],
-                'estimate' => $kind['estimate'],
                 'year' => $stats['count'] . ' · celkem ' . self::minutesLabel($stats['minutes']),
             ],
             'logs' => $logs,
@@ -140,22 +143,33 @@ final class ServiceController extends Controller
         $plan = $this->kernel->service()->plan((int) $id);
         $prefill = $this->request()->string('predvyplnit');
 
-        $description = '';
+        $notes = [];
 
         // „Zapsat do servisu" ze Zabezpečení předvyplní chybějící opatření.
         if ($prefill === 'zabezpeceni') {
             $audit = $this->kernel->securityAudit()->stored((int) $id);
             $items = array_filter((array) ($audit['checks'] ?? []), static fn (array $c): bool => in_array($c['status'], ['error', 'warning'], true));
-            $description = $items !== [] ? 'Zabezpečení: ' . implode(', ', array_map(static fn (array $c): string => mb_strtolower($c['label']), $items)) : '';
+            $notes[] = $items !== [] ? 'Zabezpečení: ' . implode(', ', array_map(static fn (array $c): string => mb_strtolower($c['label']), $items)) : '';
         }
+
+        // Zastaralé PHP nebo databáze na hostingu: servis je chvíle, kdy to
+        // klientovi říct — poznámka jde do reportu. Smazat ji jde jako text.
+        $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
+
+        if ($snapshot !== null) {
+            $notes[] = PhpSupport::advice((string) $snapshot['php_version']);
+            $notes[] = DbSupport::advice((string) $snapshot['db_type'], (string) $snapshot['db_version']);
+        }
+
+        $description = implode("\n", array_filter($notes, static fn (?string $note): bool => $note !== null && $note !== ''));
 
         return $this->logView($site, null, [
             'performed_on' => date('Y-m-d'),
             'kind' => $plan !== null ? (string) $plan['kind'] : 'small',
             'description' => $description,
-            'minutes' => $plan !== null ? ServiceSchedule::KINDS[(string) $plan['kind']]['minutes'] : 50,
+            'minutes' => null,
             'status' => 'done',
-        ], $this->formChecklists(null, null), []);
+        ], $this->formChecklists(null, false), []);
     }
 
     public function storeLog(string $id): Response
@@ -164,7 +178,7 @@ final class ServiceController extends Controller
         [$values, $errors] = $this->readLog(null);
 
         if ($errors !== []) {
-            return $this->logView($site, null, $values, $this->formChecklists(null, $this->postedDone()), $errors, 422);
+            return $this->logView($site, null, $values, $this->formChecklists(null, true), $errors, 422);
         }
 
         $service = $this->kernel->service();
@@ -181,7 +195,7 @@ final class ServiceController extends Controller
 
         $kindLabel = ServiceSchedule::KINDS[$values['kind']]['label'] ?? 'Servis';
         $this->kernel->events()->record((int) $id, EventLog::KIND_SERVICE, $values['status'] === 'done' ? 'ok' : 'warning',
-            $values['status'] === 'done' ? $kindLabel . ': ' . mb_substr($values['description'], 0, 120) : $kindLabel . ' přeskočen: ' . mb_substr($values['description'], 0, 120),
+            ($values['status'] === 'done' ? $kindLabel . ': ' : $kindLabel . ' přeskočen: ') . mb_substr(ServiceChecklists::text($values['description'], $values['checklist']), 0, 120),
             ['kind' => $values['kind'], 'minutes' => $values['minutes'], 'status' => $values['status'], 'performed_on' => $values['performed_on']], $this->actorName());
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SERVICE, true, 'Zapsán servis ' . get_czech_date($values['performed_on']));
 
@@ -200,7 +214,7 @@ final class ServiceController extends Controller
             'description' => (string) $log['description'],
             'minutes' => $log['minutes'] !== null ? (int) $log['minutes'] : null,
             'status' => (string) $log['status'],
-        ], $this->formChecklists($log, null), []);
+        ], $this->formChecklists($log, false), []);
     }
 
     public function updateLog(string $id, string $logId): Response
@@ -210,7 +224,7 @@ final class ServiceController extends Controller
         [$values, $errors] = $this->readLog($log);
 
         if ($errors !== []) {
-            return $this->logView($site, $log, $values, $this->formChecklists($log, $this->postedDone()), $errors, 422);
+            return $this->logView($site, $log, $values, $this->formChecklists($log, true), $errors, 422);
         }
 
         // Plán se úpravou neposouvá: termín posunul už původní zápis
@@ -283,7 +297,7 @@ final class ServiceController extends Controller
             'description' => mb_substr($request->string('description'), 0, 5000),
             'minutes' => $request->int('minutes'),
             'status' => $request->string('status') === 'skipped' ? 'skipped' : 'done',
-            'checklist' => ServiceChecklists::build($this->checklistLabels($kind, $log), (array) ($this->postedDone()[$kind] ?? [])),
+            'checklist' => $this->postedChecklist($kind, $log),
         ];
         $errors = [];
 
@@ -291,8 +305,8 @@ final class ServiceController extends Controller
             $errors['performed_on'] = 'Zadejte datum servisu.';
         }
 
-        if ($values['description'] === '') {
-            $errors['description'] = 'Napište, co jste udělali — klient to uvidí v reportu.';
+        if (ServiceChecklists::text($values['description'], $values['checklist']) === '') {
+            $errors['description'] = 'Odškrtněte, co je hotové, nebo napište poznámku — klient to uvidí v reportu.';
         }
 
         return [$values, $errors];
@@ -303,26 +317,47 @@ final class ServiceController extends Controller
      * jen ten, jehož druh je vybraný (CSS `:has`), takže přepnutí druhu
      * funguje bez skriptu i bez znovunačtení.
      *
-     * @param array<string, mixed>|null        $log    upravovaný zápis
-     * @param array<string, array<int, mixed>>|null $posted odškrtnutí z odeslaného formuláře (po chybě)
-     * @return array<string, array<int, array{label: string, done: bool}>>
+     * Úkoly ze seznamu dostanou `index` (hodnota zaškrtávátka `done[druh][]`),
+     * vlastní úkoly `index` v poli `extra[druh][]`.
+     *
+     * @param array<string, mixed>|null $log    upravovaný zápis
+     * @param bool                      $posted vzít stav z odeslaného formuláře (po chybě)
+     * @return array<string, array<int, array{label: string, done: bool, extra: bool, index: int}>>
      */
-    private function formChecklists(?array $log, ?array $posted): array
+    private function formChecklists(?array $log, bool $posted): array
     {
         $checklists = [];
 
         foreach (array_keys(ServiceSchedule::KINDS) as $kind) {
-            $labels = $this->checklistLabels($kind, $log);
             $saved = $log !== null && (string) $log['kind'] === $kind ? ServiceChecklists::decode($log['checklist'] ?? null) : null;
+            $items = $posted ? $this->postedChecklist($kind, $log) : ($saved ?? ServiceChecklists::build($this->checklistLabels($kind, $log), []));
+            $counters = ['list' => 0, 'extra' => 0];
+            $checklists[$kind] = [];
 
-            if ($posted !== null) {
-                $checklists[$kind] = ServiceChecklists::build($labels, (array) ($posted[$kind] ?? []));
-            } else {
-                $checklists[$kind] = $saved ?? ServiceChecklists::build($labels, []);
+            foreach ($items as $item) {
+                $counter = $item['extra'] ? 'extra' : 'list';
+                $checklists[$kind][] = $item + ['index' => $counters[$counter]++];
             }
         }
 
         return $checklists;
+    }
+
+    /**
+     * Checklist druhu z odeslaného formuláře: úkoly ze seznamu podle
+     * odškrtnutí + vlastní úkoly.
+     *
+     * @param array<string, mixed>|null $log
+     * @return array<int, array{label: string, done: bool, extra: bool}>
+     */
+    private function postedChecklist(string $kind, ?array $log): array
+    {
+        $extra = $this->request()->input('extra', []);
+
+        return array_merge(
+            ServiceChecklists::build($this->checklistLabels($kind, $log), (array) ($this->postedDone()[$kind] ?? [])),
+            ServiceChecklists::extras(is_array($extra) && is_array($extra[$kind] ?? null) ? $extra[$kind] : []),
+        );
     }
 
     /**
@@ -337,7 +372,11 @@ final class ServiceController extends Controller
     {
         $saved = $log !== null && (string) $log['kind'] === $kind ? ServiceChecklists::decode($log['checklist'] ?? null) : null;
 
-        return $saved !== null ? array_column($saved, 'label') : $this->kernel->serviceChecklists()->template($kind);
+        if ($saved === null) {
+            return $this->kernel->serviceChecklists()->template($kind);
+        }
+
+        return array_column(array_filter($saved, static fn (array $item): bool => !$item['extra']), 'label');
     }
 
     /** Odškrtnuté úkoly z formuláře: `done[druh][] = index`. @return array<string, array<int, mixed>> */

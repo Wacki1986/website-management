@@ -18,11 +18,11 @@ use DateTimeImmutable;
  */
 final class ServiceSchedule
 {
-    /** @var array<string, array{label: string, note: string, estimate: string, minutes: int, icon: string}> */
+    /** @var array<string, array{label: string, note: string, icon: string}> */
     public const KINDS = [
-        'small' => ['label' => 'Malý servis', 'note' => 'aktualizace WordPressu a pluginů, kontrola záloh a formulářů', 'estimate' => '45–60 min', 'minutes' => 50, 'icon' => 'refresh'],
-        'medium' => ['label' => 'Střední servis', 'note' => 'malý servis + kontrola bezpečnosti, čištění databáze a médií', 'estimate' => '1,5–2 h', 'minutes' => 105, 'icon' => 'shield'],
-        'large' => ['label' => 'Velký servis', 'note' => 'střední servis + optimalizace rychlosti, revize obsahu a SEO', 'estimate' => '3–4 h', 'minutes' => 210, 'icon' => 'clock'],
+        'small' => ['label' => 'Malý servis', 'note' => 'aktualizace WordPressu a pluginů, kontrola záloh a formulářů', 'icon' => 'refresh'],
+        'medium' => ['label' => 'Střední servis', 'note' => 'malý servis + kontrola bezpečnosti, čištění databáze a médií', 'icon' => 'shield'],
+        'large' => ['label' => 'Velký servis', 'note' => 'střední servis + optimalizace rychlosti, revize obsahu a SEO', 'icon' => 'clock'],
     ];
 
     /** @var array<string, array{label: string, months: int}> months 0 = jednorázově */

@@ -67,9 +67,12 @@ $this->extend('layout/shell', ['title' => $title]);
                             <?php endif; ?>
                         </div>
                         <div class="table__cell text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($plugin['uploaded']) ?></div>
-                        <div class="table__cell table__cell--right row" style="justify-content:flex-end;gap:12px;flex-wrap:nowrap">
-                            <a href="<?= $plugin['downloadUrl'] ?>" title="ZIP pro ruční instalaci na nový web">Stáhnout</a>
-                            <form method="post" action="<?= $plugin['removeAction'] ?>"><?php render_csrf($csrfToken) ?><button type="submit" class="btn--menu" title="Odebrat z knihovny (na webech plugin zůstane)"><?= get_icon('trash', 'icon--sm icon--subtle') ?></button></form>
+                        <div class="table__cell table__cell--right">
+                            <form class="row-actions" method="post" action="<?= $plugin['removeAction'] ?>">
+                                <?php render_csrf($csrfToken) ?>
+                                <a class="btn btn--ghost btn--icon" href="<?= $plugin['downloadUrl'] ?>" title="Stáhnout ZIP pro ruční instalaci na nový web" aria-label="Stáhnout <?= $this->e((string) $plugin['name']) ?>"><?= get_icon('download', 'icon--sm') ?></a>
+                                <button type="submit" class="btn btn--ghost btn--icon" title="Odebrat z knihovny (na webech plugin zůstane)" aria-label="Odebrat <?= $this->e((string) $plugin['name']) ?> z knihovny"><?= get_icon('trash', 'icon--sm') ?></button>
+                            </form>
                         </div>
                     </div>
                 <?php endforeach; ?>

@@ -86,7 +86,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.5.0';
+    public const VERSION = '0.5.2';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -976,6 +976,8 @@ final class Kernel
         $router->add('POST', '/weby/{id}/pluginy/aktualizovat', [SiteActionController::class, 'updatePlugins'], Router::AUTH_ONLY, 'sites.plugins.update');
         $router->add('GET', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deleteForm'], name: 'sites.plugins.delete.form');
         $router->add('POST', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deletePlugin'], Router::AUTH_ONLY, 'sites.plugins.delete');
+        $router->add('POST', '/weby/{id}/pluginy/deaktivovat', [SiteActionController::class, 'deactivatePlugin'], Router::AUTH_ONLY, 'sites.plugins.deactivate');
+        $router->add('POST', '/weby/{id}/pluginy/aktivovat', [SiteActionController::class, 'activatePlugin'], Router::AUTH_ONLY, 'sites.plugins.activate');
         $router->add('POST', '/weby/{id}/pluginy/nesledovat', [SiteController::class, 'unwatchPlugin'], Router::AUTH_ONLY, 'sites.plugins.unwatch');
         $router->add('POST', '/weby/{id}/pluginy/sledovat', [SiteController::class, 'watchPlugin'], Router::AUTH_ONLY, 'sites.plugins.watch');
         $router->add('GET', '/weby/{id}/wordpress', [SiteActionController::class, 'coreForm'], name: 'sites.core.form');

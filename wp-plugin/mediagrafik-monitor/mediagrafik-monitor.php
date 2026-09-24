@@ -4,7 +4,7 @@
  * Plugin Name: MEDIAGRAFIK Monitor
  * Plugin URI: https://mediagrafik.cz
  * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.4.0
+ * Version: 1.5.1
  * Requires at least: 6.8
  * Requires PHP: 7.4
  * Author: Mediagrafik.cz
@@ -26,9 +26,9 @@ if (!defined('ABSPATH')) {
  * Hub (Správa webů) se ptá sám — model „pull" — a pověřuje se hlavičkou
  * `X-MG-Key`. Klíč vydává hub, tady se ukládá jen jeho SHA-256 hash.
  * Na webu něco mění jen akce na pokyn hubu (podepsaný požadavek):
- * aktualizace pluginů (`MG_Plugin_Updates`), smazání neaktivních pluginů
- * a aktualizace WordPressu (`MG_Site_Actions`), přihlášení do administrace
- * jedním klikem (`MG_Login`). Aktualizace nabízí WordPressu pro sebe
+ * aktualizace pluginů (`MG_Plugin_Updates`); aktivace, deaktivace a smazání
+ * neaktivních pluginů a aktualizace WordPressu (`MG_Site_Actions`);
+ * přihlášení jedním klikem (`MG_Login`). Aktualizace nabízí WordPressu pro sebe
  * (`MG_Updater`) i pro pluginy z knihovny Správy webů (`MG_Library`).
  *
  * Verzi je nutné změnit na dvou místech: hlavička `Version:` a konstanta
@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
  */
 final class MG_Monitor
 {
-    const VERSION = '1.4.0';
+    const VERSION = '1.5.1';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';

@@ -34,6 +34,7 @@ final class PluginClient
     public const ACTION_PLUGIN_DELETE = 'plugin-delete';
     public const ACTION_CORE_UPDATE = 'core-update';
     public const ACTION_LOGIN_LINK = 'login-link';
+    public const ACTION_PLUGIN_ACTIVATION = 'plugin-activation';
 
     /** Od které verze pluginu akci web zná — starší plugin by odpověděl `rest_no_route`. */
     public const ACTIONS_SINCE = [
@@ -41,6 +42,7 @@ final class PluginClient
         self::ACTION_PLUGIN_DELETE => '1.2.0',
         self::ACTION_CORE_UPDATE => '1.2.0',
         self::ACTION_LOGIN_LINK => '1.3.0',
+        self::ACTION_PLUGIN_ACTIVATION => '1.5.0',
     ];
 
     /** Od této verze si plugin na webu bere aktualizace z knihovny pluginů správy. */
@@ -55,6 +57,7 @@ final class PluginClient
         'nothing_to_update', 'too_many_plugins', 'nothing_to_delete',
         'no_core_update', 'core_offer_changed', 'php_too_old', 'db_too_old', 'core_update_failed',
         'login_disabled', 'login_user_missing', 'login_not_admin',
+        'plugin_missing', 'plugin_self', 'activation_failed',
     ];
 
     /**
@@ -120,6 +123,17 @@ final class PluginClient
     public function updateCore(string $siteUrl, #[\SensitiveParameter] string $apiKey, string $version): array
     {
         return $this->action($siteUrl, $apiKey, self::ACTION_CORE_UPDATE, ['version' => $version]);
+    }
+
+    /**
+     * Aktivace (`$active = true`) nebo deaktivace pluginu na webu.
+     * `data.plugin` = `{file, name, active}` — stav po akci.
+     *
+     * @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string}
+     */
+    public function setPluginActive(string $siteUrl, #[\SensitiveParameter] string $apiKey, string $file, bool $active): array
+    {
+        return $this->action($siteUrl, $apiKey, self::ACTION_PLUGIN_ACTIVATION, ['plugin' => $file, 'active' => $active]);
     }
 
     /**

@@ -135,6 +135,17 @@ final class SiteActions
             && ((int) $plugin['has_update'] === 1 || (int) ($plugin['updates_ignored'] ?? 0) === 1);
     }
 
+    /**
+     * Jde plugin ze správy zapnout / vypnout? Všechny kromě MEDIAGRAFIK
+     * Monitoru — po jeho vypnutí by správa k webu ztratila přístup.
+     *
+     * @param array<string, mixed> $plugin řádek `site_plugins`
+     */
+    public static function canToggleActive(array $plugin): bool
+    {
+        return !self::isMonitor((string) $plugin['file']);
+    }
+
     /** Je to náš plugin? Podle souboru, složka může mít jiné jméno. */
     public static function isMonitor(string $file): bool
     {

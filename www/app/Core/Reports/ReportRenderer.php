@@ -124,7 +124,7 @@ final class ReportRenderer
                     . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
                     . '<td valign="top" style="font-size:14px;color:' . self::BODY . ';line-height:1.5;">'
                     . '<div style="font-weight:600;color:' . self::TEXT . ';">' . $e($service['kindLabel']) . ' <span style="font-weight:400;color:' . self::MUTED . ';">· ' . $e(get_czech_date($service['date'])) . '</span></div>'
-                    . '<div style="margin-top:3px;">' . $e($service['description']) . '</div></td>'
+                    . self::serviceBody($service, $e) . '</td>'
                     . ($service['minutes'] !== null ? '<td valign="top" align="right" width="70" style="font-size:12px;color:' . self::MUTED . ';white-space:nowrap;padding-left:12px;">' . $e(ReportBuilder::minutes((int) $service['minutes'])) . '</td>' : '')
                     . '</tr></table></td></tr>';
             }
@@ -330,7 +330,20 @@ final class ReportRenderer
             array_push($lines, '', 'Servis v tomto období:');
 
             foreach ($summary['services'] as $service) {
-                $lines[] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ': ' . $service['description'];
+                if (($service['tasks'] ?? []) === []) {
+                    $lines[] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ': ' . $service['description'];
+                    continue;
+                }
+
+                $lines[] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ':';
+
+                foreach ($service['tasks'] as $task) {
+                    $lines[] = '  ✓ ' . $task;
+                }
+
+                if ($service['note'] !== '') {
+                    $lines[] = '  ' . $service['note'];
+                }
             }
         }
 
@@ -359,5 +372,37 @@ final class ReportRenderer
         array_push($lines, '', $summary['uptime']['note'], '', $studio['name'] . ' · správa a údržba webů', implode(' · ', array_filter([$studio['email'], $studio['phone']])));
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Tělo řádku servisu v e-mailu: hotové úkoly pod sebou s fajfkou,
+     * pod nimi poznámka. Uložené reporty z doby před úkoly mají jen
+     * `description` — ta se vypíše jako dřív.
+     *
+     * @param array<string, mixed> $service
+     * @param callable(string): string $e
+     */
+    private static function serviceBody(array $service, callable $e): string
+    {
+        $tasks = (array) ($service['tasks'] ?? []);
+
+        if ($tasks === []) {
+            return '<div style="margin-top:3px;">' . $e((string) $service['description']) . '</div>';
+        }
+
+        $html = '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:6px;">';
+
+        foreach ($tasks as $task) {
+            $html .= '<tr><td valign="top" width="20" style="color:' . self::OK . ';font-weight:600;line-height:1.6;">✓</td>'
+                . '<td style="line-height:1.6;">' . $e((string) $task) . '</td></tr>';
+        }
+
+        $html .= '</table>';
+
+        if ((string) ($service['note'] ?? '') !== '') {
+            $html .= '<div style="margin-top:8px;color:' . self::MUTED . ';">' . nl2br($e((string) $service['note'])) . '</div>';
+        }
+
+        return $html;
     }
 }

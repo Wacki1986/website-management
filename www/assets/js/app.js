@@ -21,6 +21,9 @@ import { initSelection } from './modules/selection.js';
 import { initSteppers } from './modules/stepper.js';
 import { initReportPreview } from './modules/report-preview.js';
 import { initPending } from './modules/pending.js';
+import { initPluginUpdate } from './modules/plugin-update.js';
+import { initConfirmDialogs } from './modules/confirm-dialog.js';
+import { initServiceTasks } from './modules/service-tasks.js';
 
 initToasts();
 initThemeToggle();
@@ -35,3 +38,6 @@ initSelection();
 initSteppers();
 initReportPreview();
 initPending();
+initPluginUpdate();
+initConfirmDialogs();
+initServiceTasks();

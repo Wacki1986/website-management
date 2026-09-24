@@ -39,7 +39,7 @@ return [
         assertSame(30, count(ServiceChecklists::parse(implode("\n", array_map(static fn (int $i): string => 'Úkol ' . $i, range(1, 40))))));
 
         $items = ServiceChecklists::build(['A', 'B', 'C'], ['0', '2', 'x']);
-        assertSame([['label' => 'A', 'done' => true], ['label' => 'B', 'done' => false], ['label' => 'C', 'done' => true]], $items);
+        assertSame([['label' => 'A', 'done' => true, 'extra' => false], ['label' => 'B', 'done' => false, 'extra' => false], ['label' => 'C', 'done' => true, 'extra' => false]], $items);
         assertSame($items, ServiceChecklists::decode(ServiceChecklists::encode($items)));
         assertSame('2 z 3 úkolů', ServiceChecklists::progress($items));
         assertSame('', ServiceChecklists::progress(null));
@@ -91,9 +91,9 @@ return [
 
         $log = scOnlyLog($kernel);
         assertSame([
-            ['label' => 'Aktualizace', 'done' => true],
-            ['label' => 'Záloha', 'done' => true],
-            ['label' => 'Formuláře', 'done' => false],
+            ['label' => 'Aktualizace', 'done' => true, 'extra' => false],
+            ['label' => 'Záloha', 'done' => true, 'extra' => false],
+            ['label' => 'Formuláře', 'done' => false, 'extra' => false],
         ], ServiceChecklists::decode($log['checklist']));
 
         assertContainsString('2 z 3 úkolů', kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis')->body());
@@ -133,19 +133,91 @@ return [
         assertSame(40, (int) $edited['minutes']);
         assertSame('Technik', $edited['user_name'], 'Autor zápisu se úpravou nemění');
         assertTrue($edited['updated_at'] !== null);
-        assertSame([['label' => 'Aktualizace', 'done' => true], ['label' => 'Záloha', 'done' => true]], ServiceChecklists::decode($edited['checklist']));
+        assertSame([['label' => 'Aktualizace', 'done' => true, 'extra' => false], ['label' => 'Záloha', 'done' => true, 'extra' => false]], ServiceChecklists::decode($edited['checklist']));
         assertSame($nextAfterStore, $kernel->service()->plan($siteId)['next_date'], 'Úprava neposouvá plán');
 
-        // Bez popisu se úprava neuloží a formulář drží odškrtnutí.
+        // Bez popisu i bez odškrtnutí se úprava neuloží a formulář drží vyplněné.
         $invalid = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/servis/' . (int) $log['id'] . '/upravit', [
-            '_token' => $token, 'kind' => 'small', 'performed_on' => '2026-09-20', 'minutes' => '40',
-            'description' => '', 'status' => 'done', 'done' => ['small' => ['1']],
+            '_token' => $token, 'kind' => 'small', 'performed_on' => '2026-09-20', 'minutes' => '45',
+            'description' => '', 'status' => 'done',
         ]);
         assertSame(422, $invalid->status());
-        assertContainsString('name="done[small][]" value="1" checked', $invalid->body());
+        assertContainsString('value="45"', $invalid->body());
         assertSame('Aktualizace a záloha', scOnlyLog($kernel)['description']);
 
+        // Popis je nepovinný — bez něj historie ukáže odškrtnuté úkoly.
+        $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/servis/' . (int) $log['id'] . '/upravit', [
+            '_token' => $token, 'kind' => 'small', 'performed_on' => '2026-09-20', 'minutes' => '40',
+            'description' => '', 'status' => 'done', 'done' => ['small' => ['0', '1']],
+        ]);
+        assertSame(302, $response->status());
+        assertSame('', scOnlyLog($kernel)['description']);
+        $page = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis')->body();
+        assertContainsString('Aktualizace, záloha', $page);
+        assertContainsString('title="Upravit záznam"', $page);
+        assertFalse(str_contains($page, '45–60 min'), 'Odhady času druhů servisu jsou pryč');
+
         assertSame(404, kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis/999999/upravit')->status());
+
+        Urls::reset();
+    },
+    'vlastní úkoly: přidat k seznamu, přepsat, odebrat; report je vypíše pod sebe s poznámkou' => function (): void {
+        [$kernel, $token, $siteId] = scKernel();
+        $kernel->serviceChecklists()->save('small', "Aktualizace WordPressu\nZáloha");
+
+        $form = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis/zapsat')->body();
+        assertContainsString('name="extra[small][new][label]"', $form);
+        assertContainsString('data-task-add', $form);
+        assertContainsString('Poznámka k servisu', $form);
+
+        kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/servis/zapsat', [
+            '_token' => $token, 'kind' => 'small', 'performed_on' => '2026-09-20', 'minutes' => '30', 'description' => '', 'status' => 'done',
+            'done' => ['small' => ['0']],
+            'extra' => ['small' => [
+                't1' => ['label' => ' Oprava formuláře poptávky ', 'done' => '1'],
+                't2' => ['label' => 'Nová galerie'],
+                'new' => ['label' => '', 'done' => '1'],
+            ]],
+        ]);
+        $log = scOnlyLog($kernel);
+        assertSame([
+            ['label' => 'Aktualizace WordPressu', 'done' => true, 'extra' => false],
+            ['label' => 'Záloha', 'done' => false, 'extra' => false],
+            ['label' => 'Oprava formuláře poptávky', 'done' => true, 'extra' => true],
+            ['label' => 'Nová galerie', 'done' => false, 'extra' => true],
+        ], ServiceChecklists::decode($log['checklist']));
+
+        // Úprava: vlastní úkoly jsou pole s textem, úkoly ze seznamu jen zaškrtávátka.
+        $edit = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis/' . (int) $log['id'] . '/upravit')->body();
+        assertContainsString('name="extra[small][0][label]" value="Oprava formuláře poptávky"', $edit);
+        assertContainsString('name="extra[small][1][label]" value="Nová galerie"', $edit);
+        assertContainsString('name="done[small][]" value="1"', $edit);
+
+        // Druhý vlastní úkol odebraný (bez skriptu smazáním textu), první přepsaný.
+        kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/servis/' . (int) $log['id'] . '/upravit', [
+            '_token' => $token, 'kind' => 'small', 'performed_on' => '2026-09-20', 'minutes' => '30',
+            'description' => 'Doporučujeme obnovit fotky v galerii.', 'status' => 'done',
+            'done' => ['small' => ['0', '1']],
+            'extra' => ['small' => ['0' => ['label' => 'Oprava formuláře poptávky a e-mailu', 'done' => '1'], '1' => ['label' => '']]],
+        ]);
+        $items = ServiceChecklists::decode(scOnlyLog($kernel)['checklist']);
+        assertSame(3, count($items));
+        assertSame('Oprava formuláře poptávky a e-mailu', $items[2]['label']);
+
+        $summary = $kernel->reportBuilder()->build($kernel->sites()->findWithSnapshot($siteId), '2026-09-01', '2026-09-30', 'Září 2026', '2026-10-01');
+        assertSame(['Aktualizace WordPressu', 'Záloha', 'Oprava formuláře poptávky a e-mailu'], $summary['services'][0]['tasks']);
+        assertSame('Doporučujeme obnovit fotky v galerii.', $summary['services'][0]['note']);
+
+        $options = ['sections' => ['services'], 'studio' => ['name' => 'X', 'email' => '', 'phone' => '']];
+        $html = $kernel->reportRenderer()->body($summary, $options);
+        assertContainsString('>Oprava formuláře poptávky a e-mailu</td>', $html);
+        assertContainsString('Doporučujeme obnovit fotky v galerii.', $html);
+        assertContainsString("  ✓ Záloha\n", $kernel->reportRenderer()->text($summary, $options));
+
+        // Uložený report z doby před úkoly (jen `description`) se vykreslí jako dřív.
+        $old = $summary;
+        $old['services'][0] = ['date' => '2026-09-20', 'kind' => 'small', 'kindLabel' => 'Malý servis', 'description' => 'Aktualizace všeho.', 'minutes' => 30];
+        assertContainsString('Aktualizace všeho.', $kernel->reportRenderer()->body($old, $options));
 
         Urls::reset();
     },

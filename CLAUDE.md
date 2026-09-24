@@ -25,6 +25,13 @@ kódu: `../dispu/aplikace/dev/docs/11-jak-cist-kod.md`. Provozní dokumentace:
   viz `dev/design/STAVY.md`.
 - Ikony: `get_icon('shield', 'icon--sm icon--warning')`, ne inline masky.
 - Záložky jsou odkazy na vlastní URL, ne JS přepínání.
+- **Akce v řádku tabulky** (upravit, smazat, stáhnout…) patří do posledního
+  sloupce „Akce" vpravo: ikony `btn btn--ghost btn--icon` s `title`
+  a `aria-label` v obalu `.row-actions`. Nikdy ne odkaz schovaný v textu
+  řádku.
+- Nevratné akce (smazání) se potvrzují v modálním okně (`<dialog class="modal">`
+  + `data-confirm` na odkazu, `confirm-dialog.js`); odkaz bez skriptu vede
+  na samostatnou potvrzovací stránku.
 - U skutečných polí formuláře (rádio, zaškrtávátko v `.segmented__item`,
   `.choice__item`, `.pick__item`, `.toggle`) se stav **nekreslí třídou
   `--active`/`--on` ze serveru**, jen CSS `:has(:checked)` v `app/_extras.scss`

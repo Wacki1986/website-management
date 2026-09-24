@@ -31,6 +31,7 @@ final class AuditLog
     public const ACTION_SITE_KEY = 'web-klic';
     public const ACTION_PLUGIN_UPDATE = 'pluginy-aktualizace';
     public const ACTION_PLUGIN_DELETE = 'plugin-smazani';
+    public const ACTION_PLUGIN_ACTIVATION = 'plugin-aktivace';
     public const ACTION_CORE_UPDATE = 'wordpress-aktualizace';
     public const ACTION_CLIENT = 'klient';
     public const ACTION_ALERT = 'alert';
@@ -52,6 +53,7 @@ final class AuditLog
         self::ACTION_SITE_KEY => ['Nový API klíč', 'warning'],
         self::ACTION_PLUGIN_UPDATE => ['Aktualizace pluginů', 'brand'],
         self::ACTION_PLUGIN_DELETE => ['Smazání pluginu', 'error'],
+        self::ACTION_PLUGIN_ACTIVATION => ['Aktivace pluginu', 'warning'],
         self::ACTION_CORE_UPDATE => ['Aktualizace WordPressu', 'brand'],
         self::ACTION_CLIENT => ['Klient', ''],
         self::ACTION_ALERT => ['Alert', 'warning'],

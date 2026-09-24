@@ -10,6 +10,7 @@ use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\SecurityAudit;
 use App\Core\Monitor\SnapshotImporter;
 use App\Core\Monitor\UptimeRepository;
+use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceRepository;
 use App\Core\Service\ServiceSchedule;
 use App\Core\Sites\ContentFreshness;
@@ -99,13 +100,18 @@ final class ReportBuilder
         // --- Servis -------------------------------------------------------
         $services = [];
 
+        // `tasks` + `note` jdou do reportu pod sebe; `description` (jedna věta)
+        // zůstává pro uložené reporty z doby před úkoly a pro historii.
         foreach ($this->service->logsBetween($siteId, $from, $to) as $log) {
             $kind = ServiceSchedule::KINDS[(string) $log['kind']] ?? ServiceSchedule::KINDS['small'];
+            $checklist = ServiceChecklists::decode($log['checklist'] ?? null);
             $services[] = [
                 'date' => (string) $log['performed_on'],
                 'kind' => (string) $log['kind'],
                 'kindLabel' => $kind['label'],
-                'description' => (string) $log['description'],
+                'description' => ServiceChecklists::text((string) $log['description'], $checklist),
+                'tasks' => ServiceChecklists::doneLabels($checklist),
+                'note' => trim((string) $log['description']),
                 'minutes' => $log['minutes'] !== null ? (int) $log['minutes'] : null,
             ];
         }

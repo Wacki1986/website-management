@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -25,6 +25,12 @@ jedním klikem ze Správy webů (jednorázový odkaz, bez hesla; jde vypnout v n
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.5.1 =
+* Typy obsahu: kromě veřejných i vlastní typy s vlastní položkou v menu wp-admin (např. Reference, Kurzy registrované jako neveřejné).
+
+= 1.5.0 =
+* Aktivace a deaktivace pluginů ze Správy webů (MEDIAGRAFIK Monitor sám sebe vypnout nedovolí).
 
 = 1.4.0 =
 * Aktualizace placených a vlastních pluginů z knihovny Správy webů (web se prokazuje otiskem API klíče, ZIP má podpis jen pro daný web).
