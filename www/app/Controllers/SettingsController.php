@@ -20,6 +20,7 @@ use App\Core\Monitor\SupportTables;
 use App\Core\Notifications\EmailMessage;
 use App\Core\Notifications\MailSettings;
 use App\Core\Notifications\PushSubscriptions;
+use App\Core\Reports\ReportTemplate;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceSchedule;
 use App\Core\Sites\SiteActions;
@@ -254,6 +255,72 @@ final class SettingsController extends Controller
             'kinds' => $kinds,
             'maxItems' => ServiceChecklists::MAX_ITEMS,
         ]);
+    }
+
+    // -----------------------------------------------------------------
+    // Šablona klientského reportu
+    // -----------------------------------------------------------------
+
+    public function reportTemplate(): Response
+    {
+        $template = new ReportTemplate($this->kernel->settings());
+        $custom = $template->custom();
+        $fields = [];
+
+        foreach (ReportTemplate::FIELDS as $key => $field) {
+            $fields[] = $field + ['key' => $key, 'value' => $custom[$key] ?? '', 'changed' => isset($custom[$key])];
+        }
+
+        return $this->view('settings/report-template', [
+            'title' => 'Nastavení',
+            'activeTab' => 'reporty',
+            'fields' => $fields,
+            'placeholders' => ReportTemplate::PLACEHOLDERS,
+            'changedCount' => count($custom),
+        ] + $this->templatePreview($template));
+    }
+
+    public function saveReportTemplate(): Response
+    {
+        $template = new ReportTemplate($this->kernel->settings());
+        $reset = $this->request()->bool('reset');
+        $changed = $template->save($reset ? [] : $this->request()->body);
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, $reset ? 'Šablona reportu vrácena na výchozí texty' : 'Uložena šablona reportu (' . get_count($changed, 'upravený text', 'upravené texty', 'upravených textů') . ')');
+
+        // Rozpracované reporty ve frontě mají uložené HTML — přegenerovat,
+        // ať schvalování ukazuje nové texty.
+        foreach ($this->kernel->reports()->all(['status' => 'pending']) as $row) {
+            $report = $this->kernel->reports()->find((int) $row['id']);
+
+            if ($report !== null) {
+                $this->kernel->reportSender()->rerender($report);
+            }
+        }
+
+        return $this->redirectWithFlash('nastaveni/reporty', $reset ? 'Šablona používá zase výchozí texty.' : 'Šablona reportu je uložená. Platí pro reporty, které ještě neodešly.');
+    }
+
+    /**
+     * Náhled šablony na posledním reportu (souhrn z něj, texty aktuální).
+     *
+     * @return array{previewBody: string, previewSubject: string, previewNote: string}
+     */
+    private function templatePreview(ReportTemplate $template): array
+    {
+        $latest = $this->kernel->reports()->all()[0] ?? null;
+        $report = $latest !== null ? $this->kernel->reports()->find((int) $latest['id']) : null;
+
+        if ($report === null || !is_array($report['summary'] ?? null)) {
+            return ['previewBody' => '', 'previewSubject' => '', 'previewNote' => 'Náhled se ukáže, až vznikne první report.'];
+        }
+
+        $options = $this->kernel->reportSender()->options($report['summary'], (string) $report['note'], $report['sections']);
+
+        return [
+            'previewBody' => $this->kernel->reportRenderer()->body($report['summary'], $options),
+            'previewSubject' => ReportTemplate::subject($report['summary'], $options['texts'], $options['studio']['name']),
+            'previewNote' => 'Náhled na reportu ' . $report['site_name'] . ' · ' . $report['period_label'] . ' — data z něj, texty podle šablony.',
+        ];
     }
 
     public function saveService(): Response

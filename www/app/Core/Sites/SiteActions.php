@@ -98,6 +98,35 @@ final class SiteActions
     }
 
     /**
+     * Výsledek aktualizace z webu, přezkoumaný proti tomu, co správa ví.
+     *
+     * Web hlásí „už aktuální", když WordPress v tu chvíli žádnou novou
+     * verzi nezná — u placených pluginů bez licence (nabídka jen ve
+     * wp-admin) i tehdy, když verze zůstala stará. Pro správu je to
+     * selhání s vysvětlením, ne fajfka. Platí i pro weby s pluginem do
+     * 1.5.1, které to samy nerozliší.
+     *
+     * @param array<int, array<string, mixed>> $items    výsledky po pluginech z `PluginClient::updatePlugins()`
+     * @param array<string, array{name: string, new_version: string}> $updatable z `updatable()`
+     * @return array<int, array<string, mixed>>
+     */
+    public static function reviewUpdateResults(array $items, array $updatable): array
+    {
+        foreach ($items as $i => $item) {
+            $expected = $updatable[(string) ($item['file'] ?? '')]['new_version'] ?? '';
+            $to = (string) ($item['to'] ?? $item['from'] ?? '');
+
+            if (($item['status'] ?? '') === 'up_to_date' && $expected !== '' && version_compare($to, $expected, '<')) {
+                $items[$i]['status'] = 'failed';
+                $items[$i]['message'] = 'Web aktualizaci na ' . $expected . ' teď nenabídl a plugin zůstal ve verzi ' . $to
+                    . ' — placený plugin nejspíš nemá platnou licenci nebo aktualizuje jen ve wp-admin. Zkontrolujte licenci a aktualizujte ve wp-admin → Pluginy (případně plugin přestaňte sledovat ikonou oka).';
+            }
+        }
+
+        return $items;
+    }
+
+    /**
      * Smazat jde jen neaktivní plugin — aktivní by nejdřív musel někdo
      * vypnout a zkontrolovat, že web bez něj funguje. MEDIAGRAFIK Monitor
      * nikdy: správa by o web přišla.

@@ -4,7 +4,7 @@
  * Plugin Name: MEDIAGRAFIK Monitor
  * Plugin URI: https://mediagrafik.cz
  * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.5.1
+ * Version: 1.5.2
  * Requires at least: 6.8
  * Requires PHP: 7.4
  * Author: Mediagrafik.cz
@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
  */
 final class MG_Monitor
 {
-    const VERSION = '1.5.1';
+    const VERSION = '1.5.2';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';

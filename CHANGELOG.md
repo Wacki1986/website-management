@@ -1,5 +1,22 @@
 # Změny
 
+## 0.5.4 — 24. 9. 2026
+
+- **Šablona klientského reportu** (Nastavení → Šablona reportu, tlačítko
+  „Upravit šablonu" na stránce Reporty podle návrhu): předmět (vše v pořádku /
+  ostatní), úvod, popisek poznámky, nadpisy sekcí, tlačítka, výzva ke
+  kontaktu, podpis a patička. Značky `{web}`, `{obdobi}`, `{kdy}`,
+  `{studio}`; prázdné pole = výchozí text; „Vrátit výchozí texty"; náhled na
+  posledním reportu. Platí pro HTML i textovou variantu (`ReportTemplate`).
+- **Důvod nepovedené aktualizace pluginu** — web hlásil „už aktuální", když
+  placený plugin (Rank Math PRO) mimo wp-admin aktualizaci nenabízel, a
+  správa ukázala fajfku. Teď je to selhání s vysvětlením (licence,
+  aktualizace ve wp-admin) — funguje i se starším pluginem.
+- **Plugin MEDIAGRAFIK Monitor 1.5.2** — když obnovení seznamu aktualizací
+  nabídku placeného pluginu zahodí, použije tu, kterou web ukazoval (jako
+  tlačítko ve wp-admin); jinak vrátí důvod.
+- Budoucí TO DO v `dev/docs/02-todo.md` (bezpečnostní aktualizace, 2FA).
+
 ## 0.5.3 — 24. 9. 2026
 
 - **Konce podpory PHP a databází z endoflife.date** (`SupportTables`):

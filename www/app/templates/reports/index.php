@@ -41,7 +41,8 @@ $periodLabel = static function (string $ym): string {
 };
 ?>
 <?php render_page_head('Reporty', $this->e($meta),
-    $canSendScheduled ? '<form method="post" action="' . get_url('reporty/odeslat-naplanovane') . '">' . get_csrf($csrfToken) . '<button type="submit" class="btn btn--primary">' . get_btn_icon('mail') . 'Odeslat naplánované</button></form>' : '') ?>
+    '<a class="btn btn--secondary" href="' . get_url('nastaveni/reporty') . '">Upravit šablonu</a>'
+    . ($canSendScheduled ? '<form method="post" action="' . get_url('reporty/odeslat-naplanovane') . '">' . get_csrf($csrfToken) . '<button type="submit" class="btn btn--primary">' . get_btn_icon('mail') . 'Odeslat naplánované</button></form>' : '')) ?>
 
 <div class="app__content">
     <div class="metric-grid">

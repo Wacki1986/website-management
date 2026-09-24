@@ -43,7 +43,7 @@ $this->extend('layout/shell', ['title' => $title]);
                 <div style="font-weight:var(--font-weight-semibold)">Změna platí pro nové zápisy</div>
                 <div class="text-subtle" style="font-size:var(--font-size-label);margin-top:6px;line-height:var(--line-height-relaxed);text-wrap:pretty">Každý zápis servisu si při uložení nechá svůj seznam i s odškrtnutím. Když úkol přidáte nebo smažete tady, dřívější zápisy zůstanou, jak byly — historie tak říká, co se tehdy opravdu dělalo.</div>
             </div>
-            <div class="card card--note">Prázdný seznam = druh servisu bez checklistu. Textová část zápisu („Co jsme udělali") zůstává — tu vidí klient v reportu.</div>
+            <div class="card card--note">Prázdný seznam = druh servisu bez checklistu. Klient v reportu uvidí hotové úkoly a poznámku k servisu.</div>
         </aside>
     </div>
 </div>

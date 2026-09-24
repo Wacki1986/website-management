@@ -5,7 +5,8 @@ píše tak, aby byl čitelný na první pohled, ne jen správný. Architektura j
 převzatá ze správy instancí dispu (`../dispu/sprava-instanci`): Kernel →
 Router → Controller → View, žádný framework, žádný Composer. Průvodce čtením
 kódu: `../dispu/aplikace/dev/docs/11-jak-cist-kod.md`. Provozní dokumentace:
-`dev/docs/00-provoz.md`. Zadání a plán: `dev/docs/01-plan.md`.
+`dev/docs/00-provoz.md`. Zadání a plán: `dev/docs/01-plan.md`. Co se udělá
+později: `dev/docs/02-todo.md`.
 
 ## Struktura
 

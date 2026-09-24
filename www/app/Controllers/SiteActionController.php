@@ -76,10 +76,11 @@ final class SiteActionController extends Controller
             return $json ? Response::json(['ok' => false, 'error' => (string) $result['error']], 502) : $failure;
         }
 
+        $items = SiteActions::reviewUpdateResults(array_values((array) ($result['data']['plugins'] ?? [])), $updatable);
         $updated = [];
         $failed = [];
 
-        foreach ((array) ($result['data']['plugins'] ?? []) as $item) {
+        foreach ($items as $item) {
             $name = (string) ($item['name'] ?? $item['file'] ?? '');
 
             if (($item['status'] ?? '') === 'updated') {
@@ -97,7 +98,7 @@ final class SiteActionController extends Controller
 
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_PLUGIN_UPDATE, $failed === [],
             'Aktualizace pluginů: ' . ($updated !== [] ? implode(', ', $updated) : 'nic') . ($failed !== [] ? ' · selhalo: ' . implode(', ', $failed) : ''),
-            ['plugins' => $result['data']['plugins'] ?? []]);
+            ['plugins' => $items]);
 
         $message = $updated !== [] ? 'Aktualizováno: ' . implode(', ', $updated) : 'Nic se neaktualizovalo — pluginy už jsou v nejnovější verzi.';
 
@@ -106,7 +107,7 @@ final class SiteActionController extends Controller
         }
 
         if ($json) {
-            return Response::json(['ok' => true, 'items' => array_values((array) ($result['data']['plugins'] ?? [])), 'message' => $message]);
+            return Response::json(['ok' => true, 'items' => $items, 'message' => $message]);
         }
 
         return $this->redirectWithFlash($back, $message, $failed === [] ? 'success' : 'warning');

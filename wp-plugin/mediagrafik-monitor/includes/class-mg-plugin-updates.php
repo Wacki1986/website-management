@@ -68,9 +68,20 @@ final class MG_Plugin_Updates
             }
         }
 
+        // Nabídka, kterou web hlásil hubu (a kterou vidí wp-admin).
+        $offered = array();
+        $known = get_site_transient('update_plugins');
+
+        foreach ($files as $file) {
+            if (isset($known->response[$file]) && is_object($known->response[$file])) {
+                $offered[$file] = $known->response[$file];
+            }
+        }
+
         // Údaje o nových verzích mohou být staré až 12 hodin — hub vidí
         // aktualizaci z našeho posledního souhrnu, tak ať ji zná i upgrader.
         wp_update_plugins();
+        $lost = self::restore_offers($offered);
 
         $before = array();
 
@@ -121,6 +132,10 @@ final class MG_Plugin_Updates
             if (is_wp_error($result)) {
                 $status = 'failed';
                 $message = $result->get_error_message();
+            } elseif ($result === true && isset($lost[$file])) {
+                // Nabídku jsme vrátili, a WordPress ji stejně nevzal.
+                $status = 'failed';
+                $message = self::not_offered($lost[$file]);
             } elseif ($result === true) {
                 // Upgrader pro plugin žádnou novou verzi neznal.
                 $status = 'up_to_date';
@@ -140,6 +155,47 @@ final class MG_Plugin_Updates
         }
 
         return $items;
+    }
+
+    /**
+     * Placené pluginy (Rank Math PRO, Elementor Pro…) nabízejí aktualizaci
+     * vlastním kódem, který často běží jen ve wp-admin nebo s platnou
+     * licencí. Obnovení seznamu z REST požadavku pak jejich nabídku
+     * zahodí a upgrader hlásí „vše aktuální". Tlačítko ve wp-admin seznam
+     * neobnovuje a použije nabídku, kterou web ukazuje — tady se vrátí
+     * totéž. Vrací pluginy, jejichž nabídka po obnovení zmizela
+     * (soubor => nabízená verze).
+     *
+     * @param array $offered soubor => položka `update_plugins->response`
+     * @return array
+     */
+    private static function restore_offers($offered)
+    {
+        $fresh = get_site_transient('update_plugins');
+        $lost = array();
+
+        if (!is_object($fresh)) {
+            return $lost;
+        }
+
+        foreach ($offered as $file => $offer) {
+            if (!isset($fresh->response[$file])) {
+                $fresh->response[$file] = $offer;
+                $lost[$file] = isset($offer->new_version) ? (string) $offer->new_version : '';
+            }
+        }
+
+        if ($lost !== array()) {
+            set_site_transient('update_plugins', $fresh);
+        }
+
+        return $lost;
+    }
+
+    /** Proč se plugin s nabídnutou verzí neaktualizoval — věta pro správu. */
+    private static function not_offered($version)
+    {
+        return 'WordPress aktualizaci' . ($version !== '' ? ' na ' . $version : '') . ' mimo wp-admin nenabízí — placený plugin nejspíš nemá platnou licenci nebo aktualizuje jen ve wp-admin. Zkontrolujte licenci a aktualizujte ve wp-admin → Pluginy.';
     }
 
     /**

@@ -119,6 +119,12 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   deaktivovat, zkontrolovat web, pak smazat ikonou koše; neaktivní plugin
   jde stejnou ikonou znovu zapnout. MEDIAGRAFIK Monitor vypnout nejde.
   Po kliknutí se ikona točí a řádek ztlumí, dokud web neodpoví.
+- **Nepovedená aktualizace** má u pluginu křížek a důvod v pruhu nad
+  tabulkou i v Historii webu. Placené pluginy (Rank Math PRO, Elementor
+  Pro…) bez platné licence nebo s aktualizacemi jen ve wp-admin hlásí
+  „aktualizaci nenabídl" — zkontrolovat licenci a aktualizovat ve wp-admin,
+  případně plugin přestat sledovat (oko). Plugin 1.5.2+ zkusí nejdřív
+  nabídku, kterou web ukazuje ve wp-admin.
 - **Typy obsahu** (záložka Obsah): veřejné typy a od pluginu 1.5.1 i vlastní
   typy s vlastní položkou v menu wp-admin (šablony je často registrují jako
   neveřejné — Reference, Kurzy). Interní typy pluginů se nepočítají.
@@ -164,6 +170,12 @@ jde spouštět opakovaně.
 - Náhled ukáže přesně to, co klient dostane; poznámka pro klienta (≤ 400
   znaků) a přepínače sekcí se ukládají k reportu, sekce i jako výchozí pro
   příští reporty webu. „Poslat sobě na zkoušku" jde na e-mail přihlášeného.
+- **Šablona reportu** (Nastavení → Šablona reportu, na stránce Reporty
+  tlačítko „Upravit šablonu"): předmět, úvod, nadpisy sekcí, výzva ke
+  kontaktu, podpis a patička. Prázdné pole = výchozí text; značky `{web}`,
+  `{obdobi}`, `{kdy}`, `{studio}` se dosadí za údaje reportu. Uložení
+  přegeneruje reporty čekající ve frontě; odeslané zůstávají, jak odešly.
+  Náhled je na posledním reportu.
 - Otevření reportu klientem hlídá 1×1 obrázek `/r/<token>.gif` (musí být
   mimo Basic auth, viz kapitola 2). Kopie odeslaného HTML zůstává uložená.
 

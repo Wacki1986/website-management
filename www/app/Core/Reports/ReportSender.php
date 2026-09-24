@@ -132,7 +132,7 @@ final class ReportSender
         $options = $this->options($summary, (string) $report['note'], $report['sections'], $pixelUrl);
         $html = $this->renderer->document($summary, $options);
         $text = $this->renderer->text($summary, $options);
-        $subject = ($test ? '[ZKOUŠKA] ' : '') . (string) $summary['subject'];
+        $subject = ($test ? '[ZKOUŠKA] ' : '') . ReportTemplate::subject($summary, $options['texts'], $options['studio']['name']);
 
         $sent = 0;
         $failed = [];
@@ -300,6 +300,7 @@ final class ReportSender
                 'phone' => $this->settings->get('report_phone'),
             ],
             'contactUrl' => (string) $mail['from_address'] !== '' ? 'mailto:' . $mail['from_address'] : '',
+            'texts' => (new ReportTemplate($this->settings))->texts(),
         ];
     }
 }

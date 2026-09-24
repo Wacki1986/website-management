@@ -89,7 +89,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.5.3';
+    public const VERSION = '0.5.4';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -1115,6 +1115,8 @@ final class Kernel
         $router->add('POST', '/nastaveni/monitoring/verze', [SettingsController::class, 'refreshSupportTables'], Router::AUTH_ONLY, 'settings.monitoring.versions');
         $router->add('GET', '/nastaveni/servis', [SettingsController::class, 'service'], name: 'settings.service.show');
         $router->add('POST', '/nastaveni/servis', [SettingsController::class, 'saveService'], Router::AUTH_ONLY, 'settings.service');
+        $router->add('GET', '/nastaveni/reporty', [SettingsController::class, 'reportTemplate'], name: 'settings.reports.show');
+        $router->add('POST', '/nastaveni/reporty', [SettingsController::class, 'saveReportTemplate'], Router::AUTH_ONLY, 'settings.reports');
         $router->add('GET', '/nastaveni/alerty', [SettingsController::class, 'alerts'], name: 'settings.alerts.show');
         $router->add('POST', '/nastaveni/alerty', [SettingsController::class, 'saveAlerts'], Router::AUTH_ONLY, 'settings.alerts');
 

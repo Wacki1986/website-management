@@ -485,4 +485,16 @@ return [
             Urls::reset();
         });
     },
+    'výsledek: „aktuální“ se starou verzí je selhání s důvodem, skutečně aktuální zůstává' => function (): void {
+        $updatable = ['rank-math-pro/rank-math-pro.php' => ['name' => 'Rank Math SEO PRO', 'new_version' => '3.0.121']];
+        $items = SiteActions::reviewUpdateResults([
+            ['file' => 'rank-math-pro/rank-math-pro.php', 'name' => 'Rank Math SEO PRO', 'status' => 'up_to_date', 'from' => '3.0.107', 'to' => '3.0.107', 'message' => ''],
+            ['file' => 'elementor/elementor.php', 'name' => 'Elementor', 'status' => 'up_to_date', 'from' => '3.24.0', 'to' => '3.24.0', 'message' => ''],
+        ], $updatable + ['elementor/elementor.php' => ['name' => 'Elementor', 'new_version' => '3.24.0']]);
+
+        assertSame('failed', $items[0]['status']);
+        assertContainsString('na 3.0.121 teď nenabídl a plugin zůstal ve verzi 3.0.107', $items[0]['message']);
+        assertContainsString('licenci', $items[0]['message']);
+        assertSame('up_to_date', $items[1]['status'], 'Verze už odpovídá — opravdu aktuální');
+    },
 ];

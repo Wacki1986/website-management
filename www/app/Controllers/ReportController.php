@@ -11,6 +11,7 @@ use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Reports\ReportRepository;
 use App\Core\Reports\ReportSchedule;
+use App\Core\Reports\ReportTemplate;
 use App\Core\Sites\SiteRepository;
 
 /**
@@ -18,7 +19,7 @@ use App\Core\Sites\SiteRepository;
  * Reporty s historií, fronta napříč weby (`reporty-*.html`) a náhled
  * před odesláním (`nahled-reportu*.html`).
  *
- * „Upravit šablonu" z návrhu je v2 — v1 tlačítko není.
+ * „Upravit šablonu" vede do Nastavení → Šablona reportu (`SettingsController::reportTemplate()`).
  */
 final class ReportController extends Controller
 {
@@ -287,7 +288,7 @@ final class ReportController extends Controller
             'row' => self::row($report),
             'mobile' => $mobile,
             'emailBody' => $this->kernel->reportRenderer()->body($summary, $options),
-            'subject' => (string) $summary['subject'],
+            'subject' => ReportTemplate::subject($summary, $options['texts'], $options['studio']['name']),
             'sections' => $sections,
             'noteMax' => self::NOTE_MAX,
             'quickNotes' => ['zrychlení webu' => 'Tento měsíc jsme navíc zrychlili načítání webu.', 'oprava formuláře' => 'Opravili jsme kontaktní formulář, zprávy zase chodí správně.', 'plánovaná odstávka' => 'V nejbližších týdnech plánujeme krátkou odstávku kvůli údržbě hostingu — dáme vědět předem.'],
