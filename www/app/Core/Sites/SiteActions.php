@@ -70,7 +70,7 @@ final class SiteActions
      * @param array<string, string>           $library  soubor => verze v knihovně (`libraryFor()`)
      * @return array<string, array{name: string, new_version: string}> podle souboru pluginu
      */
-    public static function updatable(array $plugins, ?string $released, array $library = []): array
+    public static function updatable(array $plugins, ?string $released, array $library = [], array $outside = []): array
     {
         $updatable = [];
 
@@ -85,7 +85,7 @@ final class SiteActions
             // Web může hlásit „aktualizaci" na verzi, kterou už má (zbytek
             // mezipaměti WordPressu po aktualizaci pluginem starší 1.3.1) —
             // nabízí se jen skutečně novější verze.
-            if ((int) $plugin['has_update'] === 1 && version_compare((string) $plugin['new_version'], (string) $plugin['version'], '>')) {
+            if ((int) $plugin['has_update'] === 1 && version_compare((string) $plugin['new_version'], (string) $plugin['version'], '>') && self::unoffered($plugin, $outside) === null) {
                 $updatable[$file] = ['name' => (string) $plugin['name'], 'new_version' => (string) $plugin['new_version']];
             } elseif ($released !== null && self::isMonitor($file) && version_compare((string) $plugin['version'], $released, '<')) {
                 $updatable[$file] = ['name' => (string) $plugin['name'], 'new_version' => $released];
@@ -95,6 +95,29 @@ final class SiteActions
         }
 
         return $updatable;
+    }
+
+    /**
+     * Proč se hlášená aktualizace nenabízí (null = nabízí se). WordPress
+     * novou verzi zná, ale stáhnout ji nemá odkud:
+     * - k aktualizaci není balíček (placený plugin bez licence), nebo
+     * - plugin je mimo adresář wordpress.org a vypnutý — jeho vlastní
+     *   updater (licence, stahování) běží jen u aktivního pluginu.
+     *
+     * @param array<string, mixed> $plugin  řádek `site_plugins`
+     * @param array<string, true>  $outside cesty pluginů mimo adresář (`PluginDirectory::outside()`)
+     */
+    public static function unoffered(array $plugin, array $outside = []): ?string
+    {
+        if (($plugin['update_package'] ?? null) !== null && (int) $plugin['update_package'] === 0) {
+            return 'Nová verze je ohlášená, ale WordPress k ní nemá balíček ke stažení (placený plugin bez licence) — aktualizujte ručně nahráním ZIPu.';
+        }
+
+        if (isset($outside[(string) $plugin['file']]) && (int) ($plugin['is_active'] ?? 1) !== 1) {
+            return 'Plugin je mimo adresář wordpress.org a vypnutý — jeho vlastní aktualizace (licence, stahování) běží jen u aktivního pluginu. Aktivujte ho, nebo ho smažte.';
+        }
+
+        return null;
     }
 
     /**

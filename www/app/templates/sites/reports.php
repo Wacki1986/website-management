@@ -31,7 +31,7 @@ $base = 'weby/' . (int) $site['id'];
             <?php render_empty('Zatím žádný report', 'První report vznikne podle plánu, nebo ho pošlete hned tlačítkem „Odeslat report teď".', 'report') ?>
         <?php else: ?>
             <div class="table table--reports">
-                <div class="table__head"><div>Datum</div><div>Období</div><div>Stav</div><div>Otevření</div><div></div></div>
+                <div class="table__head"><div>Datum</div><div>Období</div><div>Stav</div><div>Otevření</div><div class="table__cell table__cell--right">Akce</div></div>
                 <?php foreach ($rows as $row): ?>
                     <div class="table__row<?= $row['isProblem'] ? ' table__row--error' : '' ?>">
                         <div class="table__cell table__cell--mono"><?= $this->e($row['date']) ?></div>
@@ -41,12 +41,14 @@ $base = 'weby/' . (int) $site['id'];
                         </div>
                         <div class="table__cell"><?= get_status($row['tone'], $row['label']) ?></div>
                         <div class="table__cell text-subtle" style="font-size:var(--font-size-label)"><?= $this->e($row['openedLabel']) ?></div>
-                        <div class="table__cell table__cell--right"><a href="<?= $row['previewUrl'] ?>"><?= $this->e($row['action']) ?></a></div>
+                        <div class="table__cell table__cell--right"><?= $this->partial('partials/report-actions', ['row' => $row]) ?></div>
                     </div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </section>
 
-    <div class="card card--note">Kopie každého odeslaného reportu zůstává uložená — odkaz „Náhled" ukáže přesně to, co klient dostal. Celou frontu napříč weby najdete v <a href="<?= $reportsUrl ?>">Reportech</a>.</div>
+    <div class="card card--note">Kopie každého odeslaného reportu zůstává uložená — ikona oka ukáže přesně to, co klient dostal. Celou frontu napříč weby najdete v <a href="<?= $reportsUrl ?>">Reportech</a>.</div>
 </div>
+
+<?= $this->partial('partials/report-delete-dialog', ['back' => 'weby/' . (int) $site['id'] . '/reporty', 'csrfToken' => $csrfToken]) ?>

@@ -16,7 +16,9 @@
  * @var array<int, array<string, mixed>> $rows  řádky `site_plugins` + `updatable`, `ignored`, `deleteUrl`, `watchAction`, `watchLabel`,
  *                                              `activeAction` (aktivovat/deaktivovat, null = nejde), `activeLabel`,
  *                                              `activeBusy`/`watchBusy` (text průběhu po kliknutí),
- *                                              `status` {tone, label} a `directory` (wordpress.org: released, releasedTone, title, tone)
+ *                                              `status` {tone, label} a `directory` (wordpress.org: released, releasedTone, title, tone),
+ *                                              `markExternal` (jde označit jako placená verze, null = ne), `unmarkAction`,
+ *                                              `unoffered` (proč se hlášená aktualizace nenabízí, null = nabízí se / žádná)
  * @var string              $q
  * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int, outdated: int} $metrics
  * @var bool                $hasSnapshot
@@ -92,11 +94,17 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                             <div class="table__cell table__cell--mono u-hide-mobile" data-plugin-version><?= $this->e((string) $plugin['version']) ?></div>
                             <?php if ($plugin['ignored']): ?>
                                 <div class="table__cell table__cell--mono u-hide-mobile text-faint" title="Aktualizace tohoto pluginu se nesledují — nepočítají se do čekajících ani do alertu."><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) . ' · ' : '' ?>nesledováno</div>
+                            <?php elseif ($plugin['unoffered'] !== null): ?>
+                                <div class="table__cell table__cell--mono u-hide-mobile text-faint" title="<?= $this->e($plugin['unoffered']) ?>"><?= $this->e((string) $plugin['new_version']) ?> · ručně</div>
                             <?php else: ?>
                                 <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>" data-plugin-new><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
                             <?php endif; ?>
                             <div class="table__cell u-hide-mobile">
-                                <?php if ($plugin['directory']['releasedTone'] !== ''): ?>
+                                <?php if ($plugin['markExternal'] !== null): ?>
+                                    <a href="#" class="pill pill--sm pill--button pill--<?= $plugin['directory']['releasedTone'] ?>" title="<?= $this->e($plugin['directory']['title'] . ' Placená verze se stejným názvem (např. WPML)? Klikněte a označte ji.') ?>" data-confirm="plugin-external" data-confirm-value="<?= $this->e((string) $plugin['file']) ?>" data-confirm-title="<?= $this->e((string) $plugin['name']) ?> je placená verze?"><?= $this->e($plugin['directory']['released']) ?></a>
+                                <?php elseif ($plugin['unmarkAction'] !== null): ?>
+                                    <button type="submit" formaction="<?= $plugin['unmarkAction'] ?>" name="plugin" value="<?= $this->e((string) $plugin['file']) ?>" class="pill pill--sm pill--button pill--muted" title="<?= $this->e($plugin['directory']['title']) ?>" data-busy-text="Ruším označení <?= $this->e((string) $plugin['name']) ?>…"><?= $this->e($plugin['directory']['released']) ?></button>
+                                <?php elseif ($plugin['directory']['releasedTone'] !== ''): ?>
                                     <span class="pill pill--sm pill--<?= $plugin['directory']['releasedTone'] ?>" title="<?= $this->e($plugin['directory']['title']) ?>"><?= $this->e($plugin['directory']['released']) ?></span>
                                 <?php else: ?>
                                     <span class="text-faint" title="<?= $this->e($plugin['directory']['title']) ?>"><?= $this->e($plugin['directory']['released']) ?></span>
@@ -114,7 +122,8 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                                         <button type="submit" name="plugin" value="<?= $this->e((string) $plugin['file']) ?>" class="btn btn--secondary btn--icon" title="Aktualizovat na <?= $this->e((string) $plugin['new_version']) ?>" aria-label="Aktualizovat <?= $this->e((string) $plugin['name']) ?> na <?= $this->e((string) $plugin['new_version']) ?>" data-plugin-update-one><?= get_icon('refresh', 'icon--sm') ?></button>
                                     <?php elseif ($plugin['updatable']): ?>
                                         <button type="button" class="btn btn--secondary btn--icon" disabled title="<?= $this->e($updateBlocked) ?>" aria-label="Aktualizace nejde: <?= $this->e($updateBlocked) ?>"><?= get_icon('refresh', 'icon--sm') ?></button>
-                                    <?php elseif ($plugin['deleteUrl'] !== null): ?>
+                                    <?php endif; ?>
+                                    <?php if ($plugin['deleteUrl'] !== null): ?>
                                         <a class="btn btn--ghost btn--icon" href="<?= $plugin['deleteUrl'] ?>" title="Smazat plugin" aria-label="Smazat <?= $this->e((string) $plugin['name']) ?>" data-confirm="plugin-delete" data-confirm-value="<?= $this->e((string) $plugin['file']) ?>" data-confirm-title="Smazat plugin <?= $this->e($plugin['name'] . ' ' . $plugin['version']) ?>"><?= get_icon('trash', 'icon--sm') ?></a>
                                     <?php elseif ($plugin['inactive'] && $deleteBlocked !== null): ?>
                                         <button type="button" class="btn btn--ghost btn--icon" disabled title="<?= $this->e($deleteBlocked) ?>" aria-label="Smazání nejde: <?= $this->e($deleteBlocked) ?>"><?= get_icon('trash', 'icon--sm') ?></button>
@@ -127,6 +136,23 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
             </form>
         <?php endif; ?>
     </section>
+
+    <?php if ($rows !== []): ?>
+        <dialog class="modal" id="plugin-external" aria-labelledby="plugin-external-title">
+            <form class="modal__body" method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/pluginy/mimo-adresar') ?>" data-pending>
+                <?php render_csrf($csrfToken) ?>
+                <input type="hidden" name="plugin" value="" data-confirm-value>
+                <div>
+                    <div class="card__title modal__title" id="plugin-external-title" data-confirm-title>Placená verze?</div>
+                    <div class="card__note">Některé placené pluginy (WPML a další) mají stejný název složky jako plugin, který kdysi byl na wordpress.org a pak byl stažen nebo opuštěn. Když jde o placenou verzi s vlastními aktualizacemi, správa ji přestane hodnotit podle wordpress.org — na všech webech. Označení zrušíte kliknutím na šedou pilulku „placená verze".</div>
+                </div>
+                <div class="modal__actions">
+                    <button type="button" class="btn btn--ghost" data-dialog-close>Zrušit</button>
+                    <button type="submit" class="btn btn--primary" data-pending-label="Ukládám…">Ano, placená verze</button>
+                </div>
+            </form>
+        </dialog>
+    <?php endif; ?>
 
     <?php if ($rows !== [] && $deleteBlocked === null): ?>
         <dialog class="modal modal--danger" id="plugin-delete" aria-labelledby="plugin-delete-title">

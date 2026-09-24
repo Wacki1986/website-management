@@ -16,6 +16,12 @@ use DateTimeImmutable;
  */
 final class ReportSchedule
 {
+    /**
+     * Výchozí den odeslání u nového webu. Ne 1. — prvního v měsíci chodí
+     * lidem nejvíc souhrnů a faktur, report by v nich zapadl.
+     */
+    public const DEFAULT_DAY = 7;
+
     /** @var array<string, array{label: string, note: string}> */
     public const FREQUENCIES = [
         'weekly' => ['label' => 'Týdně', 'note' => 'za předchozí týden (pondělí–neděle)'],

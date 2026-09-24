@@ -2,6 +2,10 @@
 /**
  * Nastavení → Odchozí pošta (návrh `nastaveni-email.html`).
  *
+ * Server, přihlášení a šifrování jsou v bloku `.mail-smtp`, který je vidět
+ * jen při způsobu odesílání SMTP (CSS `:has` v `app/_extras.scss`) —
+ * funkce mail() hostingu ani uložení do souboru je nepotřebují.
+ *
  * @var \App\Core\View\View  $this
  * @var string               $title
  * @var string               $activeTab
@@ -29,7 +33,7 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
 
                 <div class="row" style="justify-content:space-between;align-items:flex-start">
                     <div>
-                        <div class="card__title">Odchozí pošta (SMTP)</div>
+                        <div class="card__title">Odchozí pošta</div>
                         <div class="card__note">Přes tento účet odcházejí alerty i klientské reporty.</div>
                     </div>
                     <?php if ($configured): ?>
@@ -46,6 +50,7 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
                 <?= $form->select('transport', 'Způsob odesílání', $mailTransports, (string) $mail['transport'], class: 'form__field--caps',
                     hint: 'Ve vývoji se hodí „uložit do souboru" — e-maily končí ve storage/logs jako .eml.') ?>
 
+                <div class="mail-smtp form">
                 <div class="form__row">
                     <?= $form->text('host', 'Server', (string) $mail['host'], attributes: ['placeholder' => 'smtp.wedos.net', 'class' => 'form__control--mono'], class: 'form__field--caps') ?>
                     <?= $form->text('port', 'Port', (string) $mail['port'], type: 'number', attributes: ['class' => 'form__control--mono'], class: 'form__field--caps') ?>
@@ -57,8 +62,6 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
                         'swapLabel' => 'Vyměnit heslo',
                         'placeholderHint' => 'Ukládá se šifrovaně.',
                     ]) ?>
-                    <?= $form->text('from_name', 'Jméno odesílatele', (string) $mail['from_name'], attributes: ['placeholder' => 'MEDIAGRAFIK · správa webů'], class: 'form__field--caps') ?>
-                    <?= $form->text('from_address', 'Adresa odesílatele', (string) $mail['from_address'], type: 'email', attributes: ['placeholder' => 'monitor@mediagrafik.cz', 'class' => 'form__control--mono'], class: 'form__field--caps') ?>
                 </div>
 
                 <div class="form__field">
@@ -71,6 +74,12 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
                             </label>
                         <?php endforeach; ?>
                     </div>
+                </div>
+                </div>
+
+                <div class="form__row">
+                    <?= $form->text('from_name', 'Jméno odesílatele', (string) $mail['from_name'], attributes: ['placeholder' => 'MEDIAGRAFIK · správa webů'], class: 'form__field--caps') ?>
+                    <?= $form->text('from_address', 'Adresa odesílatele', (string) $mail['from_address'], type: 'email', attributes: ['placeholder' => 'monitor@mediagrafik.cz', 'class' => 'form__control--mono'], class: 'form__field--caps') ?>
                 </div>
 
                 <?= $form->text('mail_logo_url', 'Logo v e-mailech (URL)', $mailLogoUrl, type: 'url', class: 'form__field--caps',

@@ -1,5 +1,51 @@
 # Změny
 
+## 0.6.5 — 24. 9. 2026
+
+- **Aktualizace, která nemá odkud přijít, se nenabízí:** vypnutý plugin mimo
+  adresář wordpress.org (jeho vlastní updater běží jen u aktivního) a
+  aktualizace bez balíčku ke stažení (placený plugin bez licence; hlásí
+  MEDIAGRAFIK Monitor 1.5.4, sloupec `site_plugins.update_package`,
+  migrace `2026_09_24_000002`). Verze se ukáže šedě „· ručně" s důvodem
+  v bublině a nepočítá se do čekajících aktualizací ani alertu
+  (`SiteActions::unoffered()`, `PluginDirectory::outside()`).
+- Oprava: u neaktivního pluginu s ohlášenou aktualizací chyběl koš —
+  aktualizace a smazání jsou teď v řádku vedle sebe.
+
+## 0.6.4 — 24. 9. 2026
+
+- Reporty: nový web má předvybraný **7. den v měsíci** místo 1.
+  (`ReportSchedule::DEFAULT_DAY`); uložená nastavení webů se nemění.
+- Nastavení → Odchozí pošta: server, port, přihlášení a šifrování jsou vidět
+  jen při odesílání přes SMTP (CSS `:has`, blok `.mail-smtp`).
+- Oprava: „Poslední test" ukazoval „dnes" i u starého testu — ukládala se
+  hotová věta; teď se ukládá čas a věta se skládá při zobrazení.
+- Pole s heslem: místo textu „ukázat / skrýt" ikona oka / přeškrtnutého oka.
+
+## 0.6.3 — 24. 9. 2026
+
+- **Reporty: akce v řádku jako ikony** (fronta Reporty i záložka Reporty
+  u webu, sdílený partial `report-actions`): tužka „Zkontrolovat a odeslat"
+  u konceptu a čekajícího, oko „Náhled", odeslané HTML, koš.
+- **Smazání reportu** v potvrzovacím okně — i odeslaného (smaže se uložená
+  kopie, klientův e-mail zůstává); návrat na stránku, odkud se mazalo.
+  `confirm-dialog.js` umí z odkazu nastavit cíl formuláře (`data-confirm-action`).
+- `app.js` načítá moduly každý zvlášť: jeden vadný nebo chybějící modul už
+  neshodí ostatní a do konzole napíše, který selhal.
+
+## 0.6.2 — 24. 9. 2026
+
+- **Placené pluginy se stejným slugem jako plugin z wordpress.org** (WPML —
+  `sitepress-multilingual-cms` byl na wordpress.org a v roce 2017 ho stáhli)
+  se už nehodnotí jako stažené/opuštěné:
+  - automaticky: MEDIAGRAFIK Monitor 1.5.3 posílá, odkud se plugin
+    aktualizuje (hlavička Update URI, vlastní updater autora vs.
+    downloads.wordpress.org) → `site_plugins.source`;
+  - ručně: kliknutí na červenou pilulku Vydáno → okno „Placená verze?" →
+    plugin se přestane hodnotit na všech webech (`plugin_directory.manual_external`);
+    šedá pilulka „placená verze" označení zruší.
+  Migrace `2026_09_24_000001_plugin_source`.
+
 ## 0.6.1 — 24. 9. 2026
 
 - **Sloupec Vydáno jako pilulky** s tlumeným pozadím (`pill--sm`): šedá mimo

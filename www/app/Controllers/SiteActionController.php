@@ -57,7 +57,8 @@ final class SiteActionController extends Controller
         $single = $this->request()->string('plugin');
         $requested = $single !== '' ? [$single] : array_map('strval', array_filter((array) $this->request()->input('plugins', []), 'is_scalar'));
         $library = SiteActions::libraryFor($this->kernel->snapshots()->snapshot((int) $id), $this->kernel->pluginLibrary()->versions());
-        $updatable = SiteActions::updatable($this->kernel->snapshots()->plugins((int) $id), $this->kernel->pluginDistribution()->version(), $library);
+        $plugins = $this->kernel->snapshots()->plugins((int) $id);
+        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version(), $library, $this->kernel->pluginDirectory()->outside($plugins));
         $files = array_values(array_intersect(array_unique($requested), array_keys($updatable)));
 
         if ($files === [] || count($files) > PluginClient::MAX_UPDATES) {

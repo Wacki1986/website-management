@@ -62,7 +62,7 @@ final class ReportController extends Controller
         $reports->saveSettings((int) $id, [
             'is_active' => $request->bool('is_active'),
             'frequency' => $request->string('frequency'),
-            'send_day' => $request->int('send_day', 1) ?? 1,
+            'send_day' => $request->int('send_day', ReportSchedule::DEFAULT_DAY) ?? ReportSchedule::DEFAULT_DAY,
             'send_hour' => $request->int('send_hour', 6) ?? 6,
             'requires_approval' => $request->bool('requires_approval'),
             'sections' => $current['sections'] ?? ReportRepository::defaultSections(),
@@ -393,13 +393,22 @@ final class ReportController extends Controller
         return Response::html((string) $report['html'])->withHeader('X-Robots-Tag', 'noindex');
     }
 
+    /**
+     * Smazání reportu — i odeslaného (zmizí uložená kopie, klientův e-mail
+     * zůstává). Vrací se tam, odkud se mazalo (fronta, nebo záložka webu).
+     */
     public function delete(string $id): Response
     {
-        $report = $this->editableOr404((int) $id);
+        $report = $this->reportOr404((int) $id);
+        $sent = in_array($report['status'], ['sent', 'partial'], true);
         $this->kernel->reports()->delete((int) $id);
-        $this->kernel->audit()->record((int) $report['site_id'], (string) $report['site_name'], AuditLog::ACTION_REPORT, true, 'Zahozen koncept reportu ' . $report['period_label']);
+        $this->kernel->audit()->record((int) $report['site_id'], (string) $report['site_name'], AuditLog::ACTION_REPORT, true,
+            ($sent ? 'Smazána kopie odeslaného reportu ' : 'Zahozen report ') . $report['period_label']);
 
-        return $this->redirectWithFlash('reporty', 'Koncept reportu je zahozený.');
+        $back = $this->request()->string('back');
+
+        return $this->redirectWithFlash(preg_match('~^(reporty|weby/\d+/reporty)$~', $back) === 1 ? $back : 'reporty',
+            $sent ? 'Kopie reportu ' . $report['period_label'] . ' je smazaná.' : 'Report ' . $report['period_label'] . ' je zahozený.');
     }
 
     // -----------------------------------------------------------------
@@ -448,7 +457,15 @@ final class ReportController extends Controller
             'date' => get_czech_date((string) ($report['sent_at'] ?? $report['scheduled_for'] ?? $report['created_at'])),
             'openedLabel' => $status === 'sent' ? ($opened ? 'otevřen ' . get_when((string) $report['opened_at']) : 'neotevřen') : '—',
             'previewUrl' => get_url('reporty/' . (int) $report['id'] . '/nahled'),
-            'action' => $status === 'pending_approval' || $status === 'draft' ? 'Zkontrolovat' : 'Náhled',
+            // Akce v řádku (ikony vpravo): kontrola / náhled, odeslané HTML, smazání.
+            'actionIcon' => $status === 'pending_approval' || $status === 'draft' ? 'edit' : 'eye',
+            'actionLabel' => $status === 'pending_approval' || $status === 'draft' ? 'Zkontrolovat a odeslat' : 'Náhled',
+            'htmlUrl' => $status === 'sent' || $status === 'partial' ? get_url('reporty/' . (int) $report['id']) : null,
+            'deleteUrl' => get_url('reporty/' . (int) $report['id'] . '/smazat'),
+            'deleteTitle' => 'Smazat report ' . $report['period_label'] . '?',
+            'deleteNote' => in_array($status, ['sent', 'partial'], true)
+                ? 'Smaže se uložená kopie odeslaného reportu a záznam o otevření. E-mail, který klient dostal, zůstane u něj.'
+                : 'Rozpracovaný report se zahodí. Naplánovaný report vznikne znovu podle plánu.',
             'isProblem' => $status === 'failed',
         ];
     }
@@ -482,7 +499,13 @@ final class ReportController extends Controller
             'date' => get_czech_date($at),
             'openedLabel' => '—',
             'previewUrl' => get_url('weby/' . (int) $settings['site_id'] . '/reporty/nahled'),
-            'action' => 'Náhled',
+            'actionIcon' => 'eye',
+            'actionLabel' => 'Náhled',
+            'htmlUrl' => null,
+            // Report zatím neexistuje — není co smazat (vypíná se v Nastavení webu).
+            'deleteUrl' => null,
+            'deleteTitle' => '',
+            'deleteNote' => '',
             'isProblem' => false,
         ];
     }

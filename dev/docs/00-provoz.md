@@ -110,6 +110,11 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   serveru správy novější ZIP, záložka Pluginy ho nabídne hned (správa verzi
   zná z `plugin-info.json`), web si při aktualizaci novou verzi načte
   znovu a nečeká na svou 12hodinovou cache.
+- **Aktualizace „· ručně"** (šedá verze ve sloupci Dostupná): WordPress novou
+  verzi zná, ale správa ji nenabízí — plugin mimo wordpress.org je vypnutý
+  (jeho updater běží jen u aktivního), nebo k aktualizaci chybí balíček
+  (placený plugin bez licence, hlásí Monitor 1.5.4+). Aktualizovat ručně
+  nahráním ZIPu, plugin aktivovat, nebo ho smazat.
 - **Smazání neaktivního pluginu** (plugin 1.2.0+): Pluginy → ikona koše u
   neaktivního pluginu → potvrzení v okně nad tabulkou (bez JavaScriptu
   samostatná potvrzovací stránka). Web plugin smaže jako wp-admin
@@ -136,6 +141,10 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   kvůli bezpečnosti Problém („Nebezpečný plugin"); pravidlo alertu „Opuštěné
   pluginy" jde vypnout. Nový zápis servisu i report (sekce Doporučení)
   dostanou větu pro klienta s doporučením náhrady.
+  Placená verze se stejným názvem složky jako plugin, který kdysi byl na
+  wordpress.org (WPML), se nehodnotí: Monitor 1.5.3+ to pozná podle zdroje
+  aktualizací, jinak kliknout na červenou pilulku → „Ano, placená verze"
+  (platí pro všechny weby, šedá pilulka „placená verze" to vrátí).
 - **Typy obsahu** (záložka Obsah): veřejné typy a od pluginu 1.5.1 i vlastní
   typy s vlastní položkou v menu wp-admin (šablony je často registrují jako
   neveřejné — Reference, Kurzy). Interní typy pluginů se nepočítají.
@@ -174,7 +183,8 @@ jde spouštět opakovaně.
 ## 6. Klientské reporty
 
 - Zapínají se u každého webu (Nastavení webu → Klientské reporty): frekvence,
-  den a hodina, adresáti (klient / kopie), volba „Vyžaduje schválení".
+  den a hodina (výchozí 7. den v měsíci), adresáti (klient / kopie), volba
+  „Vyžaduje schválení".
 - Bez schválení report odchází sám v termínu. Se schválením vznikne den
   předem ve frontě Reporty jako „Čeká na schválení" (push + e-mail), po
   kontrole se odešle tlačítkem — nebo hromadně „Odeslat naplánované".

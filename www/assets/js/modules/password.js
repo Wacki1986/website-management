@@ -47,5 +47,12 @@ function setState(button, shown) {
     button.dataset.shown = shown ? 'true' : 'false';
     button.setAttribute('aria-pressed', shown ? 'true' : 'false');
     button.setAttribute('aria-label', shown ? 'Skrýt heslo' : 'Zobrazit heslo');
-    button.title = shown ? 'Skrýt' : 'Zobrazit';
+    button.title = shown ? 'Skrýt heslo' : 'Zobrazit heslo';
+
+    // Ikona oka / přeškrtnutého oka (maska jako `get_icon()`).
+    const icon = button.querySelector('.icon') ?? button.appendChild(Object.assign(document.createElement('span'), { className: 'icon icon--sm' }));
+    const mask = `var(--icon-${shown ? 'eye-off' : 'eye'}) center/contain no-repeat`;
+    icon.setAttribute('aria-hidden', 'true');
+    icon.style.webkitMask = mask;
+    icon.style.mask = mask;
 }

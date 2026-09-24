@@ -120,6 +120,19 @@ final class SettingsController extends Controller
         ));
     }
 
+    /** „Poslední test včera 14:02 — odesláno za 2 s" z uloženého času; '' = test ještě neproběhl. */
+    private static function lastTestLabel(string $stored): string
+    {
+        $data = json_decode($stored, true);
+
+        // Starší verze ukládala hotovou větu i s „dnes" — ta se už neukazuje.
+        if (!is_array($data) || !isset($data['at'])) {
+            return '';
+        }
+
+        return sprintf('Poslední test %s — odesláno za %d s', get_when((string) $data['at']), (int) ($data['seconds'] ?? 0));
+    }
+
     /** Ověřit konce podpory PHP a databází teď (jinak to cron udělá jednou za měsíc). */
     public function refreshSupportTables(): Response
     {
@@ -364,7 +377,7 @@ final class SettingsController extends Controller
             'mailTransports' => MailSettings::TRANSPORTS,
             'mailSecurities' => MailSettings::SECURITIES,
             'mailLogoUrl' => $this->kernel->settings()->get('mail_logo_url'),
-            'lastTest' => $this->kernel->settings()->get('mail_last_test'),
+            'lastTest' => self::lastTestLabel($this->kernel->settings()->get('mail_last_test')),
         ]);
     }
 
@@ -428,12 +441,12 @@ final class SettingsController extends Controller
             );
         }
 
-        // „Poslední test 8. 9. v 14:02 — doručeno za 2 s" v patičce karty.
-        $this->kernel->settings()->set('mail_last_test', sprintf(
-            'Poslední test %s — odesláno za %d s',
-            get_when(date('Y-m-d H:i:s')),
-            (int) round(microtime(true) - $started),
-        ));
+        // Čas a doba odeslání; větu „Poslední test včera 14:02 — …" skládá až
+        // zobrazení. Uložená hotová věta by si „dnes" nesla navždy.
+        $this->kernel->settings()->set('mail_last_test', (string) json_encode([
+            'at' => date('Y-m-d H:i:s'),
+            'seconds' => (int) round(microtime(true) - $started),
+        ]));
 
         return $this->redirectWithFlash('nastaveni/email', sprintf('Zkušební e-mail odešel na %s. Zkontrolujte i spam.', $to));
     }

@@ -16,6 +16,11 @@ use App\Core\Db\Connection;
  * `plugin_directory` a obnovuje jednou týdně (krok cronu). Placené
  * a vlastní pluginy v adresáři nejsou (`missing`) — ty se nehodnotí.
  *
+ * Placená verze se stejným slugem jako (dávno stažený) plugin z adresáře
+ * — WPML — se nehodnotí taky: když plugin na webu hlásí, že se aktualizuje
+ * mimo wordpress.org (`site_plugins.source = external`), nebo když ji
+ * někdo ručně označil (`manual_external`, platí pro všechny weby).
+ *
  * Opuštěný = poslední vydání starší než práh z Nastavení → Alerty
  * (`rule_abandoned_months`, výchozí 24 měsíců jako Wordfence).
  */
@@ -39,7 +44,16 @@ final class PluginDirectory
      * Slug z cesty pluginu v SQL — stejně jako `slug()`: složka, nebo název
      * souboru bez `.php` u pluginů bez složky (Hello Dolly).
      */
-    private const SLUG_SQL = "IF(LOCATE('/', sp.file) > 0, SUBSTRING_INDEX(sp.file, '/', 1), SUBSTRING_INDEX(sp.file, '.php', 1))";
+    public const SLUG_SQL = "IF(LOCATE('/', sp.file) > 0, SUBSTRING_INDEX(sp.file, '/', 1), SUBSTRING_INDEX(sp.file, '.php', 1))";
+
+    /**
+     * Plugin `sp` je mimo adresář wordpress.org (hlásí vlastní updater, adresář
+     * ho nezná, nebo je ručně označený) — pro přepočet čekajících aktualizací.
+     */
+    public const OUTSIDE_SQL = "(sp.source = 'external' OR EXISTS (SELECT 1 FROM plugin_directory pd WHERE pd.slug = " . self::SLUG_SQL . " AND (pd.status = 'missing' OR pd.manual_external = 1)))";
+
+    /** Hodnotí se jen pluginy z adresáře — ne placené verze se stejným slugem. */
+    private const RATED_SQL = "pd.manual_external = 0 AND sp.source <> 'external'";
 
     /** @var (callable(string): ?string)|null stahování — v testech podvržené */
     private $fetcher;
@@ -219,14 +233,33 @@ final class PluginDirectory
     /**
      * Hodnocení pluginu pro výpis: stav, barva, sloupec „Vydáno" a vysvětlení.
      *
-     * @param array<string, mixed>|null $row řádek `plugin_directory`
-     * @return array{state: string, tone: string, label: string, released: string, releasedTone: string, title: string}
+     * @param array<string, mixed>|null $row    řádek `plugin_directory`
+     * @param string                    $source odkud se plugin na webu aktualizuje (`site_plugins.source`)
+     * @return array{state: string, tone: string, label: string, released: string, releasedTone: string, title: string, markable: bool, manual: bool}
+     *     markable = jde ručně označit jako placenou verzi (stažený / opuštěný), manual = ručně označený
      *     state: ok | abandoned | closed | external | unknown;
      *     releasedTone = barva pilulky Vydáno: ok (do půl roku) | warning (do prahu) | error | muted (mimo adresář) | '' (bez pilulky)
      */
-    public function assess(?array $row, ?int $now = null): array
+    public function assess(?array $row, ?int $now = null, string $source = ''): array
     {
         $now ??= time();
+        $result = $this->rate($row, $now, $source);
+
+        return $result + ['markable' => in_array($result['state'], ['abandoned', 'closed'], true), 'manual' => $row !== null && (int) ($row['manual_external'] ?? 0) === 1];
+    }
+
+    /** @param array<string, mixed>|null $row @return array{state: string, tone: string, label: string, released: string, releasedTone: string, title: string} */
+    private function rate(?array $row, int $now, string $source): array
+    {
+        if ($row !== null && (int) ($row['manual_external'] ?? 0) === 1) {
+            return ['state' => 'external', 'tone' => '', 'label' => '', 'released' => 'placená verze', 'releasedTone' => 'muted',
+                'title' => 'Označeno jako placená verze mimo wordpress.org — stáří se nehodnotí. Kliknutím označení zrušíte.'];
+        }
+
+        if ($source === 'external') {
+            return ['state' => 'external', 'tone' => '', 'label' => '', 'released' => 'mimo adresář', 'releasedTone' => 'muted',
+                'title' => 'Plugin se aktualizuje přes vlastní systém autora (placená verze) — stáří na wordpress.org se nehodnotí.'];
+        }
 
         if ($row === null) {
             return ['state' => 'unknown', 'tone' => '', 'label' => '', 'released' => '—', 'releasedTone' => '', 'title' => 'Údaje z wordpress.org se ještě nenačetly (cron je doplní).'];
@@ -264,6 +297,39 @@ final class PluginDirectory
     }
 
     /**
+     * Pluginy webu mimo adresář wordpress.org: placené (hlásí vlastní
+     * updater, ručně označené) a ty, které adresář nezná.
+     *
+     * @param array<int, array<string, mixed>> $plugins řádky `site_plugins`
+     * @return array<string, true> cesta => true
+     */
+    public function outside(array $plugins): array
+    {
+        $listing = $this->forFiles(array_map(static fn (array $plugin): string => (string) $plugin['file'], $plugins));
+        $outside = [];
+
+        foreach ($plugins as $plugin) {
+            $row = $listing[(string) $plugin['file']] ?? null;
+
+            if (($plugin['source'] ?? '') === 'external' || ($row !== null && ($row['status'] === 'missing' || (int) $row['manual_external'] === 1))) {
+                $outside[(string) $plugin['file']] = true;
+            }
+        }
+
+        return $outside;
+    }
+
+    /**
+     * Ruční označení „placená verze mimo wordpress.org" (a zpět) — platí
+     * pro plugin na všech webech, počty webů se hned přepočítají.
+     */
+    public function setManualExternal(string $slug, bool $external, ?int $now = null): void
+    {
+        $this->db->execute('UPDATE plugin_directory SET manual_external = :flag WHERE slug = :slug', ['flag' => $external ? 1 : 0, 'slug' => $slug]);
+        $this->recount(null, $now);
+    }
+
+    /**
      * Opuštěné a stažené pluginy webu — pro alert, servis a report.
      *
      * @return array<int, array{name: string, state: string, security: bool, updated: ?string, reason: string}>
@@ -273,7 +339,7 @@ final class PluginDirectory
         $rows = $this->db->select(
             'SELECT sp.name, pd.status, pd.last_updated, pd.closed_reason FROM site_plugins sp
              JOIN plugin_directory pd ON pd.slug = ' . self::SLUG_SQL . '
-             WHERE sp.site_id = :id AND (pd.status = \'closed\' OR (pd.status = \'found\' AND pd.last_updated < :before))
+             WHERE sp.site_id = :id AND ' . self::RATED_SQL . ' AND (pd.status = \'closed\' OR (pd.status = \'found\' AND pd.last_updated < :before))
              ORDER BY pd.status = \'closed\' DESC, sp.name',
             ['id' => $siteId, 'before' => $this->staleBefore($now)],
         );
@@ -308,7 +374,7 @@ final class PluginDirectory
     public function recount(?int $siteId = null, ?int $now = null): void
     {
         $count = static fn (string $condition): string => '(SELECT COUNT(*) FROM site_plugins sp JOIN plugin_directory pd ON pd.slug = ' . self::SLUG_SQL . '
-             WHERE sp.site_id = ss.site_id AND ' . $condition . ')';
+             WHERE sp.site_id = ss.site_id AND ' . self::RATED_SQL . ' AND ' . $condition . ')';
 
         $this->db->execute(
             'UPDATE site_snapshots ss SET

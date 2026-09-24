@@ -147,7 +147,12 @@ final class MG_Collector
                 'is_active' => $is_active,
                 'has_update' => $has_update,
                 'new_version' => $has_update && isset($responses[$file]->new_version) ? $responses[$file]->new_version : null,
+                // Placené pluginy bez licence hlásí novou verzi bez balíčku —
+                // aktualizace pak jde jen ručně (wp-admin ukáže „Automatická
+                // aktualizace není k dispozici").
+                'update_package' => $has_update ? !empty($responses[$file]->package) : null,
                 'auto_update' => in_array($file, $auto, true),
+                'source' => self::update_source($file, $info, $transient),
             );
         }
 
@@ -160,6 +165,41 @@ final class MG_Collector
             'security_updates' => 0,
             'items' => $items,
         );
+    }
+
+    /**
+     * Odkud si plugin bere aktualizace: `wporg`, `external` (placená verze
+     * s vlastním updaterem nebo hlavičkou Update URI), '' = nezjištěno.
+     *
+     * Hub podle toho nehodnotí placené pluginy se stejným slugem jako
+     * dávno stažený plugin z wordpress.org (WPML). Nezjištěno je plugin,
+     * o kterém WordPress v seznamu aktualizací nic neví.
+     *
+     * @param string $file
+     * @param array  $info hlavička z get_plugins()
+     * @param mixed  $transient update_plugins
+     */
+    private static function update_source($file, $info, $transient)
+    {
+        $uri = isset($info['UpdateURI']) ? trim((string) $info['UpdateURI']) : '';
+
+        if ($uri !== '') {
+            $host = (string) wp_parse_url($uri, PHP_URL_HOST);
+
+            return strpos($uri, 'w.org/') === 0 || in_array($host, array('wordpress.org', 'w.org'), true) ? 'wporg' : 'external';
+        }
+
+        foreach (array('response', 'no_update') as $list) {
+            if (is_object($transient) && isset($transient->$list) && is_array($transient->$list) && isset($transient->{$list}[$file])) {
+                $entry = $transient->{$list}[$file];
+                $id = is_object($entry) && isset($entry->id) ? (string) $entry->id : '';
+                $package = is_object($entry) && isset($entry->package) ? (string) $entry->package : '';
+
+                return strpos($id, 'w.org/plugins/') === 0 || strpos($package, 'downloads.wordpress.org') !== false ? 'wporg' : 'external';
+            }
+        }
+
+        return '';
     }
 
     /**

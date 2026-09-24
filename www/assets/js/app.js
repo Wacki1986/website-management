@@ -1,47 +1,49 @@
 /**
  * Vstupní bod klientského kódu Správy webů.
  *
- * Stejná zásada jako v klientské aplikaci: skoro bez JavaScriptu, všechno
- * podstatné vykresluje server a bez skriptu to musí fungovat. JS doplňuje
- * jen pohodlí: toasty se samy zavírají, motiv se přepne bez překreslení,
- * heslo jde zobrazit okem.
+ * Každý modul se načte a spustí zvlášť: když jeden selže (chybí na
+ * serveru, chyba v kódu), ostatní běží dál a do konzole se zapíše, který
+ * to byl. Se statickými importy by jeden vadný modul potichu shodil
+ * všechny — aktualizace pluginů, okna, bubliny.
  */
 
 // Adresy modulů se NEverzují tady (import '…?v=x' by se muselo pamatovat
 // ručně a JS má roční immutable cache) — verzované adresy dodává import
 // mapa v layoutu (Kernel::jsImportMap), otisk je z času změny souboru.
-import { initToasts } from './modules/toast.js';
-import { initThemeToggle } from './modules/theme.js';
-import { initPasswordToggles } from './modules/password.js';
-import { initCopy } from './modules/copy.js';
-import { initPopovers } from './modules/popover.js';
-import { initServiceWorker } from './modules/pwa.js';
-import { initPush } from './modules/push.js';
-import { initSelection } from './modules/selection.js';
-import { initSteppers } from './modules/stepper.js';
-import { initReportPreview } from './modules/report-preview.js';
-import { initPending } from './modules/pending.js';
-import { initPluginUpdate } from './modules/plugin-update.js';
-import { initConfirmDialogs } from './modules/confirm-dialog.js';
-import { initServiceTasks } from './modules/service-tasks.js';
-import { initReportTemplate } from './modules/report-template.js';
-import { initTooltips } from './modules/tooltip.js';
+// Pořadí spuštění je pořadí v seznamu.
+const modules = [
+    ['./modules/toast.js', 'initToasts'],
+    ['./modules/theme.js', 'initThemeToggle'],
+    ['./modules/password.js', 'initPasswordToggles'],
+    ['./modules/copy.js', 'initCopy'],
+    ['./modules/popover.js', 'initPopovers'],
+    // PWA: registrace service workeru a karta „Toto zařízení" v Nastavení →
+    // Oznámení. Obojí se tiše přeskočí tam, kde na to prohlížeč nemá.
+    ['./modules/pwa.js', 'initServiceWorker'],
+    ['./modules/push.js', 'initPush'],
+    ['./modules/selection.js', 'initSelection'],
+    ['./modules/stepper.js', 'initSteppers'],
+    ['./modules/report-preview.js', 'initReportPreview'],
+    ['./modules/pending.js', 'initPending'],
+    ['./modules/plugin-update.js', 'initPluginUpdate'],
+    ['./modules/confirm-dialog.js', 'initConfirmDialogs'],
+    ['./modules/service-tasks.js', 'initServiceTasks'],
+    ['./modules/report-template.js', 'initReportTemplate'],
+    ['./modules/tooltip.js', 'initTooltips'],
+];
 
-initToasts();
-initThemeToggle();
-initPasswordToggles();
-initCopy();
-initPopovers();
-// PWA: registrace service workeru a karta „Toto zařízení" v Nastavení →
-// Oznámení. Obojí se tiše přeskočí tam, kde na to prohlížeč nemá.
-initServiceWorker();
-initPush();
-initSelection();
-initSteppers();
-initReportPreview();
-initPending();
-initPluginUpdate();
-initConfirmDialogs();
-initServiceTasks();
-initReportTemplate();
-initTooltips();
+const loaded = await Promise.allSettled(modules.map(([path]) => import(path)));
+
+loaded.forEach((result, index) => {
+    const [path, init] = modules[index];
+
+    try {
+        if (result.status === 'rejected') {
+            throw result.reason;
+        }
+
+        result.value[init]();
+    } catch (error) {
+        console.error(`[Správa webů] ${path} (${init}) selhal:`, error);
+    }
+});

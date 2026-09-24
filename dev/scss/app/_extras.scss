@@ -245,8 +245,8 @@ label.toggle { display: inline-block; cursor: pointer; }
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-semibold);
 
-  &::before { content: "ukázat"; }
-  &[data-shown="true"]::before { content: "skrýt"; }
+  display: grid;
+  place-items: center;
   &:hover { background: var(--color-surface-muted); color: var(--color-text-primary); }
 }
 
@@ -392,10 +392,21 @@ label.checkbox { cursor: pointer; }
 
 // Reporty: historie u webu (návrh `detail-webu-reporty.html` má tabulku
 // bez vlastního modifikátoru) a drobnosti náhledu.
-.table--reports { --table-columns: 110px minmax(0, 1fr) 160px 170px 90px; }
+.table--reports { --table-columns: 110px minmax(0, 1fr) 160px 170px 130px; }
 
 @media (max-width: 768px) {
-  .table--reports { --table-columns: minmax(0, 1fr) 90px; }
+  .table--reports { --table-columns: minmax(0, 1fr) 130px; }
+}
+
+// Fronta reportů: sloupec akcí na tři ikony (náhled, odeslané HTML, koš).
+.table--report-queue { --table-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) 110px 140px minmax(0, 1.3fr) 165px 130px; }
+
+@media (max-width: 1100px) {
+  .table--report-queue { --table-columns: minmax(0, 1.5fr) minmax(0, 1.1fr) 96px 128px minmax(0, 1.2fr) 150px 124px; }
+}
+
+@media (max-width: 768px) {
+  .table--report-queue { --table-columns: minmax(0, 1fr) 124px; }
 }
 
 // Adresát reportu jako formulář v pilulce (odebrání bez JS).
@@ -739,3 +750,18 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
   &.pill--error { background: var(--color-status-error-soft); border-color: var(--color-status-error-border); color: var(--color-status-error-text); }
   &.pill--muted { background: var(--color-surface-muted); border-color: var(--color-border-subtle); color: var(--color-text-subtle); }
 }
+
+// Klikací pilulka (označit / zrušit „placená verze mimo wordpress.org").
+.pill--button {
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast) var(--easing-standard);
+
+  &:hover { text-decoration: none; box-shadow: 0 0 0 3px var(--color-brand-soft); }
+  &:focus-visible { @include focus-ring; }
+}
+
+// Odchozí pošta: server, přihlášení a šifrování jen při odesílání přes SMTP.
+.mail-smtp { display: none; }
+form:has(select[name="transport"] option[value="smtp"]:checked) .mail-smtp { display: grid; }

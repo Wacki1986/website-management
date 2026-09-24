@@ -12,6 +12,7 @@ use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\PluginClient;
 use App\Core\Reports\ReportSchedule;
 use App\Core\Security\RateLimiter;
@@ -264,7 +265,8 @@ final class SiteController extends Controller
         $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
         $q = $this->request()->string('q');
         $plugins = $this->kernel->snapshots()->plugins((int) $id, $q);
-        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version(), SiteActions::libraryFor($snapshot, $this->kernel->pluginLibrary()->versions()));
+        $outside = $this->kernel->pluginDirectory()->outside($plugins);
+        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version(), SiteActions::libraryFor($snapshot, $this->kernel->pluginLibrary()->versions()), $outside);
         $deleteBlocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_DELETE);
         // Starší plugin na webu zapínání neumí — ikona se pak vůbec neukáže
         // (byla by u každého řádku, jen šedá).
@@ -280,14 +282,19 @@ final class SiteController extends Controller
             $file = (string) $plugin['file'];
             $ignored = (int) ($plugin['updates_ignored'] ?? 0) === 1;
             $ignoredCount += $ignored ? 1 : 0;
-            $assessment = $directory->assess($listing[$file] ?? null);
+            $assessment = $directory->assess($listing[$file] ?? null, null, (string) ($plugin['source'] ?? ''));
             $outdated += in_array($assessment['state'], ['abandoned', 'closed'], true) ? 1 : 0;
             $rows[] = [
                 'directory' => $assessment,
+                // Ruční označení placené verze (WPML): stažený/opuštěný přes okno, zrušení rovnou.
+                'markExternal' => $assessment['markable'] ? 'Placená verze mimo wordpress.org' : null,
+                'unmarkAction' => $assessment['manual'] ? get_url('weby/' . (int) $id . '/pluginy/z-adresare') : null,
                 'status' => self::pluginStatus((int) $plugin['is_active'] !== 1, $assessment),
                 'inactive' => (int) $plugin['is_active'] !== 1,
                 'updatable' => isset($updatable[$file]),
                 'new_version' => $updatable[$file]['new_version'] ?? $plugin['new_version'],
+                // Hlášená verze, kterou správa nenabízí — šedě a s důvodem v bublině.
+                'unoffered' => !isset($updatable[$file]) && $plugin['new_version'] !== null ? SiteActions::unoffered($plugin, $outside) : null,
                 'deleteUrl' => $deleteBlocked === null && SiteActions::isDeletable($plugin)
                     ? get_url('weby/' . (int) $id . '/pluginy/smazat?plugin=' . rawurlencode($file))
                     : null,
@@ -338,6 +345,45 @@ final class SiteController extends Controller
      * Plugin zůstává v seznamu, jen se nepočítá do čekajících aktualizací
      * ani do alertu a nenabízí se k aktualizaci.
      */
+    /**
+     * „Placená verze mimo wordpress.org" — plugin se stejným slugem jako
+     * stažený nebo starý plugin z adresáře (WPML) se přestane hodnotit na
+     * všech webech. `markExternal(…, false)` označení zruší.
+     */
+    public function markExternal(string $id, bool $external = true): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $file = $this->request()->string('plugin');
+        $plugin = null;
+
+        foreach ($this->kernel->snapshots()->plugins((int) $id) as $row) {
+            if ((string) $row['file'] === $file) {
+                $plugin = $row;
+            }
+        }
+
+        $back = 'weby/' . $id . '/pluginy';
+
+        if ($plugin === null) {
+            return $this->redirectWithFlash($back, 'Plugin na webu není.', 'warning');
+        }
+
+        $this->kernel->pluginDirectory()->setManualExternal(PluginDirectory::slug($file), $external);
+        // Alert tohoto webu hned; ostatní weby při dalším načtení dat.
+        $this->kernel->alertEngine()->afterSnapshot($site, $this->kernel->snapshots()->snapshot((int) $id));
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SETTINGS, true,
+            ($external ? 'Označen jako placená verze mimo wordpress.org: ' : 'Zrušeno označení placené verze: ') . $plugin['name']);
+
+        return $this->redirectWithFlash($back, $external
+            ? $plugin['name'] . ' se jako placená verze přestane hodnotit podle wordpress.org — na všech webech.'
+            : $plugin['name'] . ' se zase hodnotí podle wordpress.org.');
+    }
+
+    public function unmarkExternal(string $id): Response
+    {
+        return $this->markExternal($id, false);
+    }
+
     public function watchPlugin(string $id, bool $watch = true): Response
     {
         $site = $this->siteOr404((int) $id);
@@ -458,7 +504,7 @@ final class SiteController extends Controller
         $report = [
             'is_active' => $reportSettings !== null && (int) $reportSettings['is_active'] === 1,
             'frequency' => $reportSettings !== null ? (string) $reportSettings['frequency'] : 'monthly',
-            'send_day' => $reportSettings !== null ? (int) $reportSettings['send_day'] : 1,
+            'send_day' => $reportSettings !== null ? (int) $reportSettings['send_day'] : ReportSchedule::DEFAULT_DAY,
             'send_hour' => $reportSettings !== null ? (int) $reportSettings['send_hour'] : 6,
             'requires_approval' => $reportSettings !== null && (int) $reportSettings['requires_approval'] === 1,
         ];

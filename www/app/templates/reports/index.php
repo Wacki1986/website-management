@@ -110,7 +110,7 @@ $periodLabel = static function (string $ym): string {
                     $status === 'failed' ? 'check' : 'report',
                 ) ?>
             <?php else: ?>
-                <div class="table__head"><div>Web</div><div>Klient</div><div>Období</div><div>Termín</div><div>Příjemce</div><div>Stav</div><div></div></div>
+                <div class="table__head"><div>Web</div><div>Klient</div><div>Období</div><div>Termín</div><div>Příjemce</div><div>Stav</div><div class="table__cell table__cell--right">Akce</div></div>
                 <?php foreach ($groups as $groupLabel => $rows): ?>
                     <div class="table__group table__group--caps"><span><?= $this->e($groupLabel) ?></span><span style="font-weight:var(--font-weight-medium);letter-spacing:0;text-transform:none"><?= $this->e(get_count(count($rows), 'report', 'reporty', 'reportů')) ?></span></div>
                     <?php foreach ($rows as $row): ?>
@@ -124,12 +124,7 @@ $periodLabel = static function (string $ym): string {
                             <div class="table__cell"><div class="u-nowrap<?= $row['when']['tone'] !== '' ? ' text-' . $row['when']['tone'] : '' ?>" style="font-size:var(--font-size-label);<?= $row['when']['tone'] === '' ? 'color:var(--color-text-secondary)' : '' ?>"><?= $this->e($row['when']['main']) ?></div><?php if ($row['when']['sub'] !== ''): ?><div class="text-caption u-nowrap"><?= $this->e($row['when']['sub']) ?></div><?php endif; ?></div>
                             <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($row['recipients'] !== '' ? $row['recipients'] : '—') ?></div>
                             <div class="table__cell"><?= get_status($row['tone'], $row['label']) ?></div>
-                            <div class="table__cell row" style="justify-content:flex-end;gap:8px">
-                                <a href="<?= $row['previewUrl'] ?>" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)"><?= $this->e($row['action']) ?></a>
-                                <?php if ($row['status'] === 'sent' || $row['status'] === 'partial'): ?>
-                                    <a class="btn--menu" href="<?= get_url('reporty/' . $row['id']) ?>" target="_blank" rel="noopener" title="Otevřít odeslané HTML"><?= get_icon('external', 'icon--sm icon--subtle') ?></a>
-                                <?php endif; ?>
-                            </div>
+                            <div class="table__cell table__cell--right"><?= $this->partial('partials/report-actions', ['row' => $row]) ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php endforeach; ?>
@@ -141,3 +136,5 @@ $periodLabel = static function (string $ym): string {
         </div>
     </section>
 </div>
+
+<?= $this->partial('partials/report-delete-dialog', ['back' => 'reporty', 'csrfToken' => $csrfToken]) ?>

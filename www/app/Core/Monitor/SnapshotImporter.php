@@ -225,6 +225,10 @@ final class SnapshotImporter
                 'new_version' => !empty($item['has_update']) && (string) ($item['new_version'] ?? '') !== '' ? mb_substr((string) $item['new_version'], 0, 30) : null,
                 'is_active' => $isActive,
                 'has_update' => !empty($item['has_update']) ? 1 : 0,
+                // Plugin do 1.5.3 neposílá — NULL = nezjištěno (bere se jako „balíček je").
+                'update_package' => isset($item['update_package']) && is_bool($item['update_package']) ? (int) $item['update_package'] : null,
+                // Plugin do 1.5.2 zdroj neposílá — '' = nezjištěno.
+                'source' => in_array($item['source'] ?? '', ['wporg', 'external'], true) ? (string) $item['source'] : '',
                 'last_seen_at' => $now,
             ];
 
@@ -284,7 +288,15 @@ final class SnapshotImporter
     {
         $count = 0;
 
-        foreach ($this->db->select('SELECT version, new_version FROM site_plugins WHERE site_id = :id AND has_update = 1 AND updates_ignored = 0', ['id' => $siteId]) as $plugin) {
+        // Nepočítá se, co správa nenabízí: aktualizace bez balíčku (placený
+        // plugin bez licence) a vypnutý plugin s vlastním updaterem.
+        $rows = $this->db->select(
+            'SELECT sp.version, sp.new_version FROM site_plugins sp WHERE sp.site_id = :id AND sp.has_update = 1 AND sp.updates_ignored = 0
+               AND (sp.update_package IS NULL OR sp.update_package = 1) AND NOT (sp.is_active = 0 AND ' . PluginDirectory::OUTSIDE_SQL . ')',
+            ['id' => $siteId],
+        );
+
+        foreach ($rows as $plugin) {
             if (version_compare((string) $plugin['new_version'], (string) $plugin['version'], '>')) {
                 $count++;
             }

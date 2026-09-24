@@ -97,9 +97,9 @@ return [
         assertContainsString('Aktivní · opuštěný', $html);
         assertContainsString('Aktivní · stažen — bezpečnost', $html);
         // Pilulky Vydáno: stažený i opuštěný červeně, čerstvý zeleně, mimo adresář šedě.
-        assertContainsString('<span class="pill pill--sm pill--error" title="Plugin byl stažen z adresáře wordpress.org (důvod: Security Issue)', $html);
-        assertContainsString('>staženo 1. 4. 2020</span>', $html);
-        assertContainsString("pill--error\" title=\"Poslední vydání 7. 7. 2024, testováno do WordPressu 6.5.12 — plugin se přes 24 měsíců nevyvíjí.\">před 2\u{00A0}roky</span>", $html);
+        assertContainsString('pill--button pill--error" title="Plugin byl stažen z adresáře wordpress.org (důvod: Security Issue)', $html);
+        assertContainsString('>staženo 1. 4. 2020</a>', $html);
+        assertContainsString("pill--error\" title=\"Poslední vydání 7. 7. 2024, testováno do WordPressu 6.5.12 — plugin se přes 24 měsíců nevyvíjí. Placená verze", $html);
         assertContainsString('<span class="pill pill--sm pill--ok" title="Poslední vydání 10. 9. 2026', $html);
         assertContainsString('pill--muted" title="Plugin není na wordpress.org (placený nebo vlastní) — stáří se nehodnotí.">mimo adresář</span>', $html);
         assertContainsString('2 opuštěné', $html);
@@ -151,4 +151,61 @@ return [
 
         Urls::reset();
     },
+    'placená verze: podle zdroje aktualizací se nehodnotí, ruční označení platí pro všechny weby a jde zrušit' => function (): void {
+        [$kernel, $token, $siteId, $directory] = pdKernel();
+        $now = strtotime(PD_NOW);
+        $directory->refresh($directory->dueSlugs($now), $now);
+        $datepicker = 'contact-form-7-datepicker/contact-form-7-datepicker.php';
+
+        // Plugin na webu hlásí vlastní updater autora (jako WPML) — nehodnotí se.
+        $kernel->db()->execute("UPDATE site_plugins SET source = 'external' WHERE file = :file", ['file' => $datepicker]);
+        $directory->recount($siteId, $now);
+        assertSame(['Insights from Google PageSpeed'], array_column($directory->issues($siteId, $now), 'name'));
+        $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+        assertContainsString('Plugin se aktualizuje přes vlastní systém autora', $html);
+        assertFalse(str_contains($html, 'stažen — bezpečnost'));
+
+        // Ruční označení opuštěného pluginu přes okno.
+        assertContainsString('data-confirm="plugin-external" data-confirm-value="google-pagespeed-insights/google-pagespeed-insights.php"', $html);
+        assertContainsString('<dialog class="modal" id="plugin-external"', $html);
+        kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/mimo-adresar', ['_token' => $token, 'plugin' => 'google-pagespeed-insights/google-pagespeed-insights.php']);
+        assertSame([], $directory->issues($siteId, $now));
+        assertSame(0, (int) $kernel->db()->selectOne('SELECT plugins_abandoned FROM site_snapshots WHERE site_id = :id', ['id' => $siteId])['plugins_abandoned']);
+        $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+        assertContainsString('formaction="/weby/' . $siteId . '/pluginy/z-adresare"', $html);
+        assertContainsString('>placená verze</button>', $html);
+
+        // Zrušení vrátí hodnocení.
+        kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/z-adresare', ['_token' => $token, 'plugin' => 'google-pagespeed-insights/google-pagespeed-insights.php']);
+        assertSame(['Insights from Google PageSpeed'], array_column($directory->issues($siteId, $now), 'name'));
+
+        Urls::reset();
+    },
+    'aktualizace, která nemá odkud přijít: vypnutý plugin mimo adresář a bez balíčku se nenabízí, koš zůstává' => function (): void {
+        [$kernel, , $siteId, $directory] = pdKernel();
+        $now = strtotime(PD_NOW);
+        $directory->refresh($directory->dueSlugs($now), $now);
+        $rank = 'rank-math-pro/rank-math-pro.php';
+        $woo = 'woocommerce/woocommerce.php';
+
+        // Rank Math PRO (mimo adresář) vypnutý s ohlášenou verzí; WooCommerce aktivní, ale bez balíčku.
+        $kernel->db()->execute("UPDATE site_plugins SET is_active = 0, has_update = 1, new_version = '3.1' WHERE file = :file", ['file' => $rank]);
+        $kernel->db()->execute("UPDATE site_plugins SET has_update = 1, new_version = '9.9', update_package = 0 WHERE file = :file", ['file' => $woo]);
+        $kernel->db()->execute("UPDATE site_snapshots SET plugin_version = '1.5.4' WHERE site_id = :id", ['id' => $siteId]);
+        $kernel->sites()->setApiKey($siteId, 'mg_live_TESTKEY0000000000000000000000');
+        $kernel->db()->execute("INSERT INTO site_plugins (site_id, file, name, version, is_active, has_update, new_version, first_seen_at, last_seen_at) VALUES (:id, 'elementor/elementor.php', 'Elementor', '3.0', 1, 1, '3.1', :a, :b)", ['id' => $siteId, 'a' => PD_NOW, 'b' => PD_NOW]);
+        assertSame(1, $kernel->snapshots()->recountUpdates($siteId), 'Počítá se jen Elementor');
+
+        $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
+        assertFalse(str_contains($html, 'name="plugins[]" value="' . $rank . '"'), 'Vypnutý plugin mimo adresář se nenabízí');
+        assertFalse(str_contains($html, 'name="plugins[]" value="' . $woo . '"'), 'Bez balíčku se nenabízí');
+        assertContainsString('name="plugins[]" value="elementor/elementor.php"', $html);
+        assertContainsString('Plugin je mimo adresář wordpress.org a vypnutý', $html);
+        assertContainsString('nemá balíček ke stažení', $html);
+        assertContainsString('>3.1 · ručně</div>', $html);
+        assertContainsString('data-confirm="plugin-delete" data-confirm-value="' . $rank . '"', $html, 'Vypnutý plugin jde smazat');
+
+        Urls::reset();
+    },
 ];
+

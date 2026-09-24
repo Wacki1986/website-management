@@ -7,6 +7,7 @@
  *   data-confirm-value → skryté pole `[data-confirm-value]` ve formuláři dialogu
  *   data-confirm-title → text prvku `[data-confirm-title]`
  *   data-confirm-note  → text prvku `[data-confirm-note]`
+ *   data-confirm-action → `action` formuláře v dialogu (jedno okno pro víc řádků)
  * Zavírá tlačítko `[data-dialog-close]`, Esc a klik mimo okno.
  */
 export function initConfirmDialogs() {
@@ -24,7 +25,10 @@ export function initConfirmDialogs() {
 
         event.preventDefault();
 
-        const { confirmValue, confirmTitle, confirmNote } = trigger.dataset;
+        const { confirmValue, confirmTitle, confirmNote, confirmAction } = trigger.dataset;
+        const form = dialog.querySelector('form');
+
+        if (form && confirmAction !== undefined) form.action = confirmAction;
         const field = dialog.querySelector('[data-confirm-value]');
         const title = dialog.querySelector('[data-confirm-title]');
         const note = dialog.querySelector('[data-confirm-note]');
