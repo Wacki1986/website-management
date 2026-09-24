@@ -14,7 +14,8 @@ declare(strict_types=1);
  *     že adresa vrací 404. Kdyby smazání nevyšlo, smažte oba soubory ručně.
  *
  * Bez platného tokenu neudělá nic; existující účet umí i odemknout / nastavit
- * mu nové heslo (tatáž cesta jako `create-admin.php` na příkazové řádce).
+ * mu nové heslo a vypnout dvoufázové přihlášení (ztracený telefon) — tatáž
+ * cesta jako `create-admin.php` na příkazové řádce.
  */
 
 use App\Core\Auth\PasswordPolicy;
@@ -96,9 +97,14 @@ if ($submitted && hash_equals($expected, $token)) {
         $existing = $users->findByLogin($username);
         $hash = PasswordPolicy::hash($password);
 
-        $existing !== null
-            ? $users->update((int) $existing['id'], ['password_hash' => $hash, 'is_active' => 1])
-            : $users->create($username, $hash);
+        if ($existing !== null) {
+            // Odemčení je i cesta ze ztraceného telefonu — dvoufázové
+            // přihlášení se vypne a účet si ho po přihlášení zapne znovu.
+            $users->update((int) $existing['id'], ['password_hash' => $hash, 'is_active' => 1]);
+            $kernel->twoFactor()->disable((int) $existing['id']);
+        } else {
+            $users->create($username, $hash);
+        }
 
         // Uklidit po sobě: token i tento skript. Selhání úklidu se hlásí.
         $tokenGone = @unlink($tokenPath);

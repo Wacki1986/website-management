@@ -53,7 +53,10 @@ $hash = PasswordPolicy::hash($password);
 
 if ($existing !== null) {
     $users->update((int) $existing['id'], ['password_hash' => $hash, 'is_active' => 1]);
-    echo 'Účtu „' . $username . '“ bylo nastaveno nové heslo.' . "\n";
+    // Odemčení účtu je i cesta ze ztraceného telefonu: dvoufázové přihlášení
+    // se vypne, po přihlášení si ho účet zapne znovu s novým telefonem.
+    $kernel->twoFactor()->disable((int) $existing['id']);
+    echo 'Účtu „' . $username . '“ bylo nastaveno nové heslo a vypnuto dvoufázové přihlášení.' . "\n";
     exit(0);
 }
 

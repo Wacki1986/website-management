@@ -20,9 +20,3 @@ v reportu. Kde navázat: `site_snapshots.security_updates` (dnes vždy 0),
 `SnapshotImporter::recountUpdates()`, pravidla v `AlertEngine`.
 
 Nejdřív: vybrat službu (limity, cena, podmínky pro agenturu).
-
-## Dvoufázové přihlášení do Správy webů
-
-Zatím nahrazeno Basic auth na hostingu (kapitola 2 v `00-provoz.md`).
-Kdyby se správa otevírala dalším lidem, TOTP (aplikace Authenticator)
-u účtu v Nastavení → Uživatelé.

@@ -673,23 +673,49 @@ final class SettingsController extends Controller
     public function uzivatele(): Response
     {
         $users = [];
+        $twoFactor = $this->kernel->twoFactor();
+        $me = $this->kernel->auth()->current() ?? [];
+        $meId = (int) ($me['id'] ?? 0);
+        $ownerId = $this->kernel->users()->firstUserId();
 
         // Řádky tabulky připravené v controlleru — šablona jen vypisuje.
         foreach ($this->kernel->users()->all() as $user) {
+            $id = (int) $user['id'];
             $isActive = (int) $user['is_active'] === 1;
             $invited = ($user['invited_at'] ?? null) !== null;
+            $paired = $twoFactor->isEnabled($user);
+            $isSelf = $id === $meId;
+            $canManage = $this->kernel->users()->canManage($me, $id);
 
             $users[] = $user + [
                 'displayName' => UserRepository::displayName($user),
                 'roleLabel' => UserRepository::roleLabel((string) ($user['role'] ?? 'admin')),
                 'lastLogin' => $user['last_login_at'] !== null ? get_when((string) $user['last_login_at']) : 'nikdy',
-                'stateTone' => !$isActive ? 'muted' : ($invited ? 'warning' : 'ok'),
-                'stateLabel' => !$isActive ? 'Pozastavený' : ($invited ? 'Čeká na pozvánku' : 'Aktivní'),
+                // Aktivní účet bez spárovaného telefonu se do aplikace dostane
+                // až po spárování (povinné dvoufázové přihlášení).
+                'stateTone' => match (true) {
+                    !$isActive => 'muted',
+                    $invited, !$paired => 'warning',
+                    default => 'ok',
+                },
+                'stateLabel' => match (true) {
+                    !$isActive => 'Pozastavený',
+                    $invited => 'Čeká na pozvánku',
+                    !$paired => 'Čeká na spárování telefonu',
+                    default => 'Aktivní',
+                },
                 'isInvited' => $invited,
                 'isActiveFlag' => $isActive,
+                'isOwner' => $id === $ownerId,
+                'isSelf' => $isSelf,
+                // Vlastní účet se upravuje v kartě Můj účet níž na stránce.
+                'editUrl' => $isSelf ? get_url('nastaveni/uzivatele') . '#muj-ucet' : ($canManage ? get_url('nastaveni/uzivatele/' . $id . '/upravit') : ''),
+                'canSuspend' => !$isSelf && $canManage && $id !== $ownerId,
+                'canUnpair' => !$isSelf && $canManage && $paired,
             ];
         }
 
+        $recoveryLeft = $twoFactor->remainingRecoveryCodes($me);
         $active = count(array_filter($users, static fn (array $u): bool => $u['isActiveFlag'] && !$u['isInvited']));
         $invited = count(array_filter($users, static fn (array $u): bool => $u['isInvited']));
 
@@ -700,63 +726,155 @@ final class SettingsController extends Controller
             'usersNote' => get_count($active, 'aktivní', 'aktivní', 'aktivních')
                 . ($invited > 0 ? ' · ' . $invited . ' čeká na přijetí pozvánky' : ''),
             'roles' => UserRepository::ROLES,
-            'currentUserId' => $this->currentUserId(),
-            'firstUserId' => $this->kernel->users()->firstUserId(),
-            'me' => $this->kernel->auth()->current() ?? [],
+            'me' => $me,
+            'twoFactor' => [
+                'note' => 'Zapnuto ' . get_when((string) ($me['totp_enabled_at'] ?? ''))
+                    . ' · zbývá ' . get_count($recoveryLeft, 'záložní kód', 'záložní kódy', 'záložních kódů'),
+                // Tři a míň: čas vytvořit novou sadu, než dojdou úplně.
+                'recoveryLow' => $recoveryLeft <= 3,
+            ],
         ]);
     }
 
     /**
-     * Jméno a e-mail vlastního účtu. Jméno je jen kosmetika; e-mail je
+     * Karta Můj účet — jedno tlačítko pro všechno: jméno, přihlašovací
+     * jméno, e-mail, role, fotka a heslo. Jméno je jen kosmetika; e-mail je
      * potřeba, aby fungovala obnova zapomenutého hesla.
+     *
+     * Fotka a heslo se mění, jen když jsou vyplněné. Nejdřív se zkontroluje
+     * všechno, co jde zkontrolovat bez ukládání — chyba v hesle tak
+     * nenechá uložené jen půlku formuláře.
      */
     public function updateAccount(): Response
     {
         $request = $this->request();
-        $user = $this->kernel->auth()->current();
+        $user = $this->kernel->auth()->current() ?? throw HttpException::unauthorized();
+        $userId = (int) $user['id'];
+        [$data, $error] = $this->userFields($userId);
 
-        if ($user === null) {
-            throw HttpException::unauthorized();
+        $password = (string) $request->input('password', '');
+        $passwordConfirm = (string) $request->input('password_confirm', '');
+        $changesPassword = $password !== '' || $passwordConfirm !== '';
+        $error ??= $changesPassword ? PasswordPolicy::validate($password, $passwordConfirm) : null;
+
+        if ($error !== null) {
+            return $this->redirectWithFlash('nastaveni/uzivatele', $error, 'error');
         }
 
-        $name = mb_substr(trim($request->string('name')), 0, 190);
-        $email = mb_strtolower(trim($request->string('email')));
+        // Fotka jako první ze zápisů: její kontrola (typ, velikost) je až
+        // při uložení, a když neprojde, nic dalšího se nezmění.
+        $photo = $request->files['avatar'] ?? null;
 
-        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            return $this->redirectWithFlash('nastaveni/uzivatele', 'Zadejte platný e-mail, nebo pole nechte prázdné.', 'error');
+        if (is_array($photo) && (int) ($photo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            try {
+                $this->kernel->avatars()->replace($userId, $photo);
+            } catch (HttpException $e) {
+                return $this->redirectWithFlash('nastaveni/uzivatele', $e->getMessage(), 'error');
+            }
         }
 
-        // Mezi jmény i e-maily (`findByLogin()`) — přihlásit se dá obojím.
-        $existing = $email !== '' ? $this->kernel->users()->findByLogin($email) : null;
+        $this->kernel->users()->update($userId, $data);
 
-        if ($existing !== null && (int) $existing['id'] !== (int) $user['id']) {
-            return $this->redirectWithFlash('nastaveni/uzivatele', 'Tenhle e-mail už patří jinému účtu — jako adresa, nebo jako přihlašovací jméno.', 'error');
+        if ($changesPassword) {
+            $this->kernel->users()->update($userId, ['password_hash' => PasswordPolicy::hash($password)]);
+
+            // Auth hash v session přestal sedět — nové přihlášení je záměr:
+            // změna hesla odhlašuje všechny relace včetně téhle.
+            return $this->redirectWithFlash('prihlaseni', 'Účet je uložený a heslo změněné, přihlaste se znovu.');
         }
-
-        $this->kernel->users()->update((int) $user['id'], [
-            'name' => $name !== '' ? $name : null,
-            'email' => $email !== '' ? $email : null,
-        ]);
 
         return $this->redirectWithFlash('nastaveni/uzivatele', 'Účet je uložený.');
     }
 
-    /** Nahrání profilové fotky — vždy jen k vlastnímu účtu. */
-    public function uploadAvatar(): Response
+    /** Úprava cizího účtu — vlastní účet se upravuje v kartě Můj účet. */
+    public function editUser(string $id): Response
     {
-        $user = $this->kernel->auth()->current();
+        $target = $this->manageableUser((int) $id);
 
-        if ($user === null) {
-            throw HttpException::unauthorized();
+        return $this->userForm($target, $target, []);
+    }
+
+    public function updateUser(string $id): Response
+    {
+        $target = $this->manageableUser((int) $id);
+        [$data, $error] = $this->userFields((int) $target['id']);
+
+        if ($error !== null) {
+            return $this->userForm($target, $data + $target, ['_' => $error], 422);
         }
 
-        try {
-            $this->kernel->avatars()->replace((int) $user['id'], $this->request()->files['avatar'] ?? null);
-        } catch (HttpException $e) {
-            return $this->redirectWithFlash('nastaveni/uzivatele', $e->getMessage(), 'error');
+        $this->kernel->users()->update((int) $target['id'], $data);
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_USER, true,
+            'Upraven účet ' . UserRepository::displayName($data + $target), ['role' => $data['role']]);
+
+        return $this->redirectWithFlash('nastaveni/uzivatele', 'Účet ' . UserRepository::displayName($data + $target) . ' je uložený.');
+    }
+
+    /**
+     * @param array<string, mixed>  $target  upravovaný účet
+     * @param array<string, mixed>  $values  hodnoty do polí
+     * @param array<string, string> $errors
+     */
+    private function userForm(array $target, array $values, array $errors, int $status = 200): Response
+    {
+        return $this->view('settings/uzivatel', [
+            'title' => 'Nastavení',
+            'activeTab' => 'uzivatele',
+            'target' => $target,
+            'targetName' => UserRepository::displayName($target),
+            'values' => $values,
+            'roles' => UserRepository::ROLES,
+            'errors' => $errors,
+        ], $status);
+    }
+
+    /**
+     * Pole účtu z formuláře (vlastního i cizího) — a první chyba, nebo null.
+     *
+     * @return array{0: array<string, mixed>, 1: string|null}
+     */
+    private function userFields(int $targetId): array
+    {
+        $request = $this->request();
+        $users = $this->kernel->users();
+        $name = mb_substr(trim($request->string('name')), 0, 190);
+        $username = mb_strtolower(trim($request->string('username')));
+        $email = mb_strtolower(trim($request->string('email')));
+        $role = $request->string('role');
+
+        $data = [
+            'name' => $name !== '' ? $name : null,
+            'username' => $username,
+            'email' => $email !== '' ? $email : null,
+            'role' => isset(UserRepository::ROLES[$role]) ? $role : 'admin',
+        ];
+
+        $error = match (true) {
+            UserRepository::usernameError($username) !== null => UserRepository::usernameError($username),
+            $users->isLoginTaken($username, $targetId) => 'Tohle přihlašovací jméno už patří jinému účtu — jako jméno, nebo jako e-mail.',
+            $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false => 'Zadejte platný e-mail, nebo pole nechte prázdné.',
+            $users->isLoginTaken($email, $targetId) => 'Tenhle e-mail už patří jinému účtu — jako adresa, nebo jako přihlašovací jméno.',
+            default => null,
+        };
+
+        return [$data, $error];
+    }
+
+    /**
+     * Cizí účet, na který přihlášený smí sahat (`UserRepository::canManage()`).
+     *
+     * @return array<string, mixed>
+     */
+    private function manageableUser(int $id): array
+    {
+        $me = $this->kernel->auth()->current() ?? throw HttpException::unauthorized();
+        $target = $this->kernel->users()->find($id) ?? throw HttpException::notFound('Účet neexistuje.');
+
+        if (!$this->kernel->users()->canManage($me, $id)) {
+            throw new HttpException(403, 'Zakládající účet může upravovat jen on sám.');
         }
 
-        return $this->redirectWithFlash('nastaveni/uzivatele', 'Fotka je uložená.');
+        return $target;
     }
 
     /** Odebrání fotky — kolečko se vrátí k iniciálám. */
@@ -805,37 +923,6 @@ final class SettingsController extends Controller
     }
 
     /**
-     * Jen nové heslo + potvrzení — bez „současného hesla": kdo se dostal
-     * do Nastavení, je přihlášený, takže heslo už jednou prokázal.
-     */
-    public function changePassword(): Response
-    {
-        $request = $this->request();
-        $user = $this->kernel->auth()->current();
-
-        if ($user === null) {
-            throw HttpException::unauthorized();
-        }
-
-        $error = PasswordPolicy::validate(
-            (string) $request->input('password', ''),
-            (string) $request->input('password_confirm', ''),
-        );
-
-        if ($error !== null) {
-            return $this->redirectWithFlash('nastaveni/uzivatele', $error, 'error');
-        }
-
-        $this->kernel->users()->update((int) $user['id'], [
-            'password_hash' => PasswordPolicy::hash((string) $request->input('password', '')),
-        ]);
-
-        // Auth hash v session přestal sedět — nové přihlášení je záměr:
-        // změna hesla odhlašuje všechny relace včetně téhle.
-        return $this->redirectWithFlash('prihlaseni', 'Heslo je změněné, přihlaste se znovu.');
-    }
-
-    /**
      * Pozvání kolegy (návrh: „Pozvat uživatele").
      *
      * Heslo se nezadává ručně: účet dostane náhodné, které nikam nejde,
@@ -855,8 +942,8 @@ final class SettingsController extends Controller
             return $this->redirectWithFlash('nastaveni/uzivatele', 'Vyplňte přihlašovací jméno i e-mail nového uživatele.', 'error');
         }
 
-        if (preg_match('/^[a-z0-9._-]{3,50}$/', $username) !== 1) {
-            return $this->redirectWithFlash('nastaveni/uzivatele', 'Přihlašovací jméno: 3–50 znaků, jen písmena bez diakritiky, číslice, tečka, pomlčka a podtržítko.', 'error');
+        if (UserRepository::usernameError($username) !== null) {
+            return $this->redirectWithFlash('nastaveni/uzivatele', (string) UserRepository::usernameError($username), 'error');
         }
 
         if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
@@ -910,7 +997,9 @@ final class SettingsController extends Controller
             'Pozvánka — ' . Kernel::APP_NAME,
             EmailMessage::make('Vítejte — nastavte si heslo')
                 ->paragraph("Založili vám účet do správy webů studia MEDIAGRAFIK (přihlašovací jméno „{$username}“). "
-                    . 'Zbývá jediné — nastavit si heslo.')
+                    . 'Zbývá nastavit si heslo.')
+                ->paragraph('Při prvním přihlášení si pak spárujete telefon s aplikací Authenticator (Google nebo Microsoft Authenticator, 1Password, Bitwarden) — '
+                    . 'přihlášení do správy chce kromě hesla i kód z telefonu. Mějte ho po ruce.')
                 ->button('Nastavit heslo', $url)
                 ->smallprint('Odkaz platí hodinu a lze ho použít jen jednou. Když propadne, kolega vám pošle nový z Nastavení → Uživatelé.')
                 ->footerReason('Tento e-mail přišel, protože vám byl založen účet. Pokud ho nečekáte, napište studiu.'),
@@ -933,27 +1022,6 @@ final class SettingsController extends Controller
     }
 
     /** Změna štítku role — nic víc než štítek (viz `UserRepository::ROLES`). */
-    public function setRole(string $id): Response
-    {
-        $role = $this->request()->string('role');
-
-        if (!isset(UserRepository::ROLES[$role])) {
-            return $this->redirectWithFlash('nastaveni/uzivatele', 'Neznámá role.', 'error');
-        }
-
-        $user = $this->kernel->users()->find((int) $id);
-
-        if ($user === null) {
-            throw HttpException::notFound();
-        }
-
-        $this->kernel->users()->update((int) $id, ['role' => $role]);
-        $this->kernel->audit()->record(null, '', AuditLog::ACTION_USER, true,
-            'Role uživatele ' . $user['username'] . ': ' . UserRepository::roleLabel($role));
-
-        return $this->redirectWithFlash('nastaveni/uzivatele', 'Role je změněná.');
-    }
-
     public function suspendUser(string $id): Response
     {
         $current = $this->kernel->auth()->current();

@@ -160,10 +160,16 @@ final class SiteRepository
         $this->db->update('sites', $data + ['updated_at' => date('Y-m-d H:i:s')], ['id' => $id]);
     }
 
-    /** Odebrání z monitoringu — jen značka; data zůstávají 12 měsíců v archivu. */
+    /**
+     * Odebrání z monitoringu — jen značka; data zůstávají 12 měsíců v archivu.
+     *
+     * Výjimka jsou přístupy z trezoru: ty se mažou hned. Web, o který se
+     * studio nestará, nemá důvod mít u nás uložené heslo k FTP.
+     */
     public function remove(int $id): void
     {
         $this->update($id, ['removed_at' => date('Y-m-d H:i:s')]);
+        $this->db->delete('site_credentials', ['site_id' => $id]);
     }
 
     public function setApiKey(int $id, string $key): void

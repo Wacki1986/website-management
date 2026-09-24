@@ -765,3 +765,11 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
 // Odchozí pošta: server, přihlášení a šifrování jen při odesílání přes SMTP.
 .mail-smtp { display: none; }
 form:has(select[name="transport"] option[value="smtp"]:checked) .mail-smtp { display: grid; }
+
+// Uživatelé: role jako text a sloupec Akce na ikony (pozvánka, spárování,
+// pozastavení, úprava) — návrh má na konci řádku jen úzký sloupec.
+.table--users { --table-columns: minmax(150px, 1.3fr) minmax(170px, 1.3fr) 120px 130px 190px 150px; }
+
+@media (max-width: 768px) {
+  .table--users { --table-columns: minmax(0, 1fr) 150px; }
+}

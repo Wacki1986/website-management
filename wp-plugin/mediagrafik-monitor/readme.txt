@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.5.4
+Stable tag: 1.5.5
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -21,10 +21,14 @@ jedním klikem ze Správy webů (jednorázový odkaz, bez hesla; jde vypnout v n
 == Installation ==
 
 1. Pluginy → Nahrát plugin → ZIP → Aktivovat.
-2. Nastavení → MEDIAGRAFIK Monitor → vložit API klíč ze Správy webů (detail webu → Nastavení).
+2. Po aktivaci se otevře Nastavení → MEDIAGRAFIK Monitor → vložit API klíč ze Správy webů (detail webu → Nastavení).
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.5.5 =
+* Ve výpisu pluginů odkaz „Nastavení" (vedle Deaktivovat); po první aktivaci (bez uloženého klíče) přesměruje rovnou do nastavení.
+* Oprava: hláška „Klíč je uložený" se po uložení ukazovala dvakrát.
 
 = 1.5.4 =
 * U nabízené aktualizace posílá, jestli k ní WordPress má balíček ke stažení — správa pak nenabízí aktualizaci placeného pluginu bez licence.

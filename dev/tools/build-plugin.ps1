@@ -22,7 +22,10 @@ Get-ChildItem -Path $source -Filter *.php -Recurse | ForEach-Object {
     if ($LASTEXITCODE -ne 0) { throw "Syntaktická chyba: $($_.FullName)`n$result" }
 }
 
-$main = Get-Content (Join-Path $source 'mediagrafik-monitor.php') -Raw
+# -Encoding UTF8 povinně: Windows PowerShell 5.1 jinak čte soubor jako
+# cp1250 a čeština v changelogu (plugin-info.json → okno „Zobrazit
+# podrobnosti" ve WordPressu) dopadla jako „PrvnĂ­ verze".
+$main = Get-Content (Join-Path $source 'mediagrafik-monitor.php') -Raw -Encoding UTF8
 if ($main -notmatch '(?m)^\s*\*\s*Version:\s*([0-9]+\.[0-9]+\.[0-9]+)') { throw 'V hlavičce pluginu chybí Version.' }
 $version = $Matches[1]
 if ($main -notmatch "const VERSION = '$version'") { throw "Konstanta MG_Monitor::VERSION nesedí s hlavičkou ($version)." }
@@ -49,7 +52,7 @@ try {
 }
 
 # Changelog z readme.txt (blok == Changelog ==).
-$readme = Get-Content (Join-Path $source 'readme.txt') -Raw
+$readme = Get-Content (Join-Path $source 'readme.txt') -Raw -Encoding UTF8
 $changelog = ''
 if ($readme -match '(?s)== Changelog ==\s*(.*)$') { $changelog = $Matches[1].Trim() }
 $changelogHtml = '<pre>' + [System.Net.WebUtility]::HtmlEncode($changelog) + '</pre>'

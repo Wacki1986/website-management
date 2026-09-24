@@ -10,12 +10,14 @@ use App\Core\Auth\Auth;
 use App\Core\Auth\LoginRateLimiter;
 use App\Core\Auth\PasswordPolicy;
 use App\Core\Auth\RememberMe;
+use App\Core\Auth\TwoFactor;
 use App\Core\Auth\UserRepository;
 use App\Core\Db\Connection;
 use App\Core\Http\Csrf;
 use App\Core\Http\HttpException;
 use App\Core\Http\Request;
 use App\Core\Security\RateLimiter;
+use App\Core\Security\Secrets;
 
 /** @return array{0: Auth, 1: UserRepository} */
 function makeAuth(Connection $db): array
@@ -23,7 +25,7 @@ function makeAuth(Connection $db): array
     $users = new UserRepository($db);
 
     return [
-        new Auth($users, new RememberMe($db), new LoginRateLimiter(new RateLimiter($db)), new Csrf()),
+        new Auth($users, new RememberMe($db), new LoginRateLimiter(new RateLimiter($db)), new Csrf(), new TwoFactor($users, new Secrets(str_repeat('12', 32)))),
         $users,
     ];
 }

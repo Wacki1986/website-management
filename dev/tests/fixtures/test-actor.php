@@ -16,11 +16,13 @@ use App\Core\Auth\Auth;
 use App\Core\Auth\LoginRateLimiter;
 use App\Core\Auth\PasswordPolicy;
 use App\Core\Auth\RememberMe;
+use App\Core\Auth\TwoFactor;
 use App\Core\Auth\UserRepository;
 use App\Core\Db\Connection;
 use App\Core\Http\Csrf;
 use App\Core\Http\Request;
 use App\Core\Security\RateLimiter;
+use App\Core\Security\Secrets;
 
 const TEST_ACTOR_USERNAME = 'tester';
 const TEST_ACTOR_PASSWORD = 'testovaci-heslo-actor-123';
@@ -32,7 +34,7 @@ function testActorAuth(Connection $db, string $username = TEST_ACTOR_USERNAME): 
     $users = new UserRepository($db);
     $users->create($username, PasswordPolicy::hash(TEST_ACTOR_PASSWORD));
 
-    $auth = new Auth($users, new RememberMe($db), new LoginRateLimiter(new RateLimiter($db)), new Csrf());
+    $auth = new Auth($users, new RememberMe($db), new LoginRateLimiter(new RateLimiter($db)), new Csrf(), new TwoFactor($users, new Secrets(str_repeat('12', 32))));
     $auth->login(
         new Request(method: 'POST', path: '/prihlaseni', server: ['REMOTE_ADDR' => '10.0.0.9']),
         $username,

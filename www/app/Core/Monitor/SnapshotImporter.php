@@ -6,6 +6,7 @@ namespace App\Core\Monitor;
 
 use App\Core\Db\Connection;
 use App\Core\Events\EventLog;
+use App\Core\Sites\PluginOffers;
 use App\Core\Sites\SiteRepository;
 
 /**
@@ -22,6 +23,8 @@ final class SnapshotImporter
         private readonly Connection $db,
         private readonly SiteRepository $sites,
         private readonly EventLog $events,
+        // Bez něj (testy mimo Kernel) se počítá jen to, co hlásí WordPress.
+        private readonly ?PluginOffers $offers = null,
     ) {
     }
 
@@ -282,10 +285,20 @@ final class SnapshotImporter
      * verzi (zbytek mezipaměti WordPressu u pluginu < 1.3.1). Z tohohle čísla
      * čtou záložka, seznam webů, dashboard, alert i report.
      *
+     * Počítá se přes `PluginOffers` — stejně jako tlačítka Aktualizovat
+     * v tabulce, včetně verzí z Knihovny pluginů a MEDIAGRAFIK Monitoru.
+     *
      * @return int nový počet
      */
     public function recountUpdates(int $siteId): int
     {
+        if ($this->offers !== null) {
+            $count = count($this->offers->forSite($this->plugins($siteId), $this->snapshot($siteId)));
+            $this->db->update('site_snapshots', ['plugins_updates' => $count], ['site_id' => $siteId]);
+
+            return $count;
+        }
+
         $count = 0;
 
         // Nepočítá se, co správa nenabízí: aktualizace bez balíčku (placený
@@ -305,6 +318,17 @@ final class SnapshotImporter
         $this->db->update('site_snapshots', ['plugins_updates' => $count], ['site_id' => $siteId]);
 
         return $count;
+    }
+
+    /**
+     * Přepočet u všech webů — po změně Knihovny pluginů (nová nebo smazaná
+     * verze mění, co se kde nabízí).
+     */
+    public function recountAll(): void
+    {
+        foreach ($this->db->select('SELECT site_id FROM site_snapshots') as $row) {
+            $this->recountUpdates((int) $row['site_id']);
+        }
     }
 
     /** Sledovat / nesledovat aktualizace pluginu; vrací nový počet čekajících aktualizací. */

@@ -30,6 +30,8 @@ const modules = [
     ['./modules/service-tasks.js', 'initServiceTasks'],
     ['./modules/report-template.js', 'initReportTemplate'],
     ['./modules/tooltip.js', 'initTooltips'],
+    ['./modules/vault.js', 'initVault'],
+    ['./modules/qr.js', 'initQrCodes'],
 ];
 
 const loaded = await Promise.allSettled(modules.map(([path]) => import(path)));

@@ -6,7 +6,7 @@
  *
  * @var \App\Core\View\View $this
  * @var string              $title
- * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `updates`, `versions` (WP, PHP, Databáze: value, tone, title)…
+ * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `updates` (+ `updatesTitle` rozpis), `versions` (WP, PHP, Databáze: value, tone, title)…
  * @var array<string, array<int, array<string, mixed>>> $groups   při seskupení: klient => řádky
  * @var bool                $grouped
  * @var string              $q
@@ -53,7 +53,7 @@ $renderRow = function (array $site) use ($csrfToken): void {
         <?php foreach ($site['versions'] as $version): ?>
             <div class="table__cell table__cell--mono u-truncate<?= $version['value'] === '' ? ' text-faint' : ($version['tone'] !== '' ? ' text-' . $version['tone'] : '') ?>"<?= $version['title'] !== '' ? ' title="' . $this->e($version['title']) . '"' : '' ?>><?= $version['value'] !== '' ? $this->e($version['value']) : '—' ?></div>
         <?php endforeach; ?>
-        <div class="table__cell table__cell--right"><?= $site['updates'] > 0 ? get_badge((string) $site['updates'], $site['updates'] >= 5 ? 'warning' : '') : '<span class="text-faint">–</span>' ?></div>
+        <div class="table__cell table__cell--right"><?= $site['updates'] > 0 ? '<span title="' . $this->e($site['updatesTitle']) . '">' . get_badge((string) $site['updates'], $site['updates'] >= 5 ? 'warning' : '') . '</span>' : '<span class="text-faint">–</span>' ?></div>
         <div class="table__cell<?= $site['service']['tone'] !== '' ? ' text-' . $site['service']['tone'] : '' ?>" style="font-size:var(--font-size-label)"><?= $this->e($site['service']['label']) ?></div>
         <div class="table__cell<?= $site['report']['tone'] !== '' ? ' text-' . $site['report']['tone'] : ' text-secondary' ?>" style="font-size:var(--font-size-label)"><?= $this->e($site['report']['label']) ?></div>
         <div class="table__cell table__cell--right"><?= get_icon('chevron-right', 'icon--sm icon--subtle') ?></div>

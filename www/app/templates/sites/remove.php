@@ -18,7 +18,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Odebrat']);
                 <?php render_csrf($csrfToken) ?>
                 <div>
                     <div class="card__title" style="color:var(--color-status-error-text)">Odebrat web z monitoringu</div>
-                    <div class="card__note">Web přestane být kontrolován a zmizí ze seznamů. Historie kontrol, události a reporty zůstanou 12 měsíců v archivu, pak se smažou. Klient ani plugin na webu se o tom nedozví — plugin můžete na webu odinstalovat.</div>
+                    <div class="card__note">Web přestane být kontrolován a zmizí ze seznamů. Historie kontrol, události a reporty zůstanou 12 měsíců v archivu, pak se smažou. Uložené přístupy (FTP, hosting, databáze) se smažou hned. Klient ani plugin na webu se o tom nedozví — plugin můžete na webu odinstalovat.</div>
                 </div>
                 <div class="form__field">
                     <label class="form__label form__label--caps" for="confirm">Pro potvrzení opište doménu webu</label>

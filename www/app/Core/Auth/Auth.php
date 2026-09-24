@@ -21,12 +21,21 @@ use App\Core\Http\Request;
  * změna hesla odhlásí všechny ostatní relace.
  *
  * Přihlásit se jde jménem i e-mailem účtu (`UserRepository::findByLogin()`).
+ *
+ * Účet se zapnutým dvoufázovým přihlášením (`TwoFactor`) má po hesle ještě
+ * druhý krok — kód z aplikace v telefonu (`completeSecondFactor()`).
  */
 final class Auth
 {
     private const SESSION_USER = 'user_id';
     private const SESSION_HASH = 'auth_hash';
     private const SESSION_ACTIVITY = 'last_activity';
+
+    /** Heslo sedělo, čeká se na kód z telefonu (viz `login()`). */
+    private const SESSION_PENDING = 'two_factor_pending';
+
+    /** Jak dlouho po zadání hesla se dá opsat kód z telefonu (sekundy). */
+    private const PENDING_TIMEOUT = 600;
 
     /**
      * Nečinnost, po které session vyprší.
@@ -49,6 +58,7 @@ final class Auth
         private readonly RememberMe $rememberMe,
         private readonly LoginRateLimiter $rateLimiter,
         private readonly Csrf $csrf,
+        private readonly TwoFactor $twoFactor,
     ) {
     }
 
@@ -83,7 +93,8 @@ final class Auth
     /**
      * @param string $login přihlašovací jméno, nebo e-mail účtu
      *
-     * @return array<string, mixed> přihlášený uživatel
+     * @return array<string, mixed> uživatel se správným heslem — u účtu
+     *         s dvoufázovým přihlášením ještě NEpřihlášený, viz `awaitsSecondFactor()`
      * @throws HttpException při neplatných údajích nebo překročení limitu
      */
     public function login(Request $request, string $login, string $password, bool $remember = false): array
@@ -126,9 +137,97 @@ final class Auth
             $user['password_hash'] = $newHash;
         }
 
-        $this->startSessionForUser($user);
         $this->rateLimiter->clear($limiterKey);
         $this->rateLimiter->record($limiterKey, $ip, true);
+
+        /**
+         * Účet s dvoufázovým přihlášením po hesle ještě přihlášený není —
+         * session si jen poznamená, kdo heslo zadal správně, a stránka
+         * `prihlaseni/overeni` chce kód z telefonu. „Zůstat přihlášen" se
+         * odloží taky: cookie se vydá až po kódu, jinak by druhý krok šel
+         * obejít zavřením prohlížeče.
+         */
+        if ($this->twoFactor->isEnabled($user)) {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+
+            $_SESSION[self::SESSION_PENDING] = [
+                'user_id' => (int) $user['id'],
+                'hash' => $this->authHash($user),
+                'remember' => $remember,
+                'at' => time(),
+            ];
+
+            return $user;
+        }
+
+        return $this->finishLogin($request, $user, $remember);
+    }
+
+    /**
+     * Čeká se po správném hesle na kód z telefonu?
+     *
+     * Rozhoduje controller přihlášení — podle toho pošle na stránku
+     * s kódem, nebo rovnou do aplikace.
+     */
+    public function awaitsSecondFactor(): bool
+    {
+        return $this->pendingUser() !== null;
+    }
+
+    /**
+     * Druhý krok přihlášení: kód z aplikace, nebo záložní kód.
+     *
+     * @return array<string, mixed> přihlášený uživatel
+     * @throws HttpException 422 špatný kód, 429 moc pokusů (pak se musí znovu
+     *                       zadat heslo), 410 vypršelo / nic nečeká
+     */
+    public function completeSecondFactor(Request $request, string $code): array
+    {
+        $user = $this->pendingUser();
+
+        if ($user === null) {
+            unset($_SESSION[self::SESSION_PENDING]);
+
+            throw new HttpException(410, 'Přihlášení vypršelo. Zadejte znovu jméno a heslo.');
+        }
+
+        $username = (string) $user['username'];
+
+        if ($this->rateLimiter->tooManyCodeAttempts($username)) {
+            // Po pětici špatných kódů se začíná od hesla — ať se kód nedá
+            // hádat donekonečna s jedním správně zadaným heslem.
+            unset($_SESSION[self::SESSION_PENDING]);
+
+            throw HttpException::tooManyRequests(
+                'Po několika špatných kódech se přihlášení dočasně zablokovalo. Zkuste to za čtvrt hodiny znovu od hesla.'
+            );
+        }
+
+        if (!$this->twoFactor->verify($user, $code)) {
+            $this->rateLimiter->recordCode($username, false);
+
+            throw HttpException::validation('Kód nesouhlasí. Opište aktuální kód z aplikace.', ['code' => 'Kód nesouhlasí.']);
+        }
+
+        $this->rateLimiter->recordCode($username, true);
+        $remember = (bool) ($_SESSION[self::SESSION_PENDING]['remember'] ?? false);
+        unset($_SESSION[self::SESSION_PENDING]);
+
+        // Záložní kód se mohl právě spotřebovat — do session jde čerstvý řádek.
+        return $this->finishLogin($request, $this->users->find((int) $user['id']) ?? $user, $remember);
+    }
+
+    /**
+     * Konec přihlášení — po hesle, nebo po kódu z telefonu.
+     *
+     * @param array<string, mixed> $user
+     * @return array<string, mixed>
+     */
+    private function finishLogin(Request $request, array $user, bool $remember): array
+    {
+        $this->startSessionForUser($user);
         $this->users->touchLastLogin((int) $user['id']);
 
         // Správa nemá cron — úklid starých pokusů a prošlých remember tokenů
@@ -142,6 +241,32 @@ final class Auth
 
         $this->user = $user;
         $this->resolved = true;
+
+        return $user;
+    }
+
+    /**
+     * Účet, který zadal správné heslo a čeká na kód — nebo null.
+     *
+     * Čekání platí deset minut a jen dokud se nezměnilo heslo účtu
+     * (stejný otisk jako u přihlášené session).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function pendingUser(): ?array
+    {
+        $pending = $_SESSION[self::SESSION_PENDING] ?? null;
+
+        if (!is_array($pending) || time() - (int) ($pending['at'] ?? 0) > self::PENDING_TIMEOUT) {
+            return null;
+        }
+
+        $user = $this->users->find((int) ($pending['user_id'] ?? 0));
+
+        if ($user === null || (int) $user['is_active'] !== 1
+            || !hash_equals($this->authHash($user), (string) ($pending['hash'] ?? ''))) {
+            return null;
+        }
 
         return $user;
     }

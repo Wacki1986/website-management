@@ -16,10 +16,67 @@ final class MG_Admin_Page
 {
     const SLUG = 'mediagrafik-monitor';
 
-    public function __construct()
+    /**
+     * Po aktivaci pluginu bez uloženého klíče se jednou přesměruje sem —
+     * první, co se s pluginem dělá, je vložit klíč. Příznak nastaví
+     * `MG_Monitor::activate()`, platí půl minuty.
+     */
+    const TRANSIENT_REDIRECT = 'mg_monitor_activation_redirect';
+
+    /** @var string cesta pluginu jako ji zná WordPress (`slozka/soubor.php`) */
+    private $basename;
+
+    /** @param string $basename `plugin_basename()` hlavního souboru */
+    public function __construct($basename)
     {
+        $this->basename = $basename;
+
         add_action('admin_menu', array($this, 'add_menu'));
         add_action('admin_init', array($this, 'handle_actions'));
+        add_action('admin_init', array($this, 'redirect_after_activation'));
+        add_filter('plugin_action_links_' . $basename, array($this, 'action_links'));
+    }
+
+    public static function settings_url()
+    {
+        return admin_url('options-general.php?page=' . self::SLUG);
+    }
+
+    /**
+     * Odkaz „Nastavení" ve výpisu pluginů, první v řadě před „Deaktivovat".
+     *
+     * @param array<string, string> $links
+     * @return array<string, string>
+     */
+    public function action_links($links)
+    {
+        if (current_user_can('manage_options')) {
+            $links = array('settings' => '<a href="' . esc_url(self::settings_url()) . '">Nastavení</a>') + $links;
+        }
+
+        return $links;
+    }
+
+    /**
+     * Přesměrování na nastavení hned po aktivaci.
+     *
+     * Jen u aktivace jednoho pluginu — při hromadné aktivaci (`activate-multi`)
+     * by přesměrování shodilo zbytek dávky z pohledu uživatele.
+     */
+    public function redirect_after_activation()
+    {
+        if (!get_transient(self::TRANSIENT_REDIRECT)) {
+            return;
+        }
+
+        delete_transient(self::TRANSIENT_REDIRECT);
+
+        if (wp_doing_ajax() || is_network_admin() || isset($_GET['activate-multi']) || !current_user_can('manage_options')) {
+            return;
+        }
+
+        wp_safe_redirect(self::settings_url());
+        exit;
     }
 
     public function add_menu()
@@ -81,7 +138,9 @@ final class MG_Admin_Page
             $test = array('data' => $data, 'seconds' => round(microtime(true) - $started, 1));
         }
 
-        settings_errors(self::SLUG);
+        // Hlášky (uloženo, chybný klíč) vypisuje WordPress sám — stránky pod
+        // Nastavením volají `settings_errors()` v options-head.php. Vlastní
+        // volání tady je vypisovalo podruhé.
         ?>
         <div class="wrap">
             <h1>MEDIAGRAFIK Monitor</h1>

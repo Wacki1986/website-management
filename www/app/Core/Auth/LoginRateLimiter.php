@@ -23,6 +23,7 @@ final class LoginRateLimiter
 {
     public const BUCKET_USERNAME = 'login.username';
     public const BUCKET_IP = 'login.ip';
+    public const BUCKET_SECOND_FACTOR = 'login.2fa';
 
     public function __construct(
         private readonly RateLimiter $limiter,
@@ -42,6 +43,29 @@ final class LoginRateLimiter
     {
         $this->limiter->record(self::BUCKET_USERNAME, $username, $success);
         $this->limiter->record(self::BUCKET_IP, $ip, $success);
+    }
+
+    /**
+     * Hádání kódu z aplikace po správném hesle — vlastní počítadlo na účet.
+     *
+     * Heslo už útočník zná, takže pětice pokusů na heslo by tu nic
+     * nechránila; kód má milion možností a okno tři kroky, pět pokusů
+     * za čtvrt hodiny z něj dělá loterii.
+     */
+    public function tooManyCodeAttempts(string $username): bool
+    {
+        return $this->limiter->tooMany(self::BUCKET_SECOND_FACTOR, $username, $this->maxPerUsername, $this->windowMinutes);
+    }
+
+    public function recordCode(string $username, bool $success): void
+    {
+        if ($success) {
+            $this->limiter->clear(self::BUCKET_SECOND_FACTOR, $username);
+
+            return;
+        }
+
+        $this->limiter->record(self::BUCKET_SECOND_FACTOR, $username);
     }
 
     /** Po úspěšném přihlášení se počítadlo pro daný účet vynuluje. */

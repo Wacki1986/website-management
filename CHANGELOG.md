@@ -1,5 +1,63 @@
 # Změny
 
+## 0.7.1 — 24. 9. 2026
+
+- **Dvoufázové přihlášení je povinné.** Účet bez spárovaného telefonu
+  pustí Kernel po hesle jen na párování (`nastaveni/dvoufazove`, teď bez
+  menu) a k odhlášení; JSON požadavky dostanou 403. Nový kolega: pozvánka →
+  heslo → přihlášení → párování → záložní kódy → aplikace (pozvánka na to
+  upozorní). Místo „Vypnout" je „Spárovat nový telefon"; kolegovi se
+  spárování ruší ikonou štítu v řádku.
+- **Úprava uživatelů:** v řádku už se nemění role; v posledním sloupci
+  Akce jsou ikony (pozvánka znovu, zrušit spárování, pozastavit/obnovit,
+  upravit). Nová stránka Upravit uživatele — jméno, přihlašovací jméno,
+  e-mail, role. Vlastní přihlašovací jméno a roli jde změnit v kartě
+  Můj účet.
+- Zakládající účet smí upravit, pozastavit nebo odpárovat jen on sám
+  (`UserRepository::canManage()`); ostatní účty upravuje každý.
+  Stav účtu bez telefonu: „Čeká na spárování telefonu".
+- **Můj účet jedním tlačítkem „Uložit"** místo tří (údaje, fotka, heslo).
+  Fotka a heslo se mění, jen když jsou vyplněné; nejdřív se zkontroluje
+  všechno a chyba v hesle neuloží ani zbytek. Změna hesla dál odhlásí.
+  Zrušené samostatné akce `nastaveni/heslo` a `nastaveni/ucet/fotka`;
+  „Odebrat fotku" zůstává zvlášť.
+- **MEDIAGRAFIK Monitor 1.5.5:** odkaz „Nastavení" ve výpisu pluginů
+  (před Deaktivovat); po první aktivaci bez uloženého klíče přesměruje
+  rovnou do nastavení (ne při hromadné aktivaci). Oprava: hláška po
+  uložení klíče se ukazovala dvakrát — WordPress ji na stránkách pod
+  Nastavením vypisuje sám a plugin ji vypsal ještě jednou.
+- **Počty aktualizací sjednocené:** metrika „Čekající aktualizace", výpis
+  webů, dashboard, alert i report počítají totéž co tlačítka v tabulce
+  pluginů — včetně verzí z Knihovny pluginů (placené pluginy, o jejichž
+  nové verzi WordPress bez licence neví) a MEDIAGRAFIK Monitoru. Jedno
+  místo výpočtu `Sites\PluginOffers`; po nahrání/odebrání v knihovně se
+  počty přepočítají u všech webů hned. Číslo ve výpisu webů má bublinu
+  s rozpisem („2 pluginy + WordPress 6.9.1").
+- Oprava buildu pluginu: `build-plugin.ps1` četl readme jako cp1250, takže
+  čeština v okně „Zobrazit podrobnosti" u aktualizace byla rozsypaná.
+
+## 0.7.0 — 24. 9. 2026
+
+- **Dvoufázové přihlášení** (TOTP — Google/Microsoft Authenticator,
+  1Password, Bitwarden): zapíná si ho každý účet v Nastavení → Uživatelé
+  naskenováním QR kódu. Po hesle chce přihlášení kód z aplikace
+  (`prihlaseni/overeni`); „Zůstat přihlášen" se vydá až po kódu. Kód jde
+  použít jen jednou, 5 špatných = čtvrt hodiny pauza a znovu od hesla.
+  10 záložních kódů (ukážou se jednou, v databázi jen hash), nová sada
+  i vypnutí chtějí aktuální kód. Kolegovi ho může vypnout druhý účet,
+  zakládajícímu účtu jen `create-admin.php` / `zalozeni-spravce.php`.
+  Tajemství je šifrované `app_key` (`Auth\Totp`, `Auth\TwoFactor`, migrace
+  `2026_09_24_000003`). QR kód kreslí `qr.js` knihovnou qrcode-generator
+  (MIT, `assets/js/vendor/`, import mapa ji verzuje).
+- **Trezor přístupů u webu** — nová záložka Přístupy: FTP/SFTP, hosting,
+  databáze a jiné přístupy. Heslo a poznámka šifrované `app_key`
+  (`Sites\SiteCredentials`, tabulka `site_credentials`, migrace
+  `2026_09_24_000004`). Heslo ve stránce není: oko ho ukáže (na 30 s),
+  kopírování ho zkopíruje bez ukázání, u FTP tlačítko zkopíruje adresu
+  pro Rychlé připojení FileZilly (`vault.js`). Otevře ho jen účet se
+  zapnutým dvoufázovým přihlášením. Odebrání webu z monitoringu přístupy
+  smaže. Přidání, úprava a smazání se zapisují do historie webu.
+
 ## 0.6.5 — 24. 9. 2026
 
 - **Aktualizace, která nemá odkud přijít, se nenabízí:** vypnutý plugin mimo

@@ -74,6 +74,8 @@ final class SiteController extends Controller
                 'host' => SiteRepository::host((string) $site['url']),
                 'versions' => self::versionCells($site),
                 'updates' => (int) ($site['snap_plugins_updates'] ?? 0) + (($site['snap_wp_update_version'] ?? null) !== null ? 1 : 0),
+                // Číslo sčítá pluginy i WordPress — bublina říká, z čeho je.
+                'updatesTitle' => self::updatesTitle((int) ($site['snap_plugins_updates'] ?? 0), $site['snap_wp_update_version'] ?? null),
                 'service' => ServiceSchedule::cell($plans[(int) $site['id']] ?? null, $today),
                 'report' => self::reportCell($reportSettings[(int) $site['id']] ?? null),
             ];
@@ -259,6 +261,18 @@ final class SiteController extends Controller
         ]);
     }
 
+    /** Rozpis čísla aktualizací ve výpisu webů: „2 pluginy + WordPress 6.8.3". */
+    private static function updatesTitle(int $plugins, ?string $wordpress): string
+    {
+        $parts = $plugins > 0 ? [get_count($plugins, 'plugin', 'pluginy', 'pluginů')] : [];
+
+        if ($wordpress !== null) {
+            $parts[] = 'WordPress ' . $wordpress;
+        }
+
+        return 'Čeká na aktualizaci: ' . implode(' + ', $parts);
+    }
+
     public function plugins(string $id): Response
     {
         $site = $this->siteOr404((int) $id);
@@ -266,7 +280,7 @@ final class SiteController extends Controller
         $q = $this->request()->string('q');
         $plugins = $this->kernel->snapshots()->plugins((int) $id, $q);
         $outside = $this->kernel->pluginDirectory()->outside($plugins);
-        $updatable = SiteActions::updatable($plugins, $this->kernel->pluginDistribution()->version(), SiteActions::libraryFor($snapshot, $this->kernel->pluginLibrary()->versions()), $outside);
+        $updatable = $this->kernel->pluginOffers()->forSite($plugins, $snapshot);
         $deleteBlocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_DELETE);
         // Starší plugin na webu zapínání neumí — ikona se pak vůbec neukáže
         // (byla by u každého řádku, jen šedá).

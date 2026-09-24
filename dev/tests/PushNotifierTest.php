@@ -123,6 +123,11 @@ function pnKernel(): array
     Urls::bind($kernel->url(...), $kernel->asset(...));
 
     $id = pnUser($kernel->db(), 'spravce');
+    // Spárovaný telefon — bez něj Kernel pustí jen na párování (povinné 2FA).
+    $kernel->users()->update($id, [
+        'totp_secret' => $kernel->secrets()->encrypt(App\Core\Auth\Totp::generateSecret()),
+        'totp_enabled_at' => date('Y-m-d H:i:s'),
+    ]);
     $user = $kernel->users()->find($id);
 
     // Přihlášení nasucho — `Auth::login()` by chtělo heslo a rate limiter.

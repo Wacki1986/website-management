@@ -7,6 +7,7 @@ namespace App\Core;
 use App\Controllers\AlertController;
 use App\Controllers\AuthController;
 use App\Controllers\ClientController;
+use App\Controllers\CredentialController;
 use App\Controllers\DashboardController;
 use App\Controllers\ForgottenPasswordController;
 use App\Controllers\MonitorCronController;
@@ -14,6 +15,7 @@ use App\Controllers\PluginDistributionController;
 use App\Controllers\PluginLibraryController;
 use App\Controllers\ReportController;
 use App\Controllers\TrackingController;
+use App\Controllers\TwoFactorController;
 use App\Controllers\ServiceController;
 use App\Controllers\SettingsController;
 use App\Controllers\SiteActionController;
@@ -48,6 +50,8 @@ use App\Core\Reports\ReportRepository;
 use App\Core\Reports\ReportSender;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceRepository;
+use App\Core\Sites\PluginOffers;
+use App\Core\Sites\SiteCredentials;
 use App\Core\Sites\SiteIcons;
 use App\Core\Sites\SiteRepository;
 use App\Core\Auth\Auth;
@@ -55,6 +59,7 @@ use App\Core\Auth\Avatars;
 use App\Core\Auth\LoginRateLimiter;
 use App\Core\Auth\PasswordReset;
 use App\Core\Auth\RememberMe;
+use App\Core\Auth\TwoFactor;
 use App\Core\Auth\UserRepository;
 use App\Core\Db\Connection;
 use App\Core\Db\Migrator;
@@ -90,7 +95,18 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.6.5';
+    public const VERSION = '0.7.1';
+
+    /**
+     * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
+     * (povinné dvoufázové přihlášení, viz `handle()`): párování a odhlášení.
+     */
+    private const ROUTES_BEFORE_TWO_FACTOR = [
+        'settings.2fa.show',
+        'settings.2fa.enable',
+        'settings.2fa.codes',
+        'auth.logout',
+    ];
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -108,6 +124,8 @@ final class Kernel
     private ?Avatars $avatars = null;
     private ?RememberMe $rememberMe = null;
     private ?Auth $auth = null;
+    private ?TwoFactor $twoFactor = null;
+    private ?SiteCredentials $credentials = null;
     private ?AuditLog $audit = null;
     private ?Settings $settings = null;
     private ?MailSettings $mailSettings = null;
@@ -236,9 +254,12 @@ final class Kernel
     {
         $imports = [];
 
-        foreach (glob($this->rootPath('assets/js/modules/*.js')) ?: [] as $file) {
-            $name = basename($file);
-            $imports[$this->url('assets/js/modules/' . $name)] = $this->asset('js/modules/' . $name);
+        // Moduly aplikace i převzaté knihovny (vendor), které si moduly načítají.
+        foreach (['modules', 'vendor'] as $dir) {
+            foreach (glob($this->rootPath('assets/js/' . $dir . '/*.js')) ?: [] as $file) {
+                $name = $dir . '/' . basename($file);
+                $imports[$this->url('assets/js/' . $name)] = $this->asset('js/' . $name);
+            }
         }
 
         return ['imports' => $imports];
@@ -312,7 +333,12 @@ final class Kernel
 
     public function auth(): Auth
     {
-        return $this->auth ??= new Auth($this->users(), $this->rememberMe(), $this->loginRateLimiter(), $this->csrf());
+        return $this->auth ??= new Auth($this->users(), $this->rememberMe(), $this->loginRateLimiter(), $this->csrf(), $this->twoFactor());
+    }
+
+    public function twoFactor(): TwoFactor
+    {
+        return $this->twoFactor ??= new TwoFactor($this->users(), $this->secrets());
     }
 
     public function audit(): AuditLog
@@ -406,6 +432,11 @@ final class Kernel
         return $this->sites ??= new SiteRepository($this->db(), $this->secrets());
     }
 
+    public function credentials(): SiteCredentials
+    {
+        return $this->credentials ??= new SiteCredentials($this->db(), $this->secrets());
+    }
+
     public function events(): EventLog
     {
         return $this->events ??= new EventLog($this->db());
@@ -418,7 +449,12 @@ final class Kernel
 
     public function snapshots(): SnapshotImporter
     {
-        return $this->snapshots ??= new SnapshotImporter($this->db(), $this->sites(), $this->events());
+        return $this->snapshots ??= new SnapshotImporter($this->db(), $this->sites(), $this->events(), $this->pluginOffers());
+    }
+
+    public function pluginOffers(): PluginOffers
+    {
+        return new PluginOffers($this->pluginDirectory(), $this->pluginDistribution(), $this->pluginLibrary());
     }
 
     public function outsideProbe(): OutsideProbe
@@ -672,6 +708,21 @@ final class Kernel
                 return Response::redirect($this->url('prihlaseni'));
             }
 
+            /**
+             * Dvoufázové přihlášení je povinné. Účet bez spárovaného telefonu
+             * (nový kolega po pozvánce, odpárovaný účet) se dostane jen na
+             * stránku párování — nic jiného, ani seznam webů, neuvidí.
+             */
+            if ($user !== null && $route['capability'] !== Router::PUBLIC_ACCESS
+                && !in_array($route['name'], self::ROUTES_BEFORE_TWO_FACTOR, true)
+                && $this->mustPairPhone($user)) {
+                if ($request->wantsJson()) {
+                    throw new HttpException(403, 'Nejdřív si spárujte telefon pro dvoufázové přihlášení.');
+                }
+
+                return Response::redirect($this->url('nastaveni/dvoufazove'));
+            }
+
             // CSRF centrálně na každé mutaci.
             if ($request->isMutating() && $route['csrf'] && !$this->csrf()->validate($request)) {
                 throw new HttpException(419, 'Platnost formuláře vypršela. Načtěte stránku znovu.');
@@ -691,6 +742,20 @@ final class Kernel
         } catch (Throwable $e) {
             return $this->renderServerError($e, $request);
         }
+    }
+
+    /**
+     * Musí si přihlášený účet nejdřív spárovat telefon?
+     *
+     * Bez `app_key` se dvoufázové přihlášení zapnout nedá — vynucovat ho
+     * by znamenalo zamknout všechny. Stránka párování pak chybějící klíč
+     * sama ohlásí.
+     *
+     * @param array<string, mixed> $user
+     */
+    private function mustPairPhone(array $user): bool
+    {
+        return $this->twoFactor()->isAvailable() && !$this->twoFactor()->isEnabled($user);
     }
 
     // -----------------------------------------------------------------
@@ -1065,6 +1130,17 @@ final class Kernel
         $router->add('POST', '/reporty/{id}/odeslat', [ReportController::class, 'send'], Router::AUTH_ONLY, 'reports.send');
         $router->add('POST', '/reporty/{id}/smazat', [ReportController::class, 'delete'], Router::AUTH_ONLY, 'reports.delete');
         $router->add('GET', '/r/{file}', [TrackingController::class, 'pixel'], Router::PUBLIC_ACCESS, 'reports.pixel');
+        // Trezor přístupů u webu — jen pro účet s dvoufázovým přihlášením
+        // (hlídá CredentialController). Heslo jde na stránku jen přes POST
+        // na `…/heslo` (oko, kopírování), nikdy ve výpisu.
+        $router->add('GET', '/weby/{id}/pristupy', [CredentialController::class, 'index'], name: 'sites.credentials');
+        $router->add('GET', '/weby/{id}/pristupy/pridat/{kind}', [CredentialController::class, 'createForm'], name: 'sites.credentials.add');
+        $router->add('POST', '/weby/{id}/pristupy/pridat/{kind}', [CredentialController::class, 'store'], Router::AUTH_ONLY, 'sites.credentials.store');
+        $router->add('GET', '/weby/{id}/pristupy/{credentialId}/upravit', [CredentialController::class, 'editForm'], name: 'sites.credentials.edit');
+        $router->add('POST', '/weby/{id}/pristupy/{credentialId}/upravit', [CredentialController::class, 'update'], Router::AUTH_ONLY, 'sites.credentials.update');
+        $router->add('POST', '/weby/{id}/pristupy/{credentialId}/smazat', [CredentialController::class, 'delete'], Router::AUTH_ONLY, 'sites.credentials.delete');
+        $router->add('POST', '/weby/{id}/pristupy/{credentialId}/heslo', [CredentialController::class, 'password'], Router::AUTH_ONLY, 'sites.credentials.password');
+
         $router->add('GET', '/weby/{id}/nastaveni', [SiteController::class, 'settings'], name: 'sites.settings');
         $router->add('POST', '/weby/{id}/nastaveni', [SiteController::class, 'update'], Router::AUTH_ONLY, 'sites.update');
         $router->add('POST', '/weby/{id}/nastaveni/klic', [SiteController::class, 'regenerateKey'], Router::AUTH_ONLY, 'sites.key');
@@ -1112,6 +1188,9 @@ final class Kernel
         // Přihlášení a účet.
         $router->add('GET', '/prihlaseni', [AuthController::class, 'show'], Router::PUBLIC_ACCESS, 'auth.show');
         $router->add('POST', '/prihlaseni', [AuthController::class, 'login'], Router::PUBLIC_ACCESS, 'auth.login');
+        // Druhý krok přihlášení — kód z aplikace v telefonu (TwoFactor).
+        $router->add('GET', '/prihlaseni/overeni', [AuthController::class, 'showSecondFactor'], Router::PUBLIC_ACCESS, 'auth.2fa.show');
+        $router->add('POST', '/prihlaseni/overeni', [AuthController::class, 'verifySecondFactor'], Router::PUBLIC_ACCESS, 'auth.2fa');
         $router->add('POST', '/odhlaseni', [AuthController::class, 'logout'], Router::AUTH_ONLY, 'auth.logout');
         $router->add('POST', '/motiv', [AuthController::class, 'theme'], Router::AUTH_ONLY, 'auth.theme');
 
@@ -1156,11 +1235,19 @@ final class Kernel
         $router->add('POST', '/nastaveni/uzivatele', [SettingsController::class, 'inviteUser'], Router::AUTH_ONLY, 'settings.users.invite');
         $router->add('POST', '/nastaveni/uzivatele/{id}/pozastavit', [SettingsController::class, 'suspendUser'], Router::AUTH_ONLY, 'settings.users.suspend');
         $router->add('POST', '/nastaveni/uzivatele/{id}/obnovit', [SettingsController::class, 'resumeUser'], Router::AUTH_ONLY, 'settings.users.resume');
-        $router->add('POST', '/nastaveni/uzivatele/{id}/role', [SettingsController::class, 'setRole'], Router::AUTH_ONLY, 'settings.users.role');
+        $router->add('GET', '/nastaveni/uzivatele/{id}/upravit', [SettingsController::class, 'editUser'], name: 'settings.users.edit');
+        $router->add('POST', '/nastaveni/uzivatele/{id}/upravit', [SettingsController::class, 'updateUser'], Router::AUTH_ONLY, 'settings.users.update');
         $router->add('POST', '/nastaveni/uzivatele/{id}/pozvanka', [SettingsController::class, 'resendInvite'], Router::AUTH_ONLY, 'settings.users.reinvite');
-        $router->add('POST', '/nastaveni/heslo', [SettingsController::class, 'changePassword'], Router::AUTH_ONLY, 'settings.password');
+        $router->add('POST', '/nastaveni/uzivatele/{id}/dvoufazove/vypnout', [TwoFactorController::class, 'disableFor'], Router::AUTH_ONLY, 'settings.users.2fa.disable');
+
+        // Dvoufázové přihlášení vlastního účtu.
+        $router->add('GET', '/nastaveni/dvoufazove', [TwoFactorController::class, 'setup'], name: 'settings.2fa.show');
+        $router->add('POST', '/nastaveni/dvoufazove', [TwoFactorController::class, 'enable'], Router::AUTH_ONLY, 'settings.2fa.enable');
+        $router->add('GET', '/nastaveni/dvoufazove/kody', [TwoFactorController::class, 'codes'], name: 'settings.2fa.codes');
+        $router->add('POST', '/nastaveni/dvoufazove/kody', [TwoFactorController::class, 'regenerateCodes'], Router::AUTH_ONLY, 'settings.2fa.regenerate');
+        $router->add('POST', '/nastaveni/dvoufazove/vypnout', [TwoFactorController::class, 'disable'], Router::AUTH_ONLY, 'settings.2fa.disable');
+
         $router->add('POST', '/nastaveni/ucet', [SettingsController::class, 'updateAccount'], Router::AUTH_ONLY, 'settings.account');
-        $router->add('POST', '/nastaveni/ucet/fotka', [SettingsController::class, 'uploadAvatar'], Router::AUTH_ONLY, 'settings.avatar.upload');
         $router->add('POST', '/nastaveni/ucet/fotka/smazat', [SettingsController::class, 'removeAvatar'], Router::AUTH_ONLY, 'settings.avatar.remove');
         $router->add('GET', '/avatar/{id}', [SettingsController::class, 'avatar'], name: 'avatar.show');
     }

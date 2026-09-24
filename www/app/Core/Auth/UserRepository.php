@@ -81,6 +81,48 @@ final class UserRepository
         return $this->findByUsername($login) ?? $this->findByEmail(mb_strtolower($login));
     }
 
+    /**
+     * Patří přihlašovací jméno nebo e-mail už jinému účtu?
+     *
+     * Hledá se v obou sloupcích naráz — přihlásit se dá jménem i e-mailem
+     * (`findByLogin()`), takže cizí e-mail nesmí být něčím jménem a naopak.
+     */
+    public function isLoginTaken(string $login, int $exceptId = 0): bool
+    {
+        if ($login === '') {
+            return false;
+        }
+
+        return (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM users WHERE (username = :username OR email = :email) AND id <> :id',
+            ['username' => $login, 'email' => $login, 'id' => $exceptId],
+        ) > 0;
+    }
+
+    /** Pravidla přihlašovacího jména — null, když je v pořádku. */
+    public static function usernameError(string $username): ?string
+    {
+        return preg_match('/^[a-z0-9._-]{3,50}$/', $username) === 1
+            ? null
+            : 'Přihlašovací jméno: 3–50 znaků, jen malá písmena bez diakritiky, číslice, tečka, pomlčka a podtržítko.';
+    }
+
+    /**
+     * Smí účet upravovat, pozastavit nebo odpárovat jiný účet?
+     *
+     * Všichni si jsou rovni s jedinou výjimkou: na zakládající účet
+     * (`firstUserId()`) nesmí sahat nikdo jiný než on sám — jinak by mu
+     * druhý účet mohl změnit e-mail pro obnovu hesla a převzít ho.
+     *
+     * @param array<string, mixed> $actor přihlášený
+     */
+    public function canManage(array $actor, int $targetId): bool
+    {
+        $ownerId = $this->firstUserId();
+
+        return $targetId !== $ownerId || (int) $actor['id'] === $ownerId;
+    }
+
     public function count(): int
     {
         return (int) $this->db->scalar('SELECT COUNT(*) FROM users');

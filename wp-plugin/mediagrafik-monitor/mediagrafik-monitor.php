@@ -4,7 +4,7 @@
  * Plugin Name: MEDIAGRAFIK Monitor
  * Plugin URI: https://mediagrafik.cz
  * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.5.4
+ * Version: 1.5.5
  * Requires at least: 6.8
  * Requires PHP: 7.4
  * Author: Mediagrafik.cz
@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
  */
 final class MG_Monitor
 {
-    const VERSION = '1.5.4';
+    const VERSION = '1.5.5';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';
@@ -79,7 +79,7 @@ final class MG_Monitor
         add_filter('rest_authentication_errors', array('MG_Rest_Controller', 'allow_keyed_request'), 5);
 
         if (is_admin()) {
-            new MG_Admin_Page();
+            new MG_Admin_Page(plugin_basename(__FILE__));
         }
 
         add_action('plugins_loaded', array($this, 'init_updater'));
@@ -131,7 +131,12 @@ final class MG_Monitor
 
     public static function activate()
     {
-        // Nic — klíč vloží člověk v administraci. Aktivace nesmí selhat.
+        // Klíč vloží člověk v administraci — po aktivaci ho rovnou pošleme
+        // na nastavení (`MG_Admin_Page::redirect_after_activation()`), ale jen
+        // poprvé: s uloženým klíčem tam nemá co dělat. Aktivace nesmí selhat.
+        if (!MG_Api_Key::is_configured()) {
+            set_transient(MG_Admin_Page::TRANSIENT_REDIRECT, 1, 30);
+        }
     }
 }
 

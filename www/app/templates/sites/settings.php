@@ -147,7 +147,7 @@ $base = 'weby/' . (int) $site['id'];
 
             <div class="card card--danger">
                 <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)">Odebrat web z monitoringu</div>
-                <div class="text-caption" style="margin-top:4px">Historie kontrol a reportů zůstane 12 měsíců v archivu.</div>
+                <div class="text-caption" style="margin-top:4px">Historie kontrol a reportů zůstane 12 měsíců v archivu. Uložené přístupy se smažou hned.</div>
                 <div style="margin-top:12px"><a class="btn btn--danger btn--sm" href="<?= get_url($base . '/odebrat') ?>"><?= get_btn_icon('trash') ?>Odebrat web</a></div>
             </div>
         </aside>

@@ -149,6 +149,13 @@ return [
         $older = kernelRequest($kernel, 'GET', '/weby/' . $sites['1.3.1'] . '/pluginy')->body();
         assertFalse(str_contains($older, 'value="flipbook-pro/flipbook-pro.php" class="btn btn--secondary btn--icon"'), 'Web s Monitorem < 1.4.0 si ZIP z knihovny stáhnout neumí');
 
+        // Uložený počet (metrika, výpis webů, dashboard) počítá totéž co
+        // tabulka — i verzi z knihovny, o které WordPress bez licence neví.
+        $kernel->snapshots()->recountAll();
+        $count = static fn (int $siteId): int => (int) $kernel->db()->scalar('SELECT plugins_updates FROM site_snapshots WHERE site_id = :id', ['id' => $siteId]);
+        assertSame(1, $count($sites['1.4.0']), 'Aktualizace z knihovny chybí v počtu');
+        assertSame(0, $count($sites['1.3.1']), 'Web, který si z knihovny stáhnout neumí, ji nemá mít v počtu');
+
         Urls::reset();
     },
 ];

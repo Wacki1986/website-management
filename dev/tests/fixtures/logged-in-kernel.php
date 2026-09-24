@@ -50,6 +50,10 @@ function loggedInKernel(string $userName = 'Technik', array $env = []): array
         'password_hash' => password_hash('x', PASSWORD_BCRYPT),
         'is_active' => 1,
         'theme' => 'auto',
+        // Dvoufázové přihlášení je povinné — bez spárovaného telefonu by
+        // Kernel každý požadavek poslal na párování.
+        'totp_secret' => $kernel->secrets()->encrypt(App\Core\Auth\Totp::generateSecret()),
+        'totp_enabled_at' => $now,
         'created_at' => $now,
         'updated_at' => $now,
     ]);

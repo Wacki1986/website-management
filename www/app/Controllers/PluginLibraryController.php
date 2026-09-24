@@ -69,6 +69,9 @@ final class PluginLibraryController extends Controller
 
         $entry = $result['entry'];
         $what = $entry['name'] . ' ' . $entry['version'];
+        // Nová verze v knihovně mění, co se kde nabízí k aktualizaci — počty
+        // ve výpisu webů a na dashboardu se přepočítají hned, ne až s další kontrolou.
+        $this->kernel->snapshots()->recountAll();
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Knihovna pluginů: nahrán ' . $what . ($result['previous'] !== null ? ' (místo ' . $result['previous'] . ')' : ''));
 
         return $this->redirectWithFlash('knihovna', $result['previous'] !== null && $result['previous'] !== (string) $entry['version']
@@ -80,6 +83,7 @@ final class PluginLibraryController extends Controller
     {
         $plugin = $this->pluginOr404($slug);
         $this->kernel->pluginLibrary()->remove($slug);
+        $this->kernel->snapshots()->recountAll();
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Knihovna pluginů: odebrán ' . $plugin['name']);
 
         return $this->redirectWithFlash('knihovna', 'Plugin ' . $plugin['name'] . ' je z knihovny odebraný. Na webech zůstává, jen se už nebude nabízet jeho aktualizace.');

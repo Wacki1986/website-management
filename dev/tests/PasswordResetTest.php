@@ -91,6 +91,7 @@ return [
             new \App\Core\Auth\RememberMe($db),
             new \App\Core\Auth\LoginRateLimiter(new \App\Core\Security\RateLimiter($db)),
             new \App\Core\Http\Csrf(),
+            new \App\Core\Auth\TwoFactor($users, new \App\Core\Security\Secrets(str_repeat('12', 32))),
         );
         $auth->login(
             new \App\Core\Http\Request(method: 'POST', path: '/prihlaseni', server: ['REMOTE_ADDR' => '10.0.0.9']),

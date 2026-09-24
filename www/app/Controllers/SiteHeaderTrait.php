@@ -12,13 +12,14 @@ use App\Core\Sites\SiteStatus;
 
 /**
  * Hlavička detailu webu (`partials/site-header`) sdílená controllery
- * záložek: SiteController, ServiceController, ReportController.
+ * záložek: SiteController, ServiceController, ReportController,
+ * CredentialController.
  */
 trait SiteHeaderTrait
 {
     /**
      * Data pro hlavičku detailu (`partials/site-header`): stav, meta,
-     * záložky s odznaky. Počítá se jednou pro všech sedm záložek.
+     * záložky s odznaky. Počítá se jednou pro všech osm záložek.
      *
      * @param array<string, mixed> $site
      * @return array<string, mixed>
@@ -45,6 +46,7 @@ trait SiteHeaderTrait
             ['key' => 'zabezpeceni', 'label' => 'Zabezpečení', 'url' => get_url($base . '/zabezpeceni'), 'badge' => $missing > 0 ? get_badge($missing . ' chybí', 'warning') : ''],
             ['key' => 'servis', 'label' => 'Servis', 'url' => get_url($base . '/servis'), 'badge' => $service['badge']],
             ['key' => 'reporty', 'label' => 'Reporty', 'url' => get_url($base . '/reporty')],
+            ['key' => 'pristupy', 'label' => 'Přístupy', 'url' => get_url($base . '/pristupy')],
             ['key' => 'nastaveni', 'label' => 'Nastavení', 'url' => get_url($base . '/nastaveni')],
         ];
 

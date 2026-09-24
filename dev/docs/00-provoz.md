@@ -51,6 +51,31 @@ výjimkami, bez kterých by přestaly fungovat:
 Heslo vyrobí `php dev/tools/generate-htpasswd.php`. IP filtr místo hesla je
 neslučitelný s upozorněními na telefon z mobilní sítě.
 
+### Dvoufázové přihlášení a trezor přístupů
+
+- **Povinné pro všechny účty.** Účet bez spárovaného telefonu aplikace po
+  hesle pustí jen na stránku „Spárujte telefon" (QR kód pro Google/Microsoft
+  Authenticator, 1Password, Bitwarden → opsat kód) nebo k odhlášení. Pak se
+  ukáže 10 záložních kódů — jen jednou.
+- **Nový kolega:** Nastavení → Uživatelé → Pozvat → e-mail s odkazem →
+  nastaví si heslo → přihlásí se → rovnou páruje telefon → záložní kódy →
+  aplikace. Pozvánka ho na párování upozorní.
+- **Trezor** (detail webu → záložka Přístupy: FTP/SFTP, hosting, databáze,
+  jiné): heslo a poznámka jsou šifrované `app_key`; ve stránce heslo není,
+  oko a kopírování si ho načtou zvlášť. Tlačítko se serverem u FTP
+  zkopíruje `sftp://jmeno:heslo@server:port` — vložit ve FileZille do pole
+  „Hostitel" v liště Rychlé připojení.
+- **Nový / ztracený telefon:** přihlásit se záložním kódem (pole na kód
+  bere obojí), v Nastavení → Uživatelé „Spárovat nový telefon". Kolegovi
+  zruší spárování druhý účet ikonou štítu v tabulce uživatelů. Vlastníkovi
+  (zakládající účet) jen `php dev/tools/create-admin.php <jméno> <heslo>`
+  nebo `zalozeni-spravce.php` (kapitola 1) — obojí nastaví heslo a zruší
+  spárování, telefon se pak páruje znovu.
+- **Zakládající účet** (vlastník) smí upravit, pozastavit nebo odpárovat
+  jen on sám; ostatní účty upravuje každý (ikona tužky v řádku).
+- Basic auth z předchozích odstavců zůstává — dvoufázové přihlášení ho
+  doplňuje, nenahrazuje.
+
 ## 3. Cron
 
 Monitor běží jako HTTP endpoint volaný každých 5 minut (každý web se
@@ -228,8 +253,13 @@ jde spouštět opakovaně.
 
 ## 8. Zálohy a retence
 
-- Zálohovat: databázi a `config/env.php` (bez `app_key` jsou API klíče
-  nečitelné). `storage/logs` a `storage/sessions` netřeba.
+- Zálohovat: databázi a `config/env.php` (bez `app_key` jsou API klíče,
+  hesla z trezoru přístupů i dvoufázové přihlášení nečitelné). Obojí
+  **odděleně** — záloha databáze bez `env.php` hesla neprozradí.
+  `storage/logs` a `storage/sessions` netřeba.
+- `app_key` se nemění: po výměně nejde rozšifrovat nic z výše uvedeného
+  (trezor to u hesla řekne, dvoufázové přihlášení se musí zapnout znovu
+  přes `create-admin.php`).
 - Retence (denní blok cronu): kontroly dostupnosti podle „Historie" v
   Nastavení → Monitoring (výchozí 12 měsíců; denní součty zůstávají),
   události 24 měsíců, odebrané weby 12 měsíců, `audit_log` nikdy.
@@ -245,3 +275,5 @@ jde spouštět opakovaně.
 | Report „Nedoručeno" | Nastavení → Odchozí pošta (zkušební e-mail), adresa příjemce u webu, `storage/logs/app-*.log` |
 | Upozornění na telefon nechodí | Nastavení → Oznámení (VAPID klíče, zařízení), Basic auth výjimky pro `sw.js` a manifest |
 | Po změně hesla Basic auth přestal cron | cron endpoint musí zůstat ve výjimkách |
+| Kód z aplikace „nesouhlasí" | čas v telefonu (automatický), každý kód jde použít jen jednou; po 5 špatných pokusech čtvrt hodiny pauza a znovu od hesla |
+| Po přihlášení to chce jen „Spárujte telefon" | účet nemá spárovaný telefon (nový účet, zrušené spárování) — spárovat, jinak do aplikace nepustí |
