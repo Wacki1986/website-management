@@ -26,6 +26,9 @@ final class PluginDirectory
     /** Po kolika dnech se údaje o pluginu ověří znovu. */
     public const REFRESH_DAYS = 7;
 
+    /** Do kolika dní od vydání je plugin „čerstvý" (zelená pilulka ve sloupci Vydáno). */
+    public const FRESH_DAYS = 183;
+
     /** Kolik pluginů nejvýš ověřit za jeden průchod cronu. */
     public const PER_RUN = 40;
 
@@ -217,26 +220,27 @@ final class PluginDirectory
      * Hodnocení pluginu pro výpis: stav, barva, sloupec „Vydáno" a vysvětlení.
      *
      * @param array<string, mixed>|null $row řádek `plugin_directory`
-     * @return array{state: string, tone: string, label: string, released: string, title: string}
-     *     state: ok | abandoned | closed | external | unknown
+     * @return array{state: string, tone: string, label: string, released: string, releasedTone: string, title: string}
+     *     state: ok | abandoned | closed | external | unknown;
+     *     releasedTone = barva pilulky Vydáno: ok (do půl roku) | warning (do prahu) | error | muted (mimo adresář) | '' (bez pilulky)
      */
     public function assess(?array $row, ?int $now = null): array
     {
         $now ??= time();
 
         if ($row === null) {
-            return ['state' => 'unknown', 'tone' => '', 'label' => '', 'released' => '—', 'title' => 'Údaje z wordpress.org se ještě nenačetly (cron je doplní).'];
+            return ['state' => 'unknown', 'tone' => '', 'label' => '', 'released' => '—', 'releasedTone' => '', 'title' => 'Údaje z wordpress.org se ještě nenačetly (cron je doplní).'];
         }
 
         if ($row['status'] === 'missing') {
-            return ['state' => 'external', 'tone' => '', 'label' => '', 'released' => 'mimo adresář', 'title' => 'Plugin není na wordpress.org (placený nebo vlastní) — stáří se nehodnotí.'];
+            return ['state' => 'external', 'tone' => '', 'label' => '', 'released' => 'mimo adresář', 'releasedTone' => 'muted', 'title' => 'Plugin není na wordpress.org (placený nebo vlastní) — stáří se nehodnotí.'];
         }
 
         if ($row['status'] === 'closed') {
             $reason = (string) $row['closed_reason'] !== '' ? ' (důvod: ' . $row['closed_reason'] . ')' : '';
 
             return ['state' => 'closed', 'tone' => 'error', 'label' => self::isSecurity($row) ? 'Stažen — bezpečnost' : 'Stažen z adresáře',
-                'released' => $row['closed_date'] !== null ? 'staženo ' . get_czech_date((string) $row['closed_date']) : 'staženo',
+                'released' => $row['closed_date'] !== null ? 'staženo ' . get_czech_date((string) $row['closed_date']) : 'staženo', 'releasedTone' => 'error',
                 'title' => 'Plugin byl stažen z adresáře wordpress.org' . $reason . ' a už nedostane opravy — nahraďte ho jiným.'];
         }
 
@@ -244,17 +248,19 @@ final class PluginDirectory
         $tested = (string) $row['tested'] !== '' ? ', testováno do WordPressu ' . $row['tested'] : '';
 
         if ($updated === null) {
-            return ['state' => 'ok', 'tone' => '', 'label' => '', 'released' => '—', 'title' => 'Datum vydání wordpress.org neuvádí.'];
+            return ['state' => 'ok', 'tone' => '', 'label' => '', 'released' => '—', 'releasedTone' => '', 'title' => 'Datum vydání wordpress.org neuvádí.'];
         }
 
-        $released = self::ageLabel((int) floor(($now - strtotime($updated)) / 86400));
+        $days = (int) floor(($now - strtotime($updated)) / 86400);
+        $released = self::ageLabel($days);
 
         if ($updated < $this->staleBefore($now)) {
-            return ['state' => 'abandoned', 'tone' => 'warning', 'label' => 'Opuštěný', 'released' => $released,
+            return ['state' => 'abandoned', 'tone' => 'error', 'label' => 'Opuštěný', 'released' => $released, 'releasedTone' => 'error',
                 'title' => 'Poslední vydání ' . get_czech_date($updated) . $tested . ' — plugin se přes ' . $this->months() . ' měsíců nevyvíjí.'];
         }
 
-        return ['state' => 'ok', 'tone' => '', 'label' => '', 'released' => $released, 'title' => 'Poslední vydání ' . get_czech_date($updated) . $tested . '.'];
+        return ['state' => 'ok', 'tone' => '', 'label' => '', 'released' => $released, 'releasedTone' => $days <= self::FRESH_DAYS ? 'ok' : 'warning',
+            'title' => 'Poslední vydání ' . get_czech_date($updated) . $tested . ($days <= self::FRESH_DAYS ? '.' : ' — plugin se vyvíjí pomalu, hranice opuštěného je ' . $this->months() . ' měsíců.')];
     }
 
     /**

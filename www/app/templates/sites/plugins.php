@@ -16,7 +16,7 @@
  * @var array<int, array<string, mixed>> $rows  řádky `site_plugins` + `updatable`, `ignored`, `deleteUrl`, `watchAction`, `watchLabel`,
  *                                              `activeAction` (aktivovat/deaktivovat, null = nejde), `activeLabel`,
  *                                              `activeBusy`/`watchBusy` (text průběhu po kliknutí),
- *                                              `status` {tone, label} a `directory` (wordpress.org: released, title, tone)
+ *                                              `status` {tone, label} a `directory` (wordpress.org: released, releasedTone, title, tone)
  * @var string              $q
  * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int, outdated: int} $metrics
  * @var bool                $hasSnapshot
@@ -95,7 +95,13 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                             <?php else: ?>
                                 <div class="table__cell table__cell--mono u-hide-mobile<?= $plugin['new_version'] !== null ? ' text-warning' : '' ?>" data-plugin-new><?= $plugin['new_version'] !== null ? $this->e((string) $plugin['new_version']) : '—' ?></div>
                             <?php endif; ?>
-                            <div class="table__cell u-hide-mobile u-truncate<?= $plugin['directory']['tone'] !== '' ? ' text-' . $plugin['directory']['tone'] : ' text-subtle' ?>" style="font-size:var(--font-size-label)" title="<?= $this->e($plugin['directory']['title']) ?>"><?= $this->e($plugin['directory']['released']) ?></div>
+                            <div class="table__cell u-hide-mobile">
+                                <?php if ($plugin['directory']['releasedTone'] !== ''): ?>
+                                    <span class="pill pill--sm pill--<?= $plugin['directory']['releasedTone'] ?>" title="<?= $this->e($plugin['directory']['title']) ?>"><?= $this->e($plugin['directory']['released']) ?></span>
+                                <?php else: ?>
+                                    <span class="text-faint" title="<?= $this->e($plugin['directory']['title']) ?>"><?= $this->e($plugin['directory']['released']) ?></span>
+                                <?php endif; ?>
+                            </div>
                             <div class="table__cell table__cell--right u-hide-mobile">
                                 <div class="row-actions">
                                     <?php if ($plugin['activeAction'] !== null): ?>

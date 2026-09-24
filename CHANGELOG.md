@@ -1,5 +1,16 @@
 # Změny
 
+## 0.6.1 — 24. 9. 2026
+
+- **Sloupec Vydáno jako pilulky** s tlumeným pozadím (`pill--sm`): šedá mimo
+  adresář, zelená do půl roku od vydání, oranžová do hranice opuštěného,
+  červená opuštěný nebo stažený. Opuštěný plugin je červeně i ve Stavu.
+- **Bublina s popisem pro celou aplikaci** (`tooltip.js`): texty z `title`
+  se při najetí myší nebo fokusu ukážou hned v nastylované bublině nad
+  prvkem (pod ním, když nahoře není místo) místo pomalého systémového
+  popisku — sloupec Vydáno a Stav u pluginů, verze PHP/DB ve výpisu webů,
+  ikonová tlačítka.
+
 ## 0.6.0 — 24. 9. 2026
 
 - **Opuštěné a z adresáře stažené pluginy** (`PluginDirectory`, data z API

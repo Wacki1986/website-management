@@ -90,7 +90,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.6.0';
+    public const VERSION = '0.6.1';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';

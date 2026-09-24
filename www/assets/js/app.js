@@ -25,6 +25,7 @@ import { initPluginUpdate } from './modules/plugin-update.js';
 import { initConfirmDialogs } from './modules/confirm-dialog.js';
 import { initServiceTasks } from './modules/service-tasks.js';
 import { initReportTemplate } from './modules/report-template.js';
+import { initTooltips } from './modules/tooltip.js';
 
 initToasts();
 initThemeToggle();
@@ -43,3 +44,4 @@ initPluginUpdate();
 initConfirmDialogs();
 initServiceTasks();
 initReportTemplate();
+initTooltips();

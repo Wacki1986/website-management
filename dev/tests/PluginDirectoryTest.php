@@ -96,9 +96,12 @@ return [
         assertContainsString('<div>Vydáno</div>', $html);
         assertContainsString('Aktivní · opuštěný', $html);
         assertContainsString('Aktivní · stažen — bezpečnost', $html);
-        assertContainsString('>staženo 1. 4. 2020</div>', $html);
-        assertContainsString(">před 2 roky</div>", $html);
-        assertContainsString('>mimo adresář</div>', $html);
+        // Pilulky Vydáno: stažený i opuštěný červeně, čerstvý zeleně, mimo adresář šedě.
+        assertContainsString('<span class="pill pill--sm pill--error" title="Plugin byl stažen z adresáře wordpress.org (důvod: Security Issue)', $html);
+        assertContainsString('>staženo 1. 4. 2020</span>', $html);
+        assertContainsString("pill--error\" title=\"Poslední vydání 7. 7. 2024, testováno do WordPressu 6.5.12 — plugin se přes 24 měsíců nevyvíjí.\">před 2\u{00A0}roky</span>", $html);
+        assertContainsString('<span class="pill pill--sm pill--ok" title="Poslední vydání 10. 9. 2026', $html);
+        assertContainsString('pill--muted" title="Plugin není na wordpress.org (placený nebo vlastní) — stáří se nehodnotí.">mimo adresář</span>', $html);
         assertContainsString('2 opuštěné', $html);
 
         Urls::reset();
