@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Sites\SiteStatus;
 use App\Core\View\Urls;
 
 require_once __DIR__ . '/fixtures/logged-in-kernel.php';
@@ -60,5 +61,18 @@ return [
         assertContainsString('Databáze MariaDB 10.6 už nedostává bezpečnostní opravy', $form);
 
         Urls::reset();
+    },
+    'stav webu: DB bez podpory i končící PHP/DB znamenají pozornost, v pořadí závažnosti' => function (): void {
+        $now = strtotime('2026-09-24 12:00:00');
+        $site = ['status' => 'ok', 'api_status' => 'ok', 'snap_php_version' => '8.4.1', 'snap_db_type' => 'MariaDB', 'snap_db_version' => '10.11.11', 'snap_plugins_total' => 5, 'snap_plugins_active' => 5];
+
+        assertSame('V pořádku', SiteStatus::of($site, $now)['label']);
+        assertSame('PHP 8.2 končí', SiteStatus::of(['snap_php_version' => '8.2.28'] + $site, $now)['label']);
+        assertSame('attention', SiteStatus::of(['snap_php_version' => '8.2.28'] + $site, $now)['level']);
+        assertSame('MariaDB 10.6 EOL', SiteStatus::of(['snap_db_version' => '10.6.21'] + $site, $now)['label']);
+        assertSame('MariaDB 10.11 končí', SiteStatus::of($site, strtotime('2027-06-01'))['label']);
+        // Bez podpory má přednost před „končí“; zastaralé WP před končící podporou.
+        assertSame('PHP 8.1 EOL', SiteStatus::of(['snap_php_version' => '8.1.30', 'snap_db_version' => '10.6.21'] + $site, $now)['label']);
+        assertSame('Zastaralé WP', SiteStatus::of(['snap_php_version' => '8.2.28', 'snap_wp_update_version' => '6.9'] + $site, $now)['label']);
     },
 ];

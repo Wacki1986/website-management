@@ -17,6 +17,7 @@
  * @var int                 $siteCount
  * @var int                 $checksToday
  * @var string              $appVersion
+ * @var array{source: string, checkedAt: string, due: bool, error: ?string, changes: array<int, string>, rows: array<int, array{label: string, end: string, tone: string, state: string, text: string}>} $support konce podpory PHP a databází
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $title]);
@@ -127,6 +128,41 @@ $intervals = [5 => '5 minut', 15 => '15 minut', 30 => '30 minut', 60 => '1 hodin
                     <?php else: ?>
                         <?php render_notice($this, 'info', message: 'Cron zatím neběžel. Až poběží, uvidíte tady čas a výsledek posledního průchodu.') ?>
                     <?php endif; ?>
+                </div>
+            </section>
+
+            <section class="card card--padded" id="konce-podpory">
+                <div class="form">
+                    <div>
+                        <div class="card__title">Konce podpory PHP a databází</div>
+                        <div class="card__note">Podle nich se ve výpisu webů barví PHP a databáze (oranžově do roka konec, červeně bez podpory) a servis předvyplňuje poznámku. Cron data ověřuje jednou za měsíc na endoflife.date.</div>
+                    </div>
+
+                    <div class="summary-list">
+                        <div class="summary-list__row"><span class="summary-list__label">Zdroj</span><span class="summary-list__value"><?= $this->e($support['source']) ?></span></div>
+                        <div class="summary-list__row"><span class="summary-list__label">Naposledy ověřeno</span><span class="summary-list__value"><?= $support['checkedAt'] !== '' ? $this->e($support['checkedAt']) : 'zatím nikdy' ?></span></div>
+                    </div>
+
+                    <?php if ($support['error'] !== null): ?>
+                        <?php render_notice($this, 'warning', message: $support['error'] . ' Pro tyto produkty platí poslední známá data.') ?>
+                    <?php endif; ?>
+
+                    <?php if ($support['changes'] !== []): ?>
+                        <?php render_notice($this, 'info', 'Při posledním ověření se změnilo', list: $support['changes']) ?>
+                    <?php endif; ?>
+
+                    <?php if ($support['rows'] !== []): ?>
+                        <div class="summary-list">
+                            <?php foreach ($support['rows'] as $row): ?>
+                                <div class="summary-list__row"><span class="summary-list__label"><?= $this->e($row['label']) ?></span><span class="summary-list__value"><?= get_status($row['tone'], $row['text']) ?></span></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="post" action="<?= get_url('nastaveni/monitoring/verze') ?>" data-pending>
+                        <?php render_csrf($csrfToken) ?>
+                        <button type="submit" class="btn btn--secondary btn--sm" data-pending-label="Ověřuji…"><?= get_btn_icon('refresh') ?>Ověřit teď</button>
+                    </form>
                 </div>
             </section>
         </div>

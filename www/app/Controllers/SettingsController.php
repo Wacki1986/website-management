@@ -12,8 +12,11 @@ use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Kernel;
+use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\MonitorRun;
 use App\Core\Monitor\MonitorSettings;
+use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\SupportTables;
 use App\Core\Notifications\EmailMessage;
 use App\Core\Notifications\MailSettings;
 use App\Core\Notifications\PushSubscriptions;
@@ -63,6 +66,7 @@ final class SettingsController extends Controller
             'siteCount' => $this->kernel->sites()->countActive(),
             'checksToday' => $this->kernel->uptime()->countToday(),
             'appVersion' => Kernel::VERSION,
+            'support' => $this->supportSummary(),
         ]);
     }
 
@@ -112,6 +116,77 @@ final class SettingsController extends Controller
             'Průchod hotový za %s s: %d kontrol dostupnosti, %d nedostupných, %d SSL, %d načtení dat z pluginu.',
             (string) $summary['seconds'], (int) $summary['checked'], (int) $summary['down'], (int) $summary['ssl'], (int) $summary['pulled'],
         ));
+    }
+
+    /** Ověřit konce podpory PHP a databází teď (jinak to cron udělá jednou za měsíc). */
+    public function refreshSupportTables(): Response
+    {
+        $result = $this->kernel->supportTables()->refresh();
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, $result['ok'], 'Ověřeny konce podpory PHP a databází'
+            . ($result['changes'] !== [] ? ' (' . get_count(count($result['changes']), 'změna', 'změny', 'změn') . ')' : ''));
+
+        if (!$result['ok'] && $result['changes'] === []) {
+            return $this->redirectWithFlash('nastaveni/monitoring', (string) $result['error'] . ' Platí dál poslední známá data.', 'error');
+        }
+
+        return $this->redirectWithFlash('nastaveni/monitoring', ($result['changes'] === []
+            ? 'Konce podpory jsou ověřené — beze změn.'
+            : 'Konce podpory jsou ověřené: ' . get_count(count($result['changes']), 'změna', 'změny', 'změn') . ', seznam je v kartě „Konce podpory“.')
+            . ($result['error'] !== null ? ' ' . $result['error'] : ''), $result['ok'] ? 'success' : 'warning');
+    }
+
+    /**
+     * Karta „Konce podpory PHP a databází“: odkud data jsou, kdy se
+     * ověřovala a verze, které se na webech právě používají.
+     *
+     * @return array{source: string, checkedAt: string, due: bool, error: ?string, changes: array<int, string>, rows: array<int, array{label: string, end: string, tone: string, state: string, text: string}>}
+     */
+    private function supportSummary(): array
+    {
+        $tables = $this->kernel->supportTables();
+        $stored = $tables->stored();
+        $rows = [];
+
+        // Jen verze, které weby opravdu mají — celá tabulka by byla dlouhá.
+        foreach ($this->kernel->db()->select("SELECT DISTINCT php_version, db_type, db_version FROM site_snapshots") as $row) {
+            $php = PhpSupport::minor((string) $row['php_version']);
+
+            if ($php !== '') {
+                $rows['PHP ' . $php] = ['label' => 'PHP ' . $php, 'end' => (string) (PhpSupport::endOfLife($php) ?? ''), 'tone' => PhpSupport::tone($php)];
+            }
+
+            $db = DbSupport::label((string) $row['db_type'], (string) $row['db_version']);
+
+            if ((string) $row['db_version'] !== '') {
+                $rows[$db] = ['label' => $db, 'end' => (string) (DbSupport::endOfLife((string) $row['db_type'], (string) $row['db_version']) ?? ''), 'tone' => DbSupport::tone((string) $row['db_type'], (string) $row['db_version'])];
+            }
+        }
+
+        ksort($rows, SORT_NATURAL);
+
+        foreach ($rows as $key => $row) {
+            $rows[$key]['end'] = match ($row['end']) {
+                '' => 'neznámý',
+                '0000-00-00' => 'už skončila',
+                default => SupportTables::endLabel($row['end']),
+            };
+            $rows[$key]['state'] = match ($row['tone']) {
+                'error' => 'bez podpory',
+                'warning' => 'končí do roka',
+                default => 'podporovaná',
+            };
+            $rows[$key]['tone'] = $row['tone'] !== '' ? $row['tone'] : 'ok';
+            $rows[$key]['text'] = $rows[$key]['state'] . ' · konec ' . $rows[$key]['end'];
+        }
+
+        return [
+            'source' => $stored !== null ? 'endoflife.date' : 'vestavěná tabulka (zatím neověřeno)',
+            'checkedAt' => $stored !== null ? get_when($stored['checked_at']) : '',
+            'due' => $tables->isDue(),
+            'error' => $stored['error'] ?? null,
+            'changes' => $stored['changes'] ?? [],
+            'rows' => array_values($rows),
+        ];
     }
 
     /** Pravidla alertů — pořadí a texty podle návrhu. */

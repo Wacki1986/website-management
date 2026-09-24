@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Core\Sites;
 
+use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
 
 /**
  * Souhrnný stav webu pro seznamy a dashboard (návrh `weby.html`):
  * jedna tečka + popisek — „Nedostupný", „SSL vypršel", „Zastaralé WP",
- * „PHP 7.4 EOL", „Neaktivní pluginy", „V pořádku".
+ * „PHP 7.4 EOL", „PHP 8.2 končí", „Neaktivní pluginy", „V pořádku".
  *
  * Pořadí pravidel je pořadí závažnosti: první, které platí, vyhrává.
  * Úroveň `level` (problem | attention | ok | unknown) slouží filtrům
@@ -53,12 +54,29 @@ final class SiteStatus
             return self::make('attention', 'warning', 'PHP ' . PhpSupport::minor($php) . ' EOL');
         }
 
+        $dbType = (string) ($site['snap_db_type'] ?? '');
+        $db = (string) ($site['snap_db_version'] ?? '');
+
+        if (DbSupport::tone($dbType, $db, $now) === 'error') {
+            return self::make('attention', 'warning', DbSupport::label($dbType, $db) . ' EOL');
+        }
+
         if (($site['snap_wp_update_version'] ?? null) !== null && (string) $site['snap_wp_update_version'] !== '') {
             return self::make('attention', 'warning', 'Zastaralé WP');
         }
 
         if ($sslTs !== false && $sslTs - $now < 30 * 86400) {
             return self::make('attention', 'warning', 'SSL brzy vyprší');
+        }
+
+        // Podpora skončí do roka: ještě nehoří, ale je čas domluvit s klientem
+        // a hostingem přechod — proto pozornost, až za naléhavějšími věcmi.
+        if (PhpSupport::tone($php, $now) === 'warning') {
+            return self::make('attention', 'warning', 'PHP ' . PhpSupport::minor($php) . ' končí');
+        }
+
+        if (DbSupport::tone($dbType, $db, $now) === 'warning') {
+            return self::make('attention', 'warning', DbSupport::label($dbType, $db) . ' končí');
         }
 
         $total = (int) ($site['snap_plugins_total'] ?? 0);

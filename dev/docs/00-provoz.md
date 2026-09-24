@@ -66,7 +66,8 @@ Co jeden průchod dělá (v tomto pořadí, s časovým rozpočtem podle
 `max_execution_time`): dostupnost → SSL (1× denně na web) → doména (1×
 týdně, RDAP) → data z pluginu (interval v nastavení, výchozí 6 h) → denní
 blok (souhrn aktualizací e-mailem, servis po termínu, retence) → reporty
-(den před termínem příprava ke schválení, v termínu odeslání).
+(den před termínem příprava ke schválení, v termínu odeslání) → ikony webů
+→ konce podpory PHP a databází (1× za 30 dní, viz kapitola 7).
 
 Stav posledního běhu je v patičce bočního menu a v Nastavení → Monitoring;
 když cron neběží déle než 3× interval, dashboard ukáže pruh „Monitor
@@ -108,14 +109,19 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   serveru správy novější ZIP, záložka Pluginy ho nabídne hned (správa verzi
   zná z `plugin-info.json`), web si při aktualizaci novou verzi načte
   znovu a nečeká na svou 12hodinovou cache.
-- **Smazání neaktivního pluginu** (plugin 1.2.0+): Pluginy → „Smazat" u
-  neaktivního pluginu → potvrzovací stránka. Web plugin smaže jako wp-admin
+- **Smazání neaktivního pluginu** (plugin 1.2.0+): Pluginy → ikona koše u
+  neaktivního pluginu → potvrzení v okně nad tabulkou (bez JavaScriptu
+  samostatná potvrzovací stránka). Web plugin smaže jako wp-admin
   včetně odinstalace (plugin tím obvykle smaže i svá data). Aktivní plugin
   ani MEDIAGRAFIK Monitor smazat nejde.
 - **Deaktivace a aktivace pluginu** (plugin 1.5.0+): Pluginy → ikona
   vypínače v řádku. Aktivní plugin se tím dá odebrat ve dvou krocích —
   deaktivovat, zkontrolovat web, pak smazat ikonou koše; neaktivní plugin
   jde stejnou ikonou znovu zapnout. MEDIAGRAFIK Monitor vypnout nejde.
+  Po kliknutí se ikona točí a řádek ztlumí, dokud web neodpoví.
+- **Typy obsahu** (záložka Obsah): veřejné typy a od pluginu 1.5.1 i vlastní
+  typy s vlastní položkou v menu wp-admin (šablony je často registrují jako
+  neveřejné — Reference, Kurzy). Interní typy pluginů se nepočítají.
 - **Aktualizace WordPressu** (plugin 1.2.0+): Přehled → „Aktualizovat" u
   verze WordPressu → potvrzovací stránka. Web aktualizuje jako wp-admin
   (stránka údržby, převod databáze). Potvrzuje se konkrétní verze; když
@@ -161,7 +167,30 @@ jde spouštět opakovaně.
 - Otevření reportu klientem hlídá 1×1 obrázek `/r/<token>.gif` (musí být
   mimo Basic auth, viz kapitola 2). Kopie odeslaného HTML zůstává uložená.
 
-## 7. Zálohy a retence
+## 7. Servis a verze PHP a databází
+
+- **Zápis servisu** (detail webu → Servis → „Zapsat servis"): druh, seznam
+  úkolů k odškrtnutí (seznamy po druzích v Nastavení → Servis), pod ním
+  „Přidat další úkol" pro úkol jen tohoto zápisu (přepsat i odebrat jde
+  při úpravě), čas v minutách a nepovinná **Poznámka k servisu**. Uložit
+  jde, když je odškrtnutý aspoň jeden úkol nebo vyplněná poznámka.
+- V **reportu** klient uvidí hotové úkoly pod sebou s fajfkou a pod nimi
+  poznámku. Úprava zápisu se projeví v reportu, který ještě neodešel.
+- **Předvyplněná poznámka:** když web běží na PHP nebo databázi, které
+  podpora končí do roka nebo už skončila, nový zápis servisu má v poznámce
+  větu pro klienta s doporučením přechodu. Nehodí-li se, smaže se.
+- **Výpis webů** má sloupce WP, PHP a Databáze: oranžově WP s čekající
+  aktualizací a PHP/databáze, kterým podpora skončí do roka; červeně verze
+  bez bezpečnostní podpory; vysvětlení v bublině. Web s takovou verzí je
+  ve stavu **Pozornost** („PHP 8.2 končí", „MariaDB 10.6 EOL").
+- **Konce podpory** (Nastavení → Monitoring → Konce podpory PHP a databází):
+  data jsou z endoflife.date, cron je ověřuje jednou za 30 dní, ručně
+  tlačítko „Ověřit teď". Karta ukáže, kdy se ověřovalo, co se při tom
+  změnilo a verze, které weby právě používají. Když služba neodpoví,
+  platí poslední stažená data, a bez nich vestavěné tabulky v
+  `PhpSupport` / `DbSupport` (ty stačí jednou za čas srovnat se staženými).
+
+## 8. Zálohy a retence
 
 - Zálohovat: databázi a `config/env.php` (bez `app_key` jsou API klíče
   nečitelné). `storage/logs` a `storage/sessions` netřeba.
@@ -171,7 +200,7 @@ jde spouštět opakovaně.
 - Logy: `storage/logs/app-*.log` (chyby cronu, odmítnuté klíče), s
   transportem `log` i `*.eml`.
 
-## 8. Když něco nejde
+## 9. Když něco nejde
 
 | Příznak | Kde hledat |
 | --- | --- |

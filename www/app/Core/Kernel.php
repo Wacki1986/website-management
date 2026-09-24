@@ -20,11 +20,14 @@ use App\Controllers\SiteActionController;
 use App\Controllers\SiteController;
 use App\Core\Monitor\AlertEngine;
 use App\Core\Monitor\AlertRepository;
+use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\DomainChecker;
 use App\Core\Monitor\MonitorRun;
 use App\Core\Monitor\MonitorSettings;
 use App\Core\Monitor\Notifier;
+use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\SslChecker;
+use App\Core\Monitor\SupportTables;
 use App\Core\Monitor\UptimeClient;
 use App\Core\Monitor\UptimeRepository;
 use App\Core\Audit\AuditLog;
@@ -86,7 +89,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.5.2';
+    public const VERSION = '0.5.3';
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
     public const APP_NAME = 'Správa webů';
@@ -126,6 +129,7 @@ final class Kernel
     private ?AlertEngine $alertEngine = null;
     private ?Notifier $notifier = null;
     private ?MonitorRun $monitor = null;
+    private ?SupportTables $supportTables = null;
     private ?ServiceRepository $service = null;
     private ?ReportRepository $reports = null;
     private ?ReportBuilder $reportBuilder = null;
@@ -509,11 +513,20 @@ final class Kernel
     }
 
     /** Jeden průchod monitoru — cron i tlačítka „Zkontrolovat". */
+    /** Konce podpory PHP a databází z endoflife.date (Nastavení → Monitoring, krok cronu). */
+    public function supportTables(): SupportTables
+    {
+        return $this->supportTables ??= new SupportTables($this->settings());
+    }
+
     public function monitor(): MonitorRun
     {
         if ($this->monitor !== null) {
             return $this->monitor;
         }
+
+        // Cron běží mimo handle() — i on má počítat s aktuálními tabulkami.
+        $this->supportTables()->apply();
 
         $this->monitor = new MonitorRun(
             $this->db(),
@@ -543,6 +556,15 @@ final class Kernel
         // kroků se v souhrnu běhu počítá jako odeslané reporty.
         $this->monitor->addStep('icons', function (int $now, float $deadline): int {
             $this->siteIcons()->refreshStale($now, $deadline);
+
+            return 0;
+        });
+
+        // Konce podpory PHP a databází: jednou za měsíc čerstvá data.
+        $this->monitor->addStep('support-tables', function (int $now, float $deadline): int {
+            if ($this->supportTables()->isDue($now) && microtime(true) + 15 < $deadline) {
+                $this->supportTables()->refresh($now);
+            }
 
             return 0;
         });
@@ -609,6 +631,15 @@ final class Kernel
              * krok. Selhání se zaloguje a request skončí pětistovkou.
              */
             $this->runPendingMigrations();
+
+            // Stažené konce podpory PHP a databází místo vestavěných tabulek.
+            // Bez databáze (přihlášení, instalace) platí vestavěné tabulky.
+            try {
+                $this->supportTables()->apply();
+            } catch (\Throwable) {
+                PhpSupport::useTable(null);
+                DbSupport::useTables(null);
+            }
 
             $route = $this->router()->match($request->method, $request->path);
 
@@ -1081,6 +1112,7 @@ final class Kernel
         $router->add('POST', '/nastaveni/monitoring', [SettingsController::class, 'saveMonitoring'], Router::AUTH_ONLY, 'settings.monitoring');
         $router->add('POST', '/nastaveni/monitoring/token', [SettingsController::class, 'regenerateCronToken'], Router::AUTH_ONLY, 'settings.monitoring.token');
         $router->add('POST', '/nastaveni/monitoring/spustit', [SettingsController::class, 'runMonitorNow'], Router::AUTH_ONLY, 'settings.monitoring.run');
+        $router->add('POST', '/nastaveni/monitoring/verze', [SettingsController::class, 'refreshSupportTables'], Router::AUTH_ONLY, 'settings.monitoring.versions');
         $router->add('GET', '/nastaveni/servis', [SettingsController::class, 'service'], name: 'settings.service.show');
         $router->add('POST', '/nastaveni/servis', [SettingsController::class, 'saveService'], Router::AUTH_ONLY, 'settings.service');
         $router->add('GET', '/nastaveni/alerty', [SettingsController::class, 'alerts'], name: 'settings.alerts.show');

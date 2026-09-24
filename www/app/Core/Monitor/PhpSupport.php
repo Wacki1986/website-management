@@ -7,9 +7,8 @@ namespace App\Core\Monitor;
 /**
  * Konce bezpečnostní podpory PHP.
  *
- * Ručně udržovaná tabulka (php.net/supported-versions) — jedna úprava
- * ročně, když vyjde nová verze. Živé stahování z php.net by přidalo externí
- * volání do cronu kvůli údaji, který se mění jednou za rok.
+ * Vestavěná tabulka (php.net/supported-versions) je záloha: jednou za měsíc
+ * ji `SupportTables` nahradí aktuálními daty z endoflife.date (`useTable()`).
  */
 final class PhpSupport
 {
@@ -28,7 +27,22 @@ final class PhpSupport
         '8.5' => '2029-12-31',
     ];
 
-    /** Doporučená verze do textů („Doporučen přechod na 8.3"). */
+    /** @var array<string, string>|null tabulka stažená `SupportTables`, null = vestavěná */
+    private static ?array $table = null;
+
+    /** @param array<string, string>|null $table null = zpět na vestavěnou tabulku */
+    public static function useTable(?array $table): void
+    {
+        self::$table = $table;
+    }
+
+    /** @return array<string, string> tabulka, kterou správa právě používá */
+    public static function table(): array
+    {
+        return self::$table ?? self::TABLE;
+    }
+
+    /** Doporučená verze do textů („Doporučen přechod na 8.4"). */
     public const RECOMMENDED = '8.4';
 
     /** `8.1.29` → `8.1`. */
@@ -40,7 +54,7 @@ final class PhpSupport
     /** Poslední den podpory, nebo null pro neznámou (novější) verzi. */
     public static function endOfLife(string $version): ?string
     {
-        return self::TABLE[self::minor($version)] ?? null;
+        return self::table()[self::minor($version)] ?? null;
     }
 
     public static function isEol(string $version, ?int $now = null): bool

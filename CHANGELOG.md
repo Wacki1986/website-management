@@ -1,5 +1,20 @@
 # Změny
 
+## 0.5.3 — 24. 9. 2026
+
+- **Konce podpory PHP a databází z endoflife.date** (`SupportTables`):
+  Nastavení → Monitoring má kartu s tlačítkem „Ověřit teď", cron data
+  ověřuje sám jednou za 30 dní. Stažené tabulky se uloží a používají místo
+  vestavěných; při výpadku služby platí poslední stažená data. Karta
+  ukazuje, kdy se ověřovalo, co se změnilo a verze, které weby používají.
+  Oprava vestavěné tabulky: MariaDB 11.8 končí 4. 6. 2028 (ne 2030).
+- **Stav webu „Pozornost" i pro končící podporu** — „PHP 8.2 končí",
+  „MariaDB 10.11 končí" (do roka), databáze bez podpory „MariaDB 10.6 EOL".
+  Pořadí: bez podpory → zastaralé WP → SSL brzy vyprší → končí do roka →
+  neaktivní pluginy.
+- Provozní dokumentace: nová kapitola 7 (servis, verze PHP a databází),
+  potvrzení smazání v okně, typy obsahu.
+
 ## 0.5.2 — 24. 9. 2026
 
 - **Deaktivace a aktivace pluginu ze správy** — ikona vypínače v řádku

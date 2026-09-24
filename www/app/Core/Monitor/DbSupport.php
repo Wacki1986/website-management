@@ -7,7 +7,9 @@ namespace App\Core\Monitor;
 /**
  * Konce podpory databází MySQL a MariaDB — obdoba `PhpSupport`.
  *
- * Ručně udržovaná tabulka jen s dlouhodobými (LTS) verzemi: MySQL
+ * Vestavěná tabulka je záloha — jednou za měsíc ji `SupportTables` nahradí
+ * úplnými daty z endoflife.date (`useTables()`). Ručně jsou v ní jen
+ * dlouhodobé (LTS) verze: MySQL
  * dev.mysql.com/doc/refman/en/mysql-releases.html, MariaDB
  * mariadb.org/about/#maintenance-policy. Krátkodobé verze mezi nimi
  * (MySQL 8.1–8.3 „innovation“, MariaDB 10.7–10.10, 11.0–11.3, 11.5–11.7)
@@ -33,9 +35,24 @@ final class DbSupport
             '10.6' => '2026-07-06',
             '10.11' => '2028-02-16',
             '11.4' => '2029-05-29',
-            '11.8' => '2030-06-04',
+            '11.8' => '2028-06-04',
         ],
     ];
+
+    /** @var array<string, array<string, string>>|null tabulky stažené `SupportTables`, null = vestavěné */
+    private static ?array $tables = null;
+
+    /** @param array<string, array<string, string>>|null $tables null = zpět na vestavěné */
+    public static function useTables(?array $tables): void
+    {
+        self::$tables = $tables;
+    }
+
+    /** @return array<string, array<string, string>> tabulky, které správa právě používá */
+    public static function tables(): array
+    {
+        return (self::$tables ?? []) + self::TABLE;
+    }
 
     /** Doporučené verze do textů. */
     public const RECOMMENDED = ['MySQL' => '8.4', 'MariaDB' => '11.4'];
@@ -53,7 +70,7 @@ final class DbSupport
      */
     public static function endOfLife(string $type, string $version): ?string
     {
-        $table = self::TABLE[$type] ?? null;
+        $table = self::tables()[$type] ?? null;
         $minor = PhpSupport::minor($version);
 
         if ($table === null || $minor === '') {
