@@ -571,6 +571,91 @@ a.btn--ghost-inverse:hover { color: var(--color-text-inverse-subtle); }
   min-width: 820px;
 }
 
+// Weby ve sloupci „Na webech" jako malé pilulky: oranžová = starší verze
+// (s číslem verze), šedá = aktuální. Aktuální se u víc webů schovají za
+// čárkovanou „+ 12 aktuálních" a rozbalí se na místě (library-update.js) —
+// karta se posouvá do strany (`overflow-x`), plovoucí panel by ořízla.
+.library-sites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+
+  .pill--sm { font-weight: var(--font-weight-medium); }
+  .pill--warning { font-weight: var(--font-weight-semibold); }
+  .u-mono { font-size: 0.95em; }
+}
+
+.library-sites__more {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-subtle);
+}
+
+// Pruh průběhu v okně „Aktualizovat všude" — bez okrajů pruhu nad tabulkou.
+.plugin-progress--inline {
+  padding: 0;
+  border-bottom: 0;
+}
+
+// Seznam webů v okně „Aktualizovat všude": vlevo stav (prázdné kolečko →
+// točící se → fajfka / křížek), název, verze vpravo, pod ním důvod selhání.
+// U třiceti webů se okno nesmí natáhnout přes obrazovku, seznam se posouvá.
+.progress-list {
+  display: grid;
+  max-height: 45vh;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-medium);
+}
+
+.progress-list__item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 7px 12px;
+  font-size: var(--font-size-label);
+
+  & + & { border-top: 1px solid var(--color-border-subtle); }
+}
+
+.progress-list__icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+
+  // Čeká na řadu: prázdné kolečko.
+  &:empty::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: 50%;
+  }
+}
+
+.progress-list__version { color: var(--color-text-subtle); font-size: var(--font-size-caption); }
+
+.progress-list__note {
+  grid-column: 2 / -1;
+  color: var(--color-status-error-text);
+  font-size: var(--font-size-caption);
+}
+
+.progress-list__item--skipped { color: var(--color-text-subtle); }
+
+// Přeskočený web a „už měl nejnovější verzi" — poznámka, ne chyba.
+.progress-list__item--skipped .progress-list__note,
+.progress-list__note--muted { color: var(--color-text-subtle); }
+
+.progress-list__item--done .progress-list__version { color: var(--color-status-ok-text); font-weight: var(--font-weight-semibold); }
+
 // --- akční ikony a průběh aktualizace pluginů --------------------------
 
 // Oko pro „Sledovat" / „Nesledovat" a vypínač pro aktivaci pluginu —

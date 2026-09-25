@@ -175,6 +175,30 @@ final class SiteActions
     }
 
     /**
+     * Proč web novou verzi z knihovny nedostane, ačkoli má starší (pro
+     * „Aktualizovat všude" v Knihovně pluginů). Volá se jen tehdy, když ji
+     * `updatable()` nenabídl a `blocked()` nic nenašel.
+     *
+     * @param array<string, mixed>      $plugin   řádek `site_plugins`
+     * @param array<string, mixed>|null $snapshot
+     */
+    public static function libraryUnoffered(array $plugin, ?array $snapshot): string
+    {
+        if ((int) ($plugin['updates_ignored'] ?? 0) === 1) {
+            return 'Plugin je na webu nesledovaný — sledování zapnete ikonou oka na záložce Pluginy.';
+        }
+
+        $installed = (string) ($snapshot['plugin_version'] ?? '');
+
+        if (version_compare($installed, PluginClient::LIBRARY_SINCE, '<')) {
+            return sprintf('Pluginy z knihovny umí web stáhnout až s MEDIAGRAFIK Monitorem %s (web má %s) — aktualizujte ho na záložce Pluginy.',
+                PluginClient::LIBRARY_SINCE, $installed !== '' ? $installed : 'neznámou verzi');
+        }
+
+        return 'Web aktualizaci teď nenabízí — zkuste ji na záložce Pluginy webu.';
+    }
+
+    /**
      * Jde u pluginu přepnout sledování aktualizací? Jen u toho, který
      * aktualizaci hlásí (nebo už je nesledovaný), a nikdy u MEDIAGRAFIK
      * Monitoru — správa by pak nenabídla jeho vlastní aktualizace.

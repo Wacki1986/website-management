@@ -24,7 +24,7 @@ $base = 'weby/' . (int) $site['id'];
 <div class="app__content">
     <div class="split split--settings">
         <section class="card card--padded">
-            <form method="post" action="<?= get_url($base . '/wordpress') ?>" class="form" data-pending>
+            <form method="post" action="<?= get_url($base . '/wordpress') ?>" class="form" data-pending data-pending-overlay="Aktualizuji WordPress…" data-pending-note="Web mezitím ukazuje návštěvníkům stránku údržby. Obvykle to trvá do minuty — stránku nezavírejte.">
                 <?php render_csrf($csrfToken) ?>
                 <input type="hidden" name="version" value="<?= $this->e($to) ?>">
                 <div>

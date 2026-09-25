@@ -742,14 +742,20 @@ final class SiteController extends Controller
      * „Zkontrolovat teď": dostupnost, SSL, data z pluginu a bezpečnostní
      * kontrola — stejné cesty jako cron (`MonitorRun::checkOne()`).
      * Rate limit jednou za minutu — tlačítko není DDoS na klientův web.
+     * Vrací se na záložku, odkud se klikalo (pole `back` z hlavičky).
      */
     public function checkNow(string $id): Response
     {
         $site = $this->siteOr404((int) $id);
         $limiter = $this->kernel->limiter();
 
+        // Jen klíč záložky (malá písmena), ne celá adresa — přesměrovat
+        // jde tak jen v rámci detailu tohoto webu.
+        $back = $this->request()->string('back');
+        $back = 'weby/' . $id . (preg_match('~^[a-z]+$~', $back) === 1 ? '/' . $back : '');
+
         if ($limiter->tooMany('site-check', (string) $id, 1, 1)) {
-            return $this->redirectWithFlash('weby/' . $id, 'Kontrola už před chvílí proběhla — zkuste to za minutu.', 'warning');
+            return $this->redirectWithFlash($back, 'Kontrola už před chvílí proběhla — zkuste to za minutu.', 'warning');
         }
 
         // Limiter počítá jen neúspěchy (success = 0) — pro nás je každý pokus „neúspěch“.
@@ -781,7 +787,7 @@ final class SiteController extends Controller
 
         $tone = !$result['uptime']['ok'] || ($result['plugin'] !== null && !$result['plugin']['ok']) ? 'warning' : 'success';
 
-        return $this->redirectWithFlash('weby/' . $id, implode(' · ', $parts), $tone);
+        return $this->redirectWithFlash($back, implode(' · ', $parts), $tone);
     }
 
     /** „Zkontrolovat vše" — dostupnost všech webů najednou. */

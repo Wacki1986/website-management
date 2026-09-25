@@ -1,5 +1,37 @@
 # Změny
 
+## 0.7.2 — 25. 9. 2026
+
+- **Knihovna pluginů: „Aktualizovat všude".** Nová ikona v Akcích řádku
+  otevře okno s výčtem webů, které novou verzi dostanou, a webů, které se
+  přeskočí i s důvodem (MEDIAGRAFIK Monitor starší než 1.4.0, nesledovaný
+  plugin…). Po potvrzení `library-update.js` posílá weby po jednom na
+  jejich akci aktualizace (`weby/<id>/pluginy/aktualizovat`) — kvůli
+  časovému limitu hostingu ne všechny najednou. Průběh je přímo v okně:
+  pruh „Aktualizuji 3 z 12…" a vlevo u každého webu prázdné kolečko →
+  točící se → fajfka, nebo křížek s důvodem pod názvem. Během běhu okno
+  nejde zavřít (`aria-busy`, nově respektuje `confirm-dialog.js`), zavření
+  stránky prohlížeč nejdřív potvrdí; po konci se zavřením stránka načte
+  znovu.
+- **Sloupec „Na webech" jako pilulky:** oranžová s verzí = web čeká na
+  aktualizaci, šedá = aktuální. U víc než 5 webů se šedé schovají za
+  čárkovanou „+ N aktuálních", která je rozbalí na místě.
+- **Oprava v Zabezpečení:** odpověď HTTP 401 se u přihlašovací adresy
+  i u Basic AUTH počítá jako ochrana heslem jen s hlavičkou
+  `WWW-Authenticate: Basic` (nebo Digest). 401 bez ní posílají firewally
+  hostingu (WEDOS Global Protection) jen serveru monitoru — dřív se to
+  hlásilo jako „za heslem / Nasazeno", teď „Nezjištěno" s výzvou ověřit
+  ručně.
+- **„Zkontrolovat teď" vrací na záložku, odkud se klikalo** (Pluginy,
+  Zabezpečení…), ne na Přehled — hlavička posílá klíč záložky v poli
+  `back`.
+- **Čekací okno u velkých akcí:** „Zkontrolovat teď", „Zkusit znovu",
+  „Zkontrolovat vše" a aktualizace WordPressu ukážou přes celou stránku
+  okno s točícím se kolečkem a větou, co se děje. Stránka pod ním je
+  neaktivní, Esc ho nezavře; zmizí načtením výsledku. Stačí formuláři
+  přidat `data-pending-overlay` (nadpis) a `data-pending-note`
+  (`pending.js`).
+
 ## 0.7.1 — 24. 9. 2026
 
 - **Dvoufázové přihlášení je povinné.** Účet bez spárovaného telefonu

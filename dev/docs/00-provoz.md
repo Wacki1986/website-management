@@ -190,6 +190,13 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   ZIPy leží ve `storage/plugin-library/` (zálohovat, nenahrávat z počítače
   — `sftp.json` je má ve výjimkách) a ven jdou jen s podpisem pro konkrétní
   web. Velikost ZIPu omezuje `upload_max_filesize` hostingu.
+- **Aktualizovat všude** (ikona v Akcích řádku knihovny): okno vypíše weby,
+  které novou verzi dostanou, a ty, které se přeskočí (starý Monitor,
+  nesledovaný plugin — důvod je i v bublině oranžové pilulky webu). Po
+  potvrzení jdou weby po jednom (každý jako tlačítko na záložce Pluginy,
+  s auditem a historií) a průběh je v okně — fajfka, nebo křížek s důvodem.
+  Okno i stránku nechat otevřené do konce; selhání jednoho webu ostatní
+  nezastaví. Zavřením okna po konci se stránka načte znovu.
 
 ## 5. Hromadné přidání webů
 

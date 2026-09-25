@@ -142,6 +142,15 @@ return [
         assertContainsString("2\u{00A0}weby čekají na aktualizaci", $page);
         assertContainsString('/knihovna/flipbook-pro/stahnout', $page);
 
+        // „Aktualizovat všude": okno zařadí jen web, který si ZIP umí stáhnout,
+        // druhý přeskočí s důvodem.
+        assertContainsString('data-confirm="library-update-flipbook-pro"', $page);
+        assertContainsString('data-library-target data-action="/weby/' . $sites['1.4.0'] . '/pluginy/aktualizovat" data-name="Penam"', $page);
+        assertFalse(str_contains($page, '/weby/' . $sites['1.3.1'] . '/pluginy/aktualizovat'), 'Web s Monitorem < 1.4.0 se do „všude" zařadit nemá');
+        assertContainsString('<span class="progress-list__note">Pluginy z knihovny umí web stáhnout až s MEDIAGRAFIK Monitorem 1.4.0 (web má 1.3.1)', $page);
+        assertContainsString('11.20.0 → 12.6.3', $page);
+        assertContainsString("Aktualizovat na 1\u{00A0}webu", $page);
+
         $current = kernelRequest($kernel, 'GET', '/weby/' . $sites['1.4.0'] . '/pluginy')->body();
         assertContainsString('name="plugin" value="flipbook-pro/flipbook-pro.php" class="btn btn--secondary btn--icon"', $current);
         assertContainsString('12.6.3', $current);
@@ -155,6 +164,31 @@ return [
         $count = static fn (int $siteId): int => (int) $kernel->db()->scalar('SELECT plugins_updates FROM site_snapshots WHERE site_id = :id', ['id' => $siteId]);
         assertSame(1, $count($sites['1.4.0']), 'Aktualizace z knihovny chybí v počtu');
         assertSame(0, $count($sites['1.3.1']), 'Web, který si z knihovny stáhnout neumí, ji nemá mít v počtu');
+
+        Urls::reset();
+    },
+
+    'knihovna u víc webů: aktuální schované, nesledovaný přeskočený, bez cílů tlačítko vypnuté' => function (): void {
+        [$kernel] = loggedInKernel();
+        $kernel->pluginLibrary()->import(libZip('12.6.3'), 'Technik');
+        $now = date('Y-m-d H:i:s');
+
+        // Šest webů s aktuální verzí a jeden se starší, na kterém je plugin nesledovaný.
+        foreach (['Alfa', 'Beta', 'Gama', 'Delta', 'Epsilon', 'Zeta', 'Omega'] as $name) {
+            $id = $kernel->sites()->create(['name' => $name, 'url' => 'https://' . strtolower($name) . '.cz']);
+            $kernel->sites()->setApiKey($id, LIB_KEY . $id);
+            $kernel->db()->insert('site_snapshots', ['site_id' => $id, 'fetched_at' => $now, 'plugin_version' => '1.5.5', 'payload' => '{}']);
+            $kernel->db()->insert('site_plugins', ['site_id' => $id, 'file' => 'flipbook-pro/flipbook-pro.php', 'name' => 'FlipBook Pro',
+                'version' => $name === 'Omega' ? '12.0.0' : '12.6.3', 'is_active' => 1, 'has_update' => 0, 'updates_ignored' => $name === 'Omega' ? 1 : 0,
+                'first_seen_at' => $now, 'last_seen_at' => $now]);
+        }
+
+        $page = kernelRequest($kernel, 'GET', '/knihovna')->body();
+        assertContainsString("data-library-more aria-label=\"Ukázat + 6\u{00A0}aktuálních\"", $page);
+        assertSame(6, substr_count($page, 'data-library-hidden hidden'), 'Aktuální weby mají být schované');
+        assertContainsString('Aktualizovat všude web přeskočí: Plugin je na webu nesledovaný', $page);
+        assertFalse(str_contains($page, 'data-confirm="library-update-flipbook-pro"'), 'Bez webu k aktualizaci se okno nenabízí');
+        assertContainsString('aria-label="Aktualizovat všude teď nejde"', $page);
 
         Urls::reset();
     },

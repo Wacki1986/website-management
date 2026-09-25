@@ -8,7 +8,8 @@
  *   data-confirm-title → text prvku `[data-confirm-title]`
  *   data-confirm-note  → text prvku `[data-confirm-note]`
  *   data-confirm-action → `action` formuláře v dialogu (jedno okno pro víc řádků)
- * Zavírá tlačítko `[data-dialog-close]`, Esc a klik mimo okno.
+ * Zavírá tlačítko `[data-dialog-close]`, Esc a klik mimo okno — jen když
+ * v okně zrovna něco neběží (`aria-busy="true"`, např. Aktualizovat všude).
  */
 export function initConfirmDialogs() {
     if (typeof HTMLDialogElement !== 'function') {
@@ -41,10 +42,19 @@ export function initConfirmDialogs() {
     });
 
     document.querySelectorAll('dialog.modal').forEach((dialog) => {
+        const busy = () => dialog.getAttribute('aria-busy') === 'true';
+
         dialog.addEventListener('click', (event) => {
             // Klik na podklad: cíl je sám dialog, ne jeho obsah.
-            if (event.target === dialog || event.target.closest('[data-dialog-close]')) {
+            if (!busy() && (event.target === dialog || event.target.closest('[data-dialog-close]'))) {
                 dialog.close();
+            }
+        });
+
+        // Esc vyvolá `cancel` — během běžící akce ho zahodit.
+        dialog.addEventListener('cancel', (event) => {
+            if (busy()) {
+                event.preventDefault();
             }
         });
     });

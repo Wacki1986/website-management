@@ -81,6 +81,20 @@ return [
         }
     },
 
+    'vnější sondy: 401 bez výzvy k heslu (firewall hostingu) = nezjištěno, ne za heslem' => function (): void {
+        $firewall = static fn (): array => ['status' => 401, 'headers' => [], 'body' => '', 'error' => ''];
+        $probe = new OutsideProbe(fetcher: $firewall);
+
+        assertSame('unknown', $probe->loginPage('https://example.cz')['status']);
+        assertSame('unknown', $probe->adminBasicAuth('https://example.cz')['status']);
+
+        $basic = static fn (): array => ['status' => 401, 'headers' => ['www-authenticate' => 'Basic realm="x"'], 'body' => '', 'error' => ''];
+        $probe = new OutsideProbe(fetcher: $basic);
+
+        assertSame('za heslem', $probe->loginPage('https://example.cz')['value']);
+        assertSame('Zapnuto', $probe->adminBasicAuth('https://example.cz')['value']);
+    },
+
     'vnější sondy: web neodpovídá = nezjištěno, ne chybí' => function (): void {
         $probe = new OutsideProbe(timeout: 2);
         assertSame('unknown', $probe->loginPage('http://127.0.0.1:8299')['status']);

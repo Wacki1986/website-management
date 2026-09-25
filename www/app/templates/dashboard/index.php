@@ -136,7 +136,7 @@ $segments = [
                         <input class="search__input" type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat web nebo klienta…" aria-label="Hledat">
                     </label>
                 </form>
-                <form method="post" action="<?= get_url('weby/zkontrolovat-vse') ?>"><?php render_csrf($csrfToken) ?><button class="btn btn--primary" type="submit"><?= get_btn_icon('refresh') ?>Zkontrolovat vše</button></form>
+                <form method="post" action="<?= get_url('weby/zkontrolovat-vse') ?>" data-pending data-pending-overlay="Kontroluji všechny weby…" data-pending-note="Dostupnost každého webu zvlášť — podle počtu webů to může trvat i minutu."><?php render_csrf($csrfToken) ?><button class="btn btn--primary" type="submit"><?= get_btn_icon('refresh') ?>Zkontrolovat vše</button></form>
             </div>
             <div class="card__header card__header--filters">
                 <div class="segmented">

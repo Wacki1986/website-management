@@ -95,7 +95,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.7.1';
+    public const VERSION = '0.7.2';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon

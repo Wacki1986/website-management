@@ -6,6 +6,7 @@
  *
  * @var \App\Core\View\View $this
  * @var array               $site
+ * @var string              $tab           klíč aktivní záložky — „Zkontrolovat teď" se na ni vrátí
  * @var string              $tabsHtml      hotové záložky (get_tabs)
  * @var array{tone: string, label: string} $headerStatus
  * @var string              $host
@@ -44,8 +45,9 @@
             <?php else: ?>
                 <a class="btn btn--secondary btn--sm" href="<?= $this->e($adminUrl) ?>" target="_blank" rel="noopener"><?= get_btn_icon('external') ?>wp-admin</a>
             <?php endif; ?>
-            <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>">
+            <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>" data-pending data-pending-overlay="Kontroluji web…" data-pending-note="Dostupnost, SSL, data z pluginu a zabezpečení. Obvykle to trvá pár sekund, u pomalého webu až půl minuty.">
                 <?php render_csrf($csrfToken) ?>
+                <input type="hidden" name="back" value="<?= $this->e($tab) ?>">
                 <button type="submit" class="btn btn--primary btn--sm"><?= get_btn_icon('refresh') ?>Zkontrolovat teď</button>
             </form>
         </div>
@@ -62,8 +64,9 @@
                 <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)"><?= $this->e($apiWarning['title']) ?></div>
                 <div class="text-caption"><?= $this->e($apiWarning['text']) ?></div>
             </div>
-            <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>">
+            <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>" data-pending data-pending-overlay="Kontroluji web…" data-pending-note="Zkouším znovu spojení s pluginem MEDIAGRAFIK Monitor.">
                 <?php render_csrf($csrfToken) ?>
+                <input type="hidden" name="back" value="<?= $this->e($tab) ?>">
                 <button type="submit" class="btn btn--secondary btn--sm">Zkusit znovu</button>
             </form>
         </div>

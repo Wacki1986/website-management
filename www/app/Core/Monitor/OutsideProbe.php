@@ -38,8 +38,15 @@ final class OutsideProbe
             return ['status' => 'error', 'value' => '/wp-login.php', 'note' => '/wp-login.php je veřejně dostupný'];
         }
 
-        if ($response['status'] === 401) {
+        if ($response['status'] === 401 && self::asksForPassword($response)) {
             return ['status' => 'ok', 'value' => 'za heslem', 'note' => 'Přihlašovací stránku kryje HTTP Basic auth'];
+        }
+
+        // 401 bez výzvy k heslu posílají firewally hostingu (např. WEDOS
+        // Global Protection) jen serveru monitoru — z prohlížeče může být
+        // stránka dál veřejná. Proto nezjištěno, ne „nasazeno".
+        if ($response['status'] === 401) {
+            return ['status' => 'unknown', 'value' => 'HTTP 401', 'note' => 'Server odmítl monitor bez výzvy k heslu — nejspíš firewall hostingu, ověř ručně'];
         }
 
         if (in_array($response['status'], [301, 302, 303, 307, 308], true)) {
@@ -70,17 +77,34 @@ final class OutsideProbe
             return ['status' => 'unknown', 'value' => '—', 'note' => 'Web neodpověděl: ' . $response['error']];
         }
 
-        $authenticate = strtolower((string) ($response['headers']['www-authenticate'] ?? ''));
-
-        if ($response['status'] === 401 && str_starts_with($authenticate, 'basic')) {
+        if ($response['status'] === 401 && self::asksForPassword($response)) {
             return ['status' => 'ok', 'value' => 'Zapnuto', 'note' => 'Administrace je za HTTP Basic auth'];
         }
 
-        if ($response['status'] === 401 || $response['status'] === 403) {
-            return ['status' => 'ok', 'value' => 'HTTP ' . $response['status'], 'note' => 'Administraci kryje jiná serverová ochrana'];
+        // Stejný důvod jako u loginPage(): 401 bez výzvy k heslu je spíš
+        // firewall, který odmítl monitor, než ochrana platná pro každého.
+        if ($response['status'] === 401) {
+            return ['status' => 'unknown', 'value' => 'HTTP 401', 'note' => 'Server odmítl monitor bez výzvy k heslu — nejspíš firewall hostingu, ověř ručně'];
+        }
+
+        if ($response['status'] === 403) {
+            return ['status' => 'ok', 'value' => 'HTTP 403', 'note' => 'Administraci kryje jiná serverová ochrana'];
         }
 
         return ['status' => 'error', 'value' => 'Vypnuto', 'note' => 'Na hostingu není nastavena'];
+    }
+
+    /**
+     * Opravdová ochrana heslem se ohlásí hlavičkou `WWW-Authenticate`
+     * (Basic, případně Digest) — prohlížeč pak ukáže okno na jméno a heslo.
+     *
+     * @param array{headers: array<string, string>} $response
+     */
+    private static function asksForPassword(array $response): bool
+    {
+        $scheme = strtolower((string) ($response['headers']['www-authenticate'] ?? ''));
+
+        return str_starts_with($scheme, 'basic') || str_starts_with($scheme, 'digest');
     }
 
     /** @return array{status: int, headers: array<string, string>, body: string, error: string} */

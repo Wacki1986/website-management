@@ -28,6 +28,30 @@
 
 .modal--danger .modal__title { color: var(--color-status-error-text); }
 
+// Okno se seznamem (Aktualizovat všude): název webu a verze „6.4.0 → 6.15.1"
+// se do 480 px vejdou jen zalomené.
+.modal--wide { width: min(620px, calc(100vw - 32px)); }
+
+// Čekací okno velkých akcí (pending.js, `data-pending-overlay`): kolečko,
+// nadpis a věta na střed, bez tlačítek — zavře ho až načtení další stránky.
+.modal--busy {
+  width: min(400px, calc(100vw - 32px));
+  cursor: progress;
+}
+
+.modal--busy .modal__body {
+  justify-items: center;
+  gap: var(--spacing-small);
+  text-align: center;
+}
+
+.modal__spinner {
+  width: 32px;
+  height: 32px;
+  margin-bottom: var(--spacing-small);
+  color: var(--color-brand);
+}
+
 .modal__actions {
   display: flex;
   justify-content: flex-end;
