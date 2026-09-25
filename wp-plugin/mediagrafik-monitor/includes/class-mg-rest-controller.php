@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 
 /**
  * REST endpointy pro hub: `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`
- * (GET) a akce `POST /actions/{plugin-update,plugin-delete,plugin-activation,
+ * (GET; `summary?modules=seo` přidá data volitelných modulů) a akce `POST /actions/{plugin-update,plugin-delete,plugin-activation,
  * core-update,login-link}`.
  *
  * Všechno za klíčem v hlavičce `X-MG-Key`. Odpověď má vždy obálku
@@ -148,11 +148,21 @@ final class MG_Rest_Controller
         ));
     }
 
-    public static function summary()
+    /**
+     * @param WP_REST_Request $request `?modules=seo` — volitelné moduly,
+     *                                 které má hub u webu zapnuté
+     */
+    public static function summary($request)
     {
         $collector = new MG_Collector();
         $data = $collector->all();
         $data['security'] = MG_Security_Checks::run();
+
+        $modules = array_map('trim', explode(',', (string) $request->get_param('modules')));
+
+        if (in_array('seo', $modules, true)) {
+            $data['seo'] = MG_Seo::collect();
+        }
 
         return self::respond($data);
     }

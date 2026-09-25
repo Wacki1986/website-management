@@ -40,6 +40,7 @@ final class ReportTemplate
         'heading_services' => ['label' => 'Nadpis sekce servisu', 'default' => 'Servis v tomto období', 'rows' => 1, 'max' => 80],
         'heading_content' => ['label' => 'Nadpis sekce obsahu', 'default' => 'Obsah webu', 'rows' => 1, 'max' => 80],
         'content_button' => ['label' => 'Tlačítko u pozvánky k obsahu', 'default' => 'Ozvěte se nám', 'rows' => 1, 'max' => 40],
+        'heading_seo' => ['label' => 'Nadpis sekce SEO', 'default' => 'Jak je web připravený pro vyhledávače', 'rows' => 1, 'max' => 80],
         'heading_recommendations' => ['label' => 'Nadpis doporučení', 'default' => 'Na co bychom se rádi domluvili', 'rows' => 1, 'max' => 80],
         'cta_text' => ['label' => 'Výzva ke kontaktu', 'default' => 'Máte k webu jakýkoli dotaz?', 'rows' => 2, 'max' => 300],
         'cta_button' => ['label' => 'Tlačítko výzvy', 'default' => 'Napište nám', 'rows' => 1, 'max' => 40],
@@ -51,7 +52,7 @@ final class ReportTemplate
      * Posouvatelné sekce e-mailu v základním pořadí. Hlavička, úvod
      * s metrikami a patička stojí vždy na svém místě.
      */
-    public const SECTION_ORDER = ['note', 'updates', 'services', 'content', 'recommendations', 'uptime_chart', 'technical', 'cta'];
+    public const SECTION_ORDER = ['note', 'updates', 'services', 'content', 'seo', 'recommendations', 'uptime_chart', 'technical', 'cta'];
 
     /** Popisky sekcí v editoru (poznámka není přepínatelná sekce reportu). */
     public const SECTION_LABELS = ['note' => 'Poznámka od studia'];
@@ -212,6 +213,19 @@ final class ReportTemplate
                 'freshestDays' => 75,
                 'tone' => 'warning',
                 'invite' => ['title' => 'Web by si zasloužil něco nového', 'text' => 'Poslední obsah na webu přibyl před 75 dny. Ozvěte se — rádi s vámi projdeme nápady, texty nebo fotky.'],
+            ],
+            'seo' => [
+                'plugin' => 'Rank Math SEO',
+                'indexable' => true,
+                'rows' => [
+                    ['label' => 'Průměrné hodnocení stránek', 'value' => '78 ze 100 · průměrné', 'tone' => 'warning'],
+                    ['label' => 'Oproti začátku období', 'value' => 'o 4 body lépe', 'tone' => 'ok'],
+                    ['label' => 'Dobře připravené stránky', 'value' => '19', 'tone' => ''],
+                    ['label' => 'Stránky k vylepšení', 'value' => '5', 'tone' => 'warning'],
+                    ['label' => 'Viditelnost pro vyhledávače', 'value' => 'web je viditelný', 'tone' => 'ok'],
+                    ['label' => 'Mapa webu pro vyhledávače', 'value' => 'ano', 'tone' => 'ok'],
+                ],
+                'note' => 'Hodnocení počítá Rank Math SEO podle textů, nadpisů a popisů stránek. Stránky k vylepšení rádi projdeme — často stačí doplnit popis pro Google a klíčové slovo.',
             ],
             'services' => [[
                 'date' => date('Y-m-20', strtotime($from)), 'kind' => 'small', 'kindLabel' => 'Malý servis',

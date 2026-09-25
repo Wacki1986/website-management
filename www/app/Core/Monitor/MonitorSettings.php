@@ -35,6 +35,9 @@ final class MonitorSettings
         'rule_domain_days' => 90,
         'rule_abandoned_on' => 1,
         'rule_abandoned_months' => 24,
+        'rule_seo_hidden_on' => 1,
+        'rule_seo_low_on' => 1,
+        'rule_seo_low_score' => 50,
     ];
 
     /** @var array<string, array{0: int, 1: int}> meze hodnot */
@@ -51,6 +54,7 @@ final class MonitorSettings
         'rule_service_hours' => [1, 720],
         'rule_domain_days' => [7, 365],
         'rule_abandoned_months' => [6, 120],
+        'rule_seo_low_score' => [10, 100],
     ];
 
     public function __construct(private readonly Settings $settings)

@@ -1,5 +1,56 @@
 # Změny
 
+## 0.8.0 — 25. 9. 2026
+
+- **Moduly — volitelná měření webů.** Nová záložka Nastavení → Moduly:
+  modul se zapíná pro celou aplikaci (s volbou „Zapnout u nových webů"
+  a tlačítkem „Zapnout u všech webů") a pak u jednotlivých webů v kartě
+  Hlídání. Platí jen obojí najednou; web s vypnutým modulem nic navíc
+  nepočítá. Volby u webů jsou v nové tabulce `site_modules` — další modul
+  (rychlost, Search Console) už nebude měnit tabulku webů.
+- **Modul SEO** (potřebuje MEDIAGRAFIK Monitor 1.6.0): skóre stránek
+  z Rank Math nebo Yoast SEO — průměr, dobré / průměrné / slabé, stránky
+  bez klíčového slova, bez meta popisu a s noindex, deset nejslabších
+  stránek s ikonami „otevřít" a „upravit ve wp-admin". K tomu u každého
+  webu viditelnost pro vyhledávače a mapa webu.
+  - záložka **SEO** u webu (odznak „skrytý" / „N slab."), trend průměru
+    za 30 a 90 dní z denní historie `seo_days`;
+  - sloupec **SEO** v seznamu webů (jen se zapnutým modulem);
+  - sekce **„SEO webu"** v klientském reportu s posunem od začátku období;
+    skrytý web jde i do doporučení. Nová sekce je výchozí zapnutá; weby,
+    které už mají uložené sekce reportu, ji zapnou přepínačem v náhledu
+    reportu (ukazuje se jen u webů s modulem);
+  - **alerty** „Web skrytý před vyhledávači" a „Slabé SEO" (průměr pod
+    prahem, výchozí 50) v Nastavení → Alerty a prahy. Pravidlo bez prahu
+    má místo čísla prázdné místo.
+- **Záložka SEO podle návrhu z Claude Design** (bez části se Search
+  Console, prvky přiřazené k tokenům v `app/_seo.scss`):
+  - tabulka slabých stránek s klíčovým slovem, štítky „co chybí"
+    (klíčové slovo, meta popis, krátký text pod 300 slov, alt obrázků
+    v textu; číslo v bublině) a skóre s pruhem; „Zobrazit všech N" vede
+    na `weby/<id>/seo/stranky` (až 200 stránek);
+  - pokrytí metadat: klíčové slovo, vlastní meta popis, obrázek pro
+    sdílení (vlastní nebo náhledový; výchozí z nastavení pluginu platí
+    pro všechny), alt text obrázků v knihovně médií;
+  - nefunkční odkazy za 7 dní a aktivní přesměrování — z modulů
+    404 Monitor a Přesměrování v Rank Math, nebo z pluginu Redirection;
+    bez nich karta řekne, co zapnout;
+  - tmavá karta průměrného skóre s posunem za 90 dní, pruhem rozložení
+    a legendou; mapa webu s počtem stránek.
+- Plugin MEDIAGRAFIK Monitor **1.6.0**: data modulu SEO posílá jen na
+  vyžádání (`/summary?modules=seo`); **1.7.0** navíc pokrytí metadat,
+  co stránkám chybí, nefunkční odkazy a přesměrování. S 1.6.0 záložka
+  ukáže, co má, a vyzve k aktualizaci.
+- **Oprava rozvržení na telefonu:** hlavní část stránky se roztahovala na
+  šířku řady záložek (detail webu) a stránka ujížděla doprava.
+- **MEDIAGRAFIK Monitor v Knihovně pluginů:** vlastní karta nad knihovnou
+  (verze, kterou správa rozdává, weby jako pilulky, ZIP ke stažení, bez
+  koše) se stejným „Aktualizovat všude" — nová verze pluginu jde na
+  všechny weby jedním potvrzením místo proklikávání webů. Každý web
+  dostane aktualizaci s cestou, jakou Monitor u něj má (složka nahraná ze
+  ZIPu s verzí v názvu). Řádek tabulky a okno jsou partialy
+  `library-row` a `library-update-dialog`, sdílené oběma kartami.
+
 ## 0.7.2 — 25. 9. 2026
 
 - **Knihovna pluginů: „Aktualizovat všude".** Nová ikona v Akcích řádku

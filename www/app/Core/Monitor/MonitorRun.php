@@ -7,6 +7,7 @@ namespace App\Core\Monitor;
 use App\Core\Db\Connection;
 use App\Core\Events\EventLog;
 use App\Core\Log\Logger;
+use App\Core\Modules\Modules;
 use App\Core\Security\RateLimiter;
 use App\Core\Service\ServiceRepository;
 use App\Core\Settings\Settings;
@@ -47,6 +48,8 @@ final class MonitorRun
         private readonly string $lockPath,
         private ?UptimeClient $uptimeClient = null,
         private ?ServiceRepository $service = null,
+        // Bez něj (testy mimo Kernel) se volitelné moduly nesbírají.
+        private ?Modules $modules = null,
     ) {
     }
 
@@ -170,7 +173,7 @@ final class MonitorRun
         $key = $this->sites->apiKey($site);
 
         if ($key !== null) {
-            $plugin = $this->plugins->summary((string) $site['url'], $key);
+            $plugin = $this->plugins->summary((string) $site['url'], $key, $this->modulesFor([(int) $site['id']])[(int) $site['id']] ?? []);
             $import = $this->importer->import($this->sites->find((int) $site['id']) ?? $site, $plugin, $stamp);
             $changes = $import['changes'];
             $fresh = $this->sites->find((int) $site['id']) ?? $site;
@@ -318,12 +321,13 @@ final class MonitorRun
         }
 
         $batch = [];
+        $modules = $this->modulesFor(array_map(static fn (array $site): int => (int) $site['id'], $sites));
 
         foreach ($sites as $site) {
             $key = $this->sites->apiKey($site);
 
             if ($key !== null) {
-                $batch[(int) $site['id']] = ['url' => (string) $site['url'], 'key' => $key];
+                $batch[(int) $site['id']] = ['url' => (string) $site['url'], 'key' => $key, 'modules' => $modules[(int) $site['id']] ?? []];
             }
         }
 
@@ -393,6 +397,17 @@ final class MonitorRun
         $this->events->purgeOlderThan(24);
         $this->limiter->purge();
         $this->db->execute('DELETE FROM sites WHERE removed_at IS NOT NULL AND removed_at < :before', ['before' => date('Y-m-d H:i:s', strtotime('-12 months', $now))]);
+    }
+
+    /**
+     * Moduly, jejichž data má plugin u webu poslat (`?modules=`).
+     *
+     * @param array<int, int> $siteIds
+     * @return array<int, array<int, string>>
+     */
+    private function modulesFor(array $siteIds): array
+    {
+        return $this->modules?->forSites($siteIds) ?? [];
     }
 
     private function uptimeClient(): UptimeClient

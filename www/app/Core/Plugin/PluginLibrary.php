@@ -216,6 +216,30 @@ final class PluginLibrary
     }
 
     /**
+     * Na kterých webech je náš MEDIAGRAFIK Monitor a v jaké verzi — pro jeho
+     * kartu v knihovně. Pozná se podle souboru jako v `SiteActions::isMonitor()`:
+     * složka na webu se může jmenovat jinak (ruční nahrání ZIPu s verzí).
+     *
+     * @return array<int, array{id: int, name: string, version: string, file: string}>
+     */
+    public function monitorUsage(): array
+    {
+        $sites = [];
+
+        foreach ($this->db->select(
+            'SELECT p.file, p.version, s.id, s.name FROM site_plugins p
+             JOIN sites s ON s.id = p.site_id AND s.removed_at IS NULL
+             WHERE p.file LIKE :pattern
+             ORDER BY s.name',
+            ['pattern' => '%/' . PluginDistribution::SLUG . '.php'],
+        ) as $row) {
+            $sites[] = ['id' => (int) $row['id'], 'name' => (string) $row['name'], 'version' => (string) $row['version'], 'file' => (string) $row['file']];
+        }
+
+        return $sites;
+    }
+
+    /**
      * Rozbor ZIPu: WordPress čeká jednu složku v kořeni a v ní PHP soubor
      * s hlavičkou `Plugin Name:` — stejná pravidla jako při nahrání pluginu
      * ve wp-admin.

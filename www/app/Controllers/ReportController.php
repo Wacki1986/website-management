@@ -9,6 +9,7 @@ use App\Core\Auth\UserRepository;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
+use App\Core\Modules\Modules;
 use App\Core\Reports\ReportRepository;
 use App\Core\Reports\ReportSchedule;
 use App\Core\Reports\ReportTemplate;
@@ -275,9 +276,12 @@ final class ReportController extends Controller
         $me = $this->kernel->auth()->current();
 
         $sections = [];
+        $hidden = $this->hiddenSections((int) $report['site_id']);
 
         foreach (ReportRepository::SECTIONS as $key => $section) {
-            $sections[] = $section + ['key' => $key, 'on' => in_array($key, $report['sections'], true)];
+            if (!in_array($key, $hidden, true)) {
+                $sections[] = $section + ['key' => $key, 'on' => in_array($key, $report['sections'], true)];
+            }
         }
 
         $mail = $this->kernel->mailSettings()->current();
@@ -325,7 +329,9 @@ final class ReportController extends Controller
     {
         $report = $this->editableOr404((int) $id);
         $chosen = array_filter((array) $this->request()->input('sections', []), 'is_scalar');
-        $sections = array_values(array_intersect(array_keys(ReportRepository::SECTIONS), array_map('strval', $chosen)));
+        // Skrytý přepínač (modul u webu vypnutý) si nechá dosavadní stav.
+        $chosen = array_merge(array_map('strval', $chosen), array_intersect($this->hiddenSections((int) $report['site_id']), $report['sections']));
+        $sections = array_values(array_intersect(array_keys(ReportRepository::SECTIONS), $chosen));
         $this->kernel->reports()->update((int) $id, ['sections' => $sections]);
         $this->kernel->reportSender()->rerender($this->reportOr404((int) $id));
 
@@ -344,6 +350,17 @@ final class ReportController extends Controller
         }
 
         return $this->redirectWithFlash('reporty/' . $id . '/nahled', 'Sekce reportu jsou uložené.');
+    }
+
+    /**
+     * Sekce, které u webu nemají data, a proto ani přepínač v náhledu —
+     * SEO bez zapnutého modulu SEO.
+     *
+     * @return array<int, string>
+     */
+    private function hiddenSections(int $siteId): array
+    {
+        return $this->kernel->modules()->forSite($siteId, Modules::SEO) ? [] : ['seo'];
     }
 
     /** „Poslat sobě na zkoušku" — na e-mail přihlášeného, stav reportu se nemění. */

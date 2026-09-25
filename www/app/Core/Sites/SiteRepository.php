@@ -231,6 +231,7 @@ final class SiteRepository
             'db_version', 'db_size_mb', 'theme_name', 'theme_version', 'theme_is_child', 'plugins_total',
             'plugins_active', 'plugins_updates', 'security_updates', 'last_backup_at', 'security_checked_at',
             'security_missing', 'security_partial', 'plugins_abandoned', 'plugins_closed', 'plugins_insecure',
+            'seo_plugin', 'seo_average', 'seo_bad', 'seo_indexable', 'seo_checked_at',
         ];
 
         return implode(', ', array_map(static fn (string $c): string => 'ss.' . $c . ' AS snap_' . $c, $columns));

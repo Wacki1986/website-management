@@ -198,6 +198,27 @@ final class ReportRenderer
                 . '</td></tr>';
         }
 
+        // SEO webu (modul SEO; reporty před verzí 0.8.0 ani weby bez modulu ho nemají).
+        $seo = $summary['seo'] ?? null;
+
+        if ($show('seo') && is_array($seo) && $seo['rows'] !== []) {
+            $items = '';
+            $count = count($seo['rows']);
+
+            foreach ($seo['rows'] as $i => $item) {
+                $border = $i < $count - 1 ? 'border-bottom:1px solid ' . self::BORDER . ';' : '';
+                $dot = $item['tone'] !== '' ? '<span style="display:inline-block;width:8px;height:8px;border-radius:999px;background:' . (self::TONES[$item['tone']] ?? self::MUTED) . ';margin-right:6px;"></span>' : '';
+                $items .= '<tr><td style="padding:10px 16px;font-size:14px;color:' . self::BODY . ';' . $border . '">' . $e($item['label']) . '</td>'
+                    . '<td align="right" style="padding:10px 16px;font-size:14px;font-weight:600;color:' . self::TEXT . ';white-space:nowrap;' . $border . '">' . $dot . $e($item['value']) . '</td></tr>';
+            }
+
+            $blocks['seo'] = $row('seo') . '<td style="padding:26px ' . $pad . ' 0;">'
+                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $ed('heading_seo', $e($t('heading_seo'))) . '</h3>'
+                . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ' . self::BORDER . ';border-radius:12px;border-collapse:separate;">' . $items . '</table>'
+                . '<div style="font-size:13px;color:' . self::MUTED . ';line-height:1.55;margin-top:10px;">' . $e($seo['note']) . '</div>'
+                . '</td></tr>';
+        }
+
         // Doporučení.
         if ($show('recommendations') && $summary['recommendations'] !== []) {
             $items = '';
@@ -383,6 +404,18 @@ final class ReportRenderer
             if (($content['invite'] ?? null) !== null) {
                 $blocks['content'][] = $content['invite']['title'] . '. ' . $content['invite']['text'];
             }
+        }
+
+        $seo = $summary['seo'] ?? null;
+
+        if (in_array('seo', $sections, true) && is_array($seo) && $seo['rows'] !== []) {
+            $blocks['seo'] = ['', $t('heading_seo') . ':'];
+
+            foreach ($seo['rows'] as $item) {
+                $blocks['seo'][] = '- ' . $item['label'] . ': ' . $item['value'];
+            }
+
+            $blocks['seo'][] = $seo['note'];
         }
 
         if (in_array('recommendations', $sections, true) && $summary['recommendations'] !== []) {

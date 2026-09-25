@@ -13,6 +13,7 @@
  * @var string              $pluginInfoUrl
  * @var string              $defaultLoginUser výchozí účet studia pro přihlášení (Nastavení → Monitoring)
  * @var string              $iconNote  odkud je ikona webu (favicona / nahrané logo / žádná)
+ * @var array<string, array{label: string, title: string, text: string, on: bool}> $moduleChoices globálně zapnuté moduly a jejich volba u webu
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $site['name'] . ' — Nastavení']);
@@ -141,6 +142,15 @@ $base = 'weby/' . (int) $site['id'];
                         </div>
                         <?= get_toggle('watch_ssl', (int) $site['watch_ssl'] === 1, 'Hlídat platnost SSL') ?>
                     </div>
+                    <?php foreach ($moduleChoices as $key => $module): ?>
+                        <div class="summary-list__row" style="align-items:center">
+                            <div>
+                                <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-body)">Modul <?= $this->e($module['label']) ?></div>
+                                <div class="text-caption"><?= $this->e($module['title']) ?></div>
+                            </div>
+                            <?= get_toggle('module_' . $key, $module['on'], 'Modul ' . $module['label']) ?>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
                 <div class="card__footer"><button type="submit" class="btn btn--secondary btn--sm btn--block">Uložit hlídání</button></div>
             </form>

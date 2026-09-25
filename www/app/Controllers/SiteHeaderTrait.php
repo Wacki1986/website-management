@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Modules\Modules;
 use App\Core\Monitor\PluginClient;
 use App\Core\Service\ServiceSchedule;
 use App\Core\Sites\SiteActions;
@@ -19,7 +20,7 @@ trait SiteHeaderTrait
 {
     /**
      * Data pro hlavičku detailu (`partials/site-header`): stav, meta,
-     * záložky s odznaky. Počítá se jednou pro všech osm záložek.
+     * záložky s odznaky. Počítá se jednou pro všechny záložky.
      *
      * @param array<string, mixed> $site
      * @return array<string, mixed>
@@ -44,6 +45,7 @@ trait SiteHeaderTrait
             ['key' => 'pluginy', 'label' => 'Pluginy', 'url' => get_url($base . '/pluginy'), 'badge' => $inactive > 0 ? get_badge($inactive . ' neakt.', 'warning') : ''],
             ['key' => 'obsah', 'label' => 'Obsah', 'url' => get_url($base . '/obsah')],
             ['key' => 'zabezpeceni', 'label' => 'Zabezpečení', 'url' => get_url($base . '/zabezpeceni'), 'badge' => $missing > 0 ? get_badge($missing . ' chybí', 'warning') : ''],
+            ...$this->moduleTabs($site, $base),
             ['key' => 'servis', 'label' => 'Servis', 'url' => get_url($base . '/servis'), 'badge' => $service['badge']],
             ['key' => 'reporty', 'label' => 'Reporty', 'url' => get_url($base . '/reporty')],
             ['key' => 'pristupy', 'label' => 'Přístupy', 'url' => get_url($base . '/pristupy')],
@@ -65,6 +67,34 @@ trait SiteHeaderTrait
                     . '. ' . ((string) $site['snapshot_error'] !== '' ? $site['snapshot_error'] . ' ' : '') . 'Data níže jsou z poslední úspěšné kontroly.',
             ] : null,
         ];
+    }
+
+    /**
+     * Záložky modulů zapnutých u webu (zatím SEO) — s odznakem, když je
+     * co řešit.
+     *
+     * @param array<string, mixed> $site řádek z `findWithSnapshot()` (sloupce `snap_seo_*`)
+     * @return array<int, array{key: string, label: string, url: string, badge: string}>
+     */
+    private function moduleTabs(array $site, string $base): array
+    {
+        if (!$this->kernel->modules()->forSite((int) $site['id'], Modules::SEO)) {
+            return [];
+        }
+
+        $hidden = ($site['snap_seo_indexable'] ?? null) !== null && (int) $site['snap_seo_indexable'] === 0;
+        $bad = (int) ($site['snap_seo_bad'] ?? 0);
+
+        return [[
+            'key' => 'seo',
+            'label' => 'SEO',
+            'url' => get_url($base . '/seo'),
+            'badge' => match (true) {
+                $hidden => get_badge('skrytý', 'error'),
+                $bad > 0 => get_badge($bad . ' slab.', 'warning'),
+                default => '',
+            },
+        ]];
     }
 
     /**

@@ -125,7 +125,9 @@ label.toggle { display: inline-block; cursor: pointer; }
 .sidebar__mobile { display: none; }
 
 @media (max-width: 768px) {
-  .app { flex-direction: column; }
+  // Ve sloupci musí hlavní část vzít šířku okna — s `flex-start` z návrhu
+  // by se roztáhla na šířku obsahu (řada záložek) a stránka by ujela doprava.
+  .app { flex-direction: column; align-items: stretch; }
 
   .sidebar {
     position: static;
@@ -734,6 +736,10 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
   gap: 6px;
 }
 
+// Formulář jen s jedním tlačítkem (koš) mezi odkazy — v řadě se nesmí
+// chovat jako blok, jinak odskočí.
+.row-actions__form { display: contents; }
+
 // Historie servisů: návrh nemá sloupec akcí, přidává se za „Stav".
 .table--service { --table-columns: 110px 170px minmax(0, 1fr) 84px 130px 84px; }
 
@@ -760,6 +766,23 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
 @media (min-width: 769px) {
   .table--sites { min-width: 1100px; }
 }
+
+// Výpis webů se sloupcem SEO (modul SEO zapnutý) — o jednu stopu víc
+// za „Aktualizace". Na mobilu zůstává dvousloupcový řádek.
+.table--sites.table--sites-seo { --table-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) 126px 74px 58px 50px 112px 94px 76px 132px 92px 34px; }
+
+@media (max-width: 1100px) {
+  .table--sites.table--sites-seo { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 116px 68px 54px 46px 104px 84px 70px 124px 80px 34px; }
+}
+
+@media (max-width: 768px) {
+  .table--sites.table--sites-seo { --table-columns: minmax(0, 1fr) 110px; }
+}
+
+@media (min-width: 769px) {
+  .table--sites.table--sites-seo { min-width: 1180px; }
+}
+
 
 // Hláška přímo v kartě bez vnitřního okraje (karta s tabulkou): odsadit
 // od krajů karty jako obsah, ne roztáhnout přes celou šířku.

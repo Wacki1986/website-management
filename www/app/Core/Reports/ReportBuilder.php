@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Core\Reports;
 
 use App\Core\Events\EventLog;
+use App\Core\Modules\Modules;
+use App\Core\Modules\SeoRepository;
+use App\Core\Modules\SeoScore;
 use App\Core\Monitor\AlertRepository;
 use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\PluginDirectory;
@@ -38,6 +41,9 @@ final class ReportBuilder
         private readonly SecurityAudit $security,
         private readonly SnapshotImporter $snapshots,
         private readonly ?PluginDirectory $directory = null,
+        // Bez nich (testy mimo Kernel) report sekci SEO nemá.
+        private readonly ?Modules $modules = null,
+        private readonly ?SeoRepository $seoHistory = null,
     ) {
     }
 
@@ -191,6 +197,13 @@ final class ReportBuilder
             $recommendations[] = ['title' => 'Posílení zabezpečení', 'text' => 'Z pěti doporučených bezpečnostních opatření ' . ($missing === 1 ? 'jedno na webu zatím chybí' : $missing . ' na webu zatím chybí') . '. Rádi je doplníme v rámci příštího servisu — ozvěte se, když to chcete dřív.'];
         }
 
+        // Modul SEO — skrytý web je doporučení, i když sekci SEO klient nedostává.
+        $seo = $this->seo($siteId, $from);
+
+        if ($seo !== null && !$seo['indexable']) {
+            $recommendations[] = ['title' => 'Web je skrytý před vyhledávači', 'text' => 'Ve WordPressu je zapnutá volba, která vyhledávačům říká, ať web nezařazují do výsledků hledání. Pokud to není záměr (třeba web ve výstavbě), vypneme ji — stačí nám dát vědět.'];
+        }
+
         // --- Titulek a předmět ---------------------------------------------
         $seriousOutage = $stats['downtime_min'] > 30 || ($percent !== null && $percent < 99);
         $allGood = $outages === [] && $recommendations === [] && ($percent === null || $percent >= 99.9);
@@ -238,6 +251,7 @@ final class ReportBuilder
             ],
             'done' => $done,
             'content' => $this->content($siteId, $today),
+            'seo' => $seo,
             'services' => $services,
             'nextService' => $nextService,
             'recommendations' => $recommendations,
@@ -318,6 +332,69 @@ final class ReportBuilder
                     'text' => 'Na webu už ' . $freshest . ' dní nepřibylo nic nového a návštěvníci i vyhledávače to poznají. Ozvěte se — domluvíme se, jak web oživit, a můžeme na něm pracovat společně.',
                 ],
                 default => null,
+            },
+        ];
+    }
+
+    /**
+     * Sekce „SEO webu" (modul SEO): průměrné hodnocení stránek ze SEO
+     * pluginu, posun od začátku období (denní historie `seo_days`)
+     * a viditelnost pro vyhledávače. Null = modul u webu nezapnutý nebo
+     * zatím bez dat — sekce se pak nevykreslí.
+     *
+     * Čísla jsou z poslední kontroly, ne k poslednímu dni období: SEO
+     * plugin historii stránek nevede.
+     *
+     * @return array{plugin: string, indexable: bool, rows: array<int, array{label: string, value: string, tone: string}>, note: string}|null
+     */
+    private function seo(int $siteId, string $from): ?array
+    {
+        if ($this->modules === null || !$this->modules->forSite($siteId, Modules::SEO)) {
+            return null;
+        }
+
+        $data = $this->snapshots->snapshot($siteId)['data']['seo'] ?? null;
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $plugin = isset(SeoScore::THRESHOLDS[(string) ($data['plugin'] ?? '')]) ? (string) $data['plugin'] : '';
+        $scores = is_array($data['scores'] ?? null) ? $data['scores'] : null;
+        $average = $plugin !== '' ? SeoScore::average($scores['average'] ?? null) : null;
+        $indexable = !empty($data['indexable']);
+        $rows = [];
+
+        if ($average !== null) {
+            $start = $this->seoHistory?->averageOn($siteId, $from);
+            $diff = $start !== null ? $average - $start : null;
+            $weak = (int) ($scores['ok'] ?? 0) + (int) ($scores['bad'] ?? 0);
+
+            $rows[] = ['label' => 'Průměrné hodnocení stránek', 'value' => $average . ' ze 100 · ' . SeoScore::word($average, $plugin), 'tone' => SeoScore::tone($average, $plugin)];
+
+            if ($diff !== null) {
+                $rows[] = ['label' => 'Oproti začátku období', 'value' => match (true) {
+                    $diff > 0 => 'o ' . get_count($diff, 'bod', 'body', 'bodů') . ' lépe',
+                    $diff < 0 => 'o ' . get_count(-$diff, 'bod', 'body', 'bodů') . ' hůř',
+                    default => 'beze změny',
+                }, 'tone' => $diff > 0 ? 'ok' : ''];
+            }
+
+            $rows[] = ['label' => 'Dobře připravené stránky', 'value' => (string) (int) ($scores['good'] ?? 0), 'tone' => ''];
+            $rows[] = ['label' => 'Stránky k vylepšení', 'value' => (string) $weak, 'tone' => $weak > 0 ? 'warning' : ''];
+        }
+
+        $rows[] = ['label' => 'Viditelnost pro vyhledávače', 'value' => $indexable ? 'web je viditelný' : 'web je skrytý', 'tone' => $indexable ? 'ok' : 'error'];
+        $rows[] = ['label' => 'Mapa webu pro vyhledávače', 'value' => !empty($data['sitemap']['enabled']) ? 'ano' : 'chybí', 'tone' => !empty($data['sitemap']['enabled']) ? 'ok' : 'warning'];
+
+        return [
+            'plugin' => $plugin !== '' ? SeoScore::PLUGIN_NAMES[$plugin] : '',
+            'indexable' => $indexable,
+            'rows' => $rows,
+            'note' => match (true) {
+                $average === null => 'Jak je web připravený pro vyhledávače: jestli ho smějí zařadit do výsledků a jestli mají mapu jeho stránek.',
+                (int) ($scores['ok'] ?? 0) + (int) ($scores['bad'] ?? 0) > 0 => 'Hodnocení počítá ' . SeoScore::PLUGIN_NAMES[$plugin] . ' podle textů, nadpisů a popisů stránek. Stránky k vylepšení rádi projdeme — často stačí doplnit popis pro Google a klíčové slovo.',
+                default => 'Hodnocení počítá ' . SeoScore::PLUGIN_NAMES[$plugin] . ' podle textů, nadpisů a popisů stránek. Všechny hodnocené stránky jsou dobře připravené.',
             },
         ];
     }

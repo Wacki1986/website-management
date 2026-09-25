@@ -1,0 +1,259 @@
+@use "../abstracts/mixins" as *;
+
+// Záložka SEO u webu (modul SEO). Návrh z Claude Design přišel jen jako
+// obrázek, bez předávky — prvky jsou přiřazené k nejbližším tokenům.
+// Až přijde předávka, nahradí se jejími třídami.
+
+// --- rozvržení: pokrytí metadat a nefunkční odkazy vedle sebe -------------
+
+.seo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-large);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .seo-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+// --- karta průměrného skóre (inverzní podklad jako `.hero`) --------------
+
+.seo-score {
+  padding: var(--spacing-xxlarge) var(--spacing-xxlarge) var(--spacing-xlarge);
+  border-radius: var(--border-radius-card);
+  background: var(--gradient-surface-inverse);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-hero);
+
+  &__label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+    font-size: var(--font-size-subtle);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-caps);
+    text-transform: uppercase;
+    color: var(--color-text-inverse-subtle);
+  }
+
+  &__headline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-medium);
+    margin-top: var(--spacing-large);
+  }
+
+  &__value {
+    font-size: var(--font-size-metric-small);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-metric);
+    line-height: var(--line-height-tight);
+  }
+
+  // Posun za 90 dní — šipka v textu nese směr, barva jen doplňuje.
+  &__change {
+    padding: 3px 9px;
+    border: 1px solid var(--color-on-inverse-ghost-border);
+    border-radius: var(--border-radius-pill);
+    background: var(--color-on-inverse-ghost-background);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+
+    &--up { color: var(--color-status-ok); }
+    &--down { color: var(--color-status-error); }
+  }
+
+  &__note {
+    margin-top: var(--spacing-small);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-text-inverse-subtle);
+  }
+
+  // Pruh rozložení: šířku segmentu dává počet stránek (`flex-grow`).
+  &__bar {
+    display: flex;
+    gap: 3px;
+    height: 8px;
+    margin-top: var(--spacing-xlarge);
+  }
+
+  &__segment {
+    flex: 0 1 0;
+    min-width: 4px;
+    border-radius: var(--border-radius-pill);
+
+    &--ok { background: var(--color-status-ok); }
+    &--warning { background: var(--color-status-warning); }
+    &--error { background: var(--color-status-error); }
+    &--muted { background: var(--color-text-inverse-faint); }
+  }
+
+  &__legend {
+    margin: var(--spacing-large) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+    padding: 5px 0;
+    font-size: var(--font-size-body);
+    color: var(--color-text-inverse-subtle);
+
+    .dot--muted { background: var(--color-text-inverse-faint); }
+  }
+
+  &__legend-label { flex: 1; min-width: 0; }
+
+  &__legend-count {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-inverse);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// --- pokrytí metadat: řádek s hodnotou a pruhem ---------------------------
+
+.coverage {
+  &__row {
+    padding: var(--spacing-large) var(--layout-card-padding);
+    border-bottom: 1px solid var(--color-border-subtle);
+
+    &:last-child { border-bottom: 0; }
+  }
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-medium);
+    font-size: var(--font-size-body);
+  }
+
+  &__label { min-width: 0; }
+
+  &__value {
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+
+    &--error { color: var(--color-status-error-text); }
+    &--warning { color: var(--color-status-warning-text); }
+  }
+
+  &__track {
+    display: block;
+    height: 6px;
+    margin-top: var(--spacing-small);
+    border-radius: var(--border-radius-pill);
+    background: var(--color-surface-muted);
+    overflow: hidden;
+  }
+
+  &__fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--border-radius-pill);
+
+    &--ok { background: var(--color-status-ok); }
+    &--warning { background: var(--color-status-warning); }
+    &--error { background: var(--color-status-error); }
+  }
+}
+
+// --- nefunkční odkazy: adresa a počet zásahů ------------------------------
+
+.link-list {
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-medium);
+    padding: var(--spacing-medium) var(--layout-card-padding);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  &__url {
+    @include truncate;
+    min-width: 0;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-label);
+  }
+
+  &__count {
+    flex: none;
+    font-size: var(--font-size-label);
+    color: var(--color-text-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// --- tabulka slabých stránek ----------------------------------------------
+
+.table--seo { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.3fr) 130px 88px; }
+
+@media (max-width: 1100px) {
+  .table--seo { --table-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr) 120px 88px; }
+}
+
+// Na mobilu: nahoře stránka a skóre, pod nimi co chybí a akce; klíčové
+// slovo se schová (je v editoru stránky).
+@media (max-width: 768px) {
+  .table--seo {
+    --table-columns: minmax(0, 1fr) auto;
+
+    .table__row > :nth-child(2) { display: none; }
+    .table__row > :nth-child(3) { grid-column: 1; grid-row: 2; }
+    .table__row > :nth-child(4) { grid-column: 2; grid-row: 1; }
+    .table__row > :nth-child(5) { grid-column: 2; grid-row: 2; }
+  }
+}
+
+// Štítky „Co chybí" pod sebou i vedle sebe podle místa.
+.seo-issues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xxsmall);
+}
+
+// Skóre v řádku: krátký pruh a číslo v barvě hodnocení.
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+
+  &__track {
+    flex: 1;
+    max-width: 80px;
+    height: 6px;
+    border-radius: var(--border-radius-pill);
+    background: var(--color-surface-muted);
+    overflow: hidden;
+  }
+
+  &__fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--border-radius-pill);
+    background: var(--color-text-faint);
+  }
+
+  &__value {
+    min-width: 24px;
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--ok &__fill { background: var(--color-status-ok); }
+  &--ok &__value { color: var(--color-status-ok-text); }
+  &--warning &__fill { background: var(--color-status-warning); }
+  &--warning &__value { color: var(--color-status-warning-text); }
+  &--error &__fill { background: var(--color-status-error); }
+  &--error &__value { color: var(--color-status-error-text); }
+}

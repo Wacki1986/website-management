@@ -6,7 +6,9 @@
  * (`weby/<id>/pluginy/aktualizovat`, stejná jako na záložce Pluginy webu):
  * jedna aktualizace trvá i desítky sekund a všechny najednou by na hostingu
  * narazily na časový limit. Každý požadavek si po sobě načte čerstvá data
- * z webu (`refresh=1`) a zapíše audit i historii webu.
+ * z webu (`refresh=1`) a zapíše audit i historii webu. Cestu pluginu nese
+ * každý web zvlášť (`data-file`) — MEDIAGRAFIK Monitor může mít na webu
+ * jinak pojmenovanou složku.
  *
  * Průběh je přímo v okně: pruh „Aktualizuji 3 z 12: Penam CZ…" a vlevo
  * u každého webu prázdné kolečko → točící se → fajfka, nebo křížek
@@ -76,13 +78,13 @@ export function initLibraryUpdate() {
         note.textContent = detail;
     };
 
-    const send = async (form, action) => {
+    const send = async (form, target) => {
         const body = new FormData();
         body.set('_token', form.querySelector('input[name="_token"]')?.value ?? '');
-        body.set('plugin', form.querySelector('input[name="plugin"]')?.value ?? '');
+        body.set('plugin', target.dataset.file ?? '');
         body.set('refresh', '1');
 
-        const response = await fetch(action, {
+        const response = await fetch(target.dataset.action, {
             method: 'POST',
             body,
             credentials: 'same-origin',
@@ -99,7 +101,6 @@ export function initLibraryUpdate() {
         const fill = form.querySelector('[data-library-progress-fill]');
         const start = form.querySelector('[data-library-start]');
         const close = form.querySelector('[data-library-close]');
-        const file = form.querySelector('input[name="plugin"]')?.value ?? '';
         const targets = [...form.querySelectorAll('[data-library-target]')];
 
         running = true;
@@ -119,12 +120,12 @@ export function initLibraryUpdate() {
             let data;
 
             try {
-                data = await send(form, target.dataset.action);
+                data = await send(form, target);
             } catch (error) {
                 data = { ok: false, error: 'Spojení se správou se přerušilo.' };
             }
 
-            const result = data.ok ? (data.items ?? []).find((entry) => entry.file === file) : null;
+            const result = data.ok ? (data.items ?? []).find((entry) => entry.file === target.dataset.file) : null;
 
             if (result?.status === 'updated') {
                 updated++;

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Monitor;
 
 use App\Core\Events\EventLog;
+use App\Core\Modules\Modules;
+use App\Core\Modules\SeoScore;
 use App\Core\Sites\SiteRepository;
 
 /**
@@ -23,6 +25,7 @@ final class AlertEngine
         private readonly Notifier $notifier,
         private readonly MonitorSettings $settings,
         private readonly ?PluginDirectory $directory = null,
+        private readonly ?Modules $modules = null,
     ) {
     }
 
@@ -238,6 +241,37 @@ final class AlertEngine
                 'Poslední úspěšná záloha ' . get_when((string) $backupAt) . '. Zálohovací plugin možná neběží.',
                 'pravidlo: záloha starší než ' . $limit . ' h', 'Záloha je zase čerstvá.', $now);
         }
+
+        $this->afterSeo($site, $snapshot, $now);
+    }
+
+    /**
+     * Modul SEO: web skrytý před vyhledávači, slabé průměrné skóre.
+     * Když modul u webu vypnou, otevřené alerty se zavřou — jinak by
+     * visely navždy, nikdo by je už nevyhodnotil.
+     *
+     * @param array<string, mixed> $site
+     * @param array<string, mixed> $snapshot řádek `site_snapshots` (sloupce `seo_*`)
+     */
+    private function afterSeo(array $site, array $snapshot, string $now): void
+    {
+        $on = $this->modules?->forSite((int) $site['id'], Modules::SEO) === true && ($snapshot['seo_checked_at'] ?? null) !== null;
+        $offNote = 'Modul SEO je u webu vypnutý.';
+
+        $hidden = $on && $this->settings->bool('rule_seo_hidden_on') && ($snapshot['seo_indexable'] ?? null) !== null && (int) $snapshot['seo_indexable'] === 0;
+        $this->toggle($site, 'seo_hidden', $hidden, 'error', 'Web je skrytý před vyhledávači',
+            'Ve WordPressu je zapnuté „Požádat vyhledávače o neindexování tohoto webu" (Nastavení → Zobrazení). Google web nezařadí do výsledků hledání.',
+            'pravidlo: web skrytý před vyhledávači', $on ? 'Web je zase viditelný pro vyhledávače.' : $offNote, $now);
+
+        $average = ($snapshot['seo_average'] ?? null) !== null ? (int) $snapshot['seo_average'] : null;
+        $limit = $this->settings->int('rule_seo_low_score');
+        $low = $on && $this->settings->bool('rule_seo_low_on') && $average !== null && $average < $limit;
+        $plugin = (string) ($snapshot['seo_plugin'] ?? '');
+        $bad = (int) ($snapshot['seo_bad'] ?? 0);
+        $this->toggle($site, 'seo_low', $low, 'warning', 'Slabé SEO – průměrné skóre ' . (int) $average . ' ze 100',
+            'Stránky webu mají v ' . (SeoScore::PLUGIN_NAMES[$plugin] ?? 'SEO pluginu') . ' průměrné skóre ' . (int) $average . ' ze 100'
+                . ($bad > 0 ? ', ' . get_count($bad, 'stránka má', 'stránky mají', 'stránek má') . ' slabé hodnocení' : '') . '. Seznam je na záložce SEO.',
+            'pravidlo: průměrné SEO skóre pod ' . $limit, $on ? 'Průměrné SEO skóre je zase nad prahem.' : $offNote, $now);
     }
 
     /**

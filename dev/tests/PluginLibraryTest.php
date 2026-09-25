@@ -145,7 +145,7 @@ return [
         // „Aktualizovat všude": okno zařadí jen web, který si ZIP umí stáhnout,
         // druhý přeskočí s důvodem.
         assertContainsString('data-confirm="library-update-flipbook-pro"', $page);
-        assertContainsString('data-library-target data-action="/weby/' . $sites['1.4.0'] . '/pluginy/aktualizovat" data-name="Penam"', $page);
+        assertContainsString('data-library-target data-action="/weby/' . $sites['1.4.0'] . '/pluginy/aktualizovat" data-file="flipbook-pro/flipbook-pro.php" data-name="Penam"', $page);
         assertFalse(str_contains($page, '/weby/' . $sites['1.3.1'] . '/pluginy/aktualizovat'), 'Web s Monitorem < 1.4.0 se do „všude" zařadit nemá');
         assertContainsString('<span class="progress-list__note">Pluginy z knihovny umí web stáhnout až s MEDIAGRAFIK Monitorem 1.4.0 (web má 1.3.1)', $page);
         assertContainsString('11.20.0 → 12.6.3', $page);
@@ -189,6 +189,44 @@ return [
         assertContainsString('Aktualizovat všude web přeskočí: Plugin je na webu nesledovaný', $page);
         assertFalse(str_contains($page, 'data-confirm="library-update-flipbook-pro"'), 'Bez webu k aktualizaci se okno nenabízí');
         assertContainsString('aria-label="Aktualizovat všude teď nejde"', $page);
+
+        Urls::reset();
+    },
+
+    'MEDIAGRAFIK Monitor ve vlastní kartě: „všude" i pro složku s jiným názvem, bez koše' => function (): void {
+        [$kernel] = loggedInKernel();
+        $dir = $kernel->storagePath('plugin');
+        @mkdir($dir, 0775, true);
+        $now = date('Y-m-d H:i:s');
+        $sites = [];
+
+        try {
+            // Bez vydané verze se karta neukazuje.
+            @unlink($dir . '/plugin-info.json');
+            assertFalse(str_contains(kernelRequest($kernel, 'GET', '/knihovna')->body(), 'library-update-mediagrafik-monitor'));
+
+            file_put_contents($dir . '/plugin-info.json', json_encode(['name' => 'MEDIAGRAFIK Monitor', 'version' => '1.6.0', 'last_updated' => $now]));
+
+            // Penam má Monitor ve standardní složce, Kavárna ze ZIPu s verzí v názvu, Alfa už aktuální.
+            foreach (['Penam' => ['mediagrafik-monitor', '1.5.5'], 'Kavárna' => ['mediagrafik-monitor-1.5.0', '1.5.0'], 'Alfa' => ['mediagrafik-monitor', '1.6.0']] as $name => [$folder, $version]) {
+                $id = $kernel->sites()->create(['name' => $name, 'url' => 'https://' . strtolower(str_replace('á', 'a', $name)) . '.cz']);
+                $kernel->sites()->setApiKey($id, LIB_KEY . $id);
+                $kernel->db()->insert('site_snapshots', ['site_id' => $id, 'fetched_at' => $now, 'plugin_version' => $version, 'payload' => '{}']);
+                $kernel->db()->insert('site_plugins', ['site_id' => $id, 'file' => $folder . '/mediagrafik-monitor.php', 'name' => 'MEDIAGRAFIK Monitor',
+                    'version' => $version, 'is_active' => 1, 'has_update' => 0, 'first_seen_at' => $now, 'last_seen_at' => $now]);
+                $sites[$name] = $id;
+            }
+
+            $page = kernelRequest($kernel, 'GET', '/knihovna')->body();
+            assertContainsString('data-confirm="library-update-mediagrafik-monitor"', $page);
+            assertContainsString("2\u{00A0}weby čekají na aktualizaci", $page);
+            assertContainsString('data-action="/weby/' . $sites['Penam'] . '/pluginy/aktualizovat" data-file="mediagrafik-monitor/mediagrafik-monitor.php"', $page);
+            assertContainsString('data-action="/weby/' . $sites['Kavárna'] . '/pluginy/aktualizovat" data-file="mediagrafik-monitor-1.5.0/mediagrafik-monitor.php"', $page);
+            assertContainsString('1.5.5 → 1.6.0', $page);
+            assertFalse(str_contains($page, '/knihovna/mediagrafik-monitor/smazat'), 'Monitor z knihovny odebrat nejde');
+        } finally {
+            @unlink($dir . '/plugin-info.json');
+        }
 
         Urls::reset();
     },

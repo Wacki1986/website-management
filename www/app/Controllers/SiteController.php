@@ -10,6 +10,8 @@ use App\Core\Events\EventLog;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
+use App\Core\Modules\Modules;
+use App\Core\Modules\SeoScore;
 use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\PluginDirectory;
@@ -55,6 +57,9 @@ final class SiteController extends Controller
         $percents = $this->kernel->uptime()->percentsFor(array_map(static fn (array $s): int => (int) $s['id'], $sites), 30);
         $plans = $this->kernel->service()->plansFor(array_map(static fn (array $s): int => (int) $s['id'], $sites));
         $reportSettings = $this->kernel->reports()->settingsFor(array_map(static fn (array $s): int => (int) $s['id'], $sites));
+        // Sloupec SEO jen při globálně zapnutém modulu; u webu bez modulu pomlčka.
+        $seoColumn = $this->kernel->modules()->isOn(Modules::SEO);
+        $siteModules = $seoColumn ? $this->kernel->modules()->forSites(array_map(static fn (array $s): int => (int) $s['id'], $sites)) : [];
         $today = date('Y-m-d');
 
         foreach ($sites as $site) {
@@ -78,6 +83,7 @@ final class SiteController extends Controller
                 'updatesTitle' => self::updatesTitle((int) ($site['snap_plugins_updates'] ?? 0), $site['snap_wp_update_version'] ?? null),
                 'service' => ServiceSchedule::cell($plans[(int) $site['id']] ?? null, $today),
                 'report' => self::reportCell($reportSettings[(int) $site['id']] ?? null),
+                'seo' => self::seoCell($site, in_array(Modules::SEO, $siteModules[(int) $site['id']] ?? [], true)),
             ];
         }
 
@@ -113,7 +119,35 @@ final class SiteController extends Controller
             'meta' => get_count($counts['all'], 'monitorovaný web', 'monitorované weby', 'monitorovaných webů')
                 . ($problems > 0 ? ' · ' . get_count($problems, 's problémem', 's problémem', 's problémem') : ''),
             'shown' => count($rows),
+            'seoColumn' => $seoColumn,
         ]);
+    }
+
+    /**
+     * Buňka SEO v seznamu webů: průměrné skóre s tečkou, skrytý web
+     * přebíjí skóre. `tone` '' = pomlčka (modul vypnutý / zatím bez dat).
+     *
+     * @param array<string, mixed> $site řádek se sloupci `snap_seo_*`
+     * @return array{tone: string, label: string, title: string}
+     */
+    private static function seoCell(array $site, bool $on): array
+    {
+        if (!$on) {
+            return ['tone' => '', 'label' => '–', 'title' => 'Modul SEO je u webu vypnutý'];
+        }
+
+        if (($site['snap_seo_indexable'] ?? null) !== null && (int) $site['snap_seo_indexable'] === 0) {
+            return ['tone' => 'error', 'label' => 'skrytý', 'title' => 'Web je skrytý před vyhledávači'];
+        }
+
+        if (($site['snap_seo_average'] ?? null) === null) {
+            return ['tone' => '', 'label' => '—', 'title' => ($site['snap_seo_checked_at'] ?? null) === null ? 'Zatím bez dat' : 'Bez SEO pluginu nebo bez hodnocených stránek'];
+        }
+
+        $average = (int) $site['snap_seo_average'];
+        $plugin = (string) ($site['snap_seo_plugin'] ?? '');
+
+        return ['tone' => SeoScore::tone($average, $plugin), 'label' => (string) $average, 'title' => 'Průměrné SEO skóre ' . $average . ' ze 100 (' . SeoScore::word($average, $plugin) . ')'];
     }
 
     public function createForm(): Response
@@ -170,6 +204,7 @@ final class SiteController extends Controller
         $key = ApiKey::generate();
         $this->kernel->sites()->setApiKey($id, $key);
         $this->kernel->events()->record($id, EventLog::KIND_SETTINGS, 'ok', 'Web přidán do monitoringu', [], $this->actorName());
+        $this->kernel->modules()->onNewSite($id);
         $this->kernel->audit()->record($id, $values['name'], AuditLog::ACTION_SITE_ADD, true, 'Přidán web ' . $values['url']);
 
         // Klíč se ukáže celý jen jednou — hned na Nastavení webu.
@@ -543,6 +578,7 @@ final class SiteController extends Controller
             'pluginVersion' => $this->kernel->pluginDistribution()->version(),
             'pluginInfoUrl' => $this->kernel->appUrl('plugin/mediagrafik-monitor/plugin-info.json'),
             'defaultLoginUser' => $this->kernel->settings()->get(SiteActions::LOGIN_USER_SETTING),
+            'moduleChoices' => $this->kernel->modules()->siteChoices((int) $id),
             'iconNote' => match (true) {
                 (string) $site['icon_source'] === SiteIcons::SOURCE_MANUAL => 'Nahrané logo — v seznamech místo favicony.',
                 (string) $site['icon'] !== '' => 'Favicona stažená z webu' . ($site['icon_checked_at'] !== null ? ' ' . get_when((string) $site['icon_checked_at']) : '') . '. Obnovuje se jednou týdně.',
@@ -614,7 +650,10 @@ final class SiteController extends Controller
         return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Adresa webu je změněná na ' . $url . '. Historie zůstala; klikněte na „Zkontrolovat teď", ať se nová adresa hned ověří.');
     }
 
-    /** Přepínače hlídání — tři samostatné toggle, jeden formulář. */
+    /**
+     * Přepínače hlídání — tři samostatné toggle a pod nimi globálně
+     * zapnuté moduly (`module_seo`…), jeden formulář.
+     */
     public function updateWatch(string $id): Response
     {
         $site = $this->siteOr404((int) $id);
@@ -626,10 +665,21 @@ final class SiteController extends Controller
         ];
 
         $this->kernel->sites()->update((int) $id, $data);
+
+        // Jen moduly, které formulář ukazoval — vypnutý globálně nemá přepínač.
+        $modules = [];
+
+        foreach ($this->kernel->modules()->active() as $key => $module) {
+            $on = $request->bool('module_' . $key);
+            $this->kernel->modules()->setForSite((int) $id, $key, $on);
+            $modules[] = $module['label'] . ' ' . ($on ? 'zap' : 'vyp');
+            $data['module_' . $key] = $on ? 1 : 0;
+        }
+
         $this->kernel->events()->record((int) $id, EventLog::KIND_SETTINGS, 'ok', sprintf(
             'Hlídání: dostupnost %s, aktualizace %s, SSL %s',
             $data['watch_uptime'] ? 'zap' : 'vyp', $data['watch_updates'] ? 'zap' : 'vyp', $data['watch_ssl'] ? 'zap' : 'vyp',
-        ), $data, $this->actorName());
+        ) . ($modules !== [] ? ', ' . implode(', ', $modules) : ''), $data, $this->actorName());
 
         return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Hlídání je uložené.');
     }

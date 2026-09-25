@@ -190,7 +190,39 @@ function fake_summary(): array
 
     $summary['plugins']['active'] = $active;
 
+    // Modul SEO jen na vyžádání (`?modules=seo`), jako plugin 1.6.0.
+    if (in_array('seo', explode(',', (string) ($_GET['modules'] ?? '')), true)) {
+        $summary['seo'] = fake_seo();
+    }
+
     return $summary;
+}
+
+/** Data modulu SEO — průměr a viditelnost řídí FAKE_WP_SEO_AVERAGE a FAKE_WP_SEO_HIDDEN. */
+function fake_seo(): array
+{
+    $average = (int) (getenv('FAKE_WP_SEO_AVERAGE') ?: 72);
+
+    return [
+        'plugin' => 'rank-math',
+        'plugin_name' => 'Rank Math SEO',
+        'plugin_version' => '1.0.230',
+        'indexable' => getenv('FAKE_WP_SEO_HIDDEN') !== '1',
+        'sitemap' => ['enabled' => true, 'url' => 'http://127.0.0.1/sitemap_index.xml', 'source' => 'rank-math'],
+        'post_types' => ['post', 'page'],
+        'pages' => 30,
+        'scores' => ['average' => $average, 'good' => 18, 'ok' => 6, 'bad' => 3, 'unscored' => 2],
+        'thresholds' => ['good' => 80, 'ok' => 50],
+        'missing' => ['keyword' => 5, 'description' => 7],
+        'noindex' => 1,
+        'coverage' => ['pages' => 29, 'keyword' => 24, 'description' => 22, 'og_image' => 12, 'og_default' => false, 'images' => ['total' => 940, 'with_alt' => 612]],
+        'weak' => [
+            ['id' => 12, 'title' => 'Kontakt', 'type' => 'page', 'type_label' => 'Stránka', 'score' => 31, 'keyword' => '', 'issues' => ['keyword', 'short_text'], 'words' => 42, 'images_without_alt' => 0, 'url' => 'http://127.0.0.1/kontakt/', 'edit_url' => 'http://127.0.0.1/wp-admin/post.php?post=12&action=edit'],
+            ['id' => 40, 'title' => 'Podzimní menu', 'type' => 'post', 'type_label' => 'Příspěvek', 'score' => 64, 'keyword' => 'podzimní menu', 'issues' => ['description', 'image_alt'], 'words' => 520, 'images_without_alt' => 2, 'url' => 'javascript:alert(1)', 'edit_url' => 'http://127.0.0.1/wp-admin/post.php?post=40&action=edit'],
+        ],
+        'not_found' => ['source' => 'rank-math', 'days' => 7, 'hits' => 38, 'urls' => 3, 'top' => [['url' => '/menu-leto-2025', 'hits' => 17], ['url' => '/eshop/kava-kolumbie', 'hits' => 12]]],
+        'redirects' => ['source' => 'rank-math', 'active' => 24],
+    ];
 }
 
 function fake_summary_base(): array

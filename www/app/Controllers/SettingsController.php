@@ -12,6 +12,7 @@ use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Kernel;
+use App\Core\Modules\Modules;
 use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\MonitorRun;
 use App\Core\Monitor\MonitorSettings;
@@ -212,16 +213,33 @@ final class SettingsController extends Controller
         ['key' => 'rule_service', 'valueKey' => 'rule_service_hours', 'label' => 'Nezapsaný servis', 'text' => 'Alert, když se naplánovaný servis nezapíše do historie.', 'unit' => 'h', 'min' => 1, 'max' => 720, 'note' => ''],
         ['key' => 'rule_domain', 'valueKey' => 'rule_domain_days', 'label' => 'Expirace domény', 'text' => 'Upozornit, kolik dní před koncem registrace domény.', 'unit' => 'dní', 'min' => 7, 'max' => 365, 'note' => 'Zjišťuje se přes RDAP jednou týdně.'],
         ['key' => 'rule_abandoned', 'valueKey' => 'rule_abandoned_months', 'label' => 'Opuštěné pluginy', 'text' => 'Alert, když plugin na webu nemá nové vydání déle než tolik měsíců, nebo ho wordpress.org stáhl.', 'unit' => 'měs.', 'min' => 6, 'max' => 120, 'note' => 'Data z wordpress.org se ověřují jednou týdně; placené pluginy mimo adresář se nehodnotí. Práh platí i pro označení „Opuštěný" u pluginů.'],
+        // Pravidla modulů — jen když je modul zapnutý (`rules()`). Bez
+        // `valueKey` = pravidlo bez prahu, jen zapnuto/vypnuto.
+        ['key' => 'rule_seo_hidden', 'valueKey' => null, 'label' => 'Web skrytý před vyhledávači', 'text' => 'Alert, když má web ve WordPressu zapnuté „Požádat vyhledávače o neindexování".', 'unit' => '', 'min' => 0, 'max' => 0, 'note' => 'Jen u webů se zapnutým modulem SEO.', 'module' => Modules::SEO],
+        ['key' => 'rule_seo_low', 'valueKey' => 'rule_seo_low_score', 'label' => 'Slabé SEO', 'text' => 'Alert, když průměrné SEO skóre stránek klesne pod tuto hodnotu.', 'unit' => 'bodů', 'min' => 10, 'max' => 100, 'note' => 'Jen u webů se zapnutým modulem SEO; skóre počítá Rank Math nebo Yoast.', 'module' => Modules::SEO],
     ];
+
+    /**
+     * Pravidla k zobrazení i uložení — bez pravidel vypnutých modulů
+     * (skrytý přepínač by se při uložení bral jako vypnutý).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function rules(): array
+    {
+        $modules = $this->kernel->modules();
+
+        return array_values(array_filter(self::RULES, static fn (array $rule): bool => !isset($rule['module']) || $modules->isOn($rule['module'])));
+    }
 
     public function alerts(): Response
     {
         $settings = $this->kernel->monitorSettings();
         $rules = [];
 
-        foreach (self::RULES as $rule) {
+        foreach ($this->rules() as $rule) {
             $valueKey = $rule['valueKey'];
-            $rules[] = $rule + ['value' => $settings->int($valueKey), 'on' => $settings->bool($rule['key'] . '_on')];
+            $rules[] = $rule + ['value' => $valueKey !== null ? $settings->int($valueKey) : 0, 'on' => $settings->bool($rule['key'] . '_on')];
         }
 
         return $this->view('settings/alerts', [
@@ -239,9 +257,13 @@ final class SettingsController extends Controller
         $body = $this->request()->body;
         $values = [];
 
-        foreach (self::RULES as $rule) {
+        foreach ($this->rules() as $rule) {
             $valueKey = $rule['valueKey'];
-            $values[$valueKey] = $body[$rule['key'] . '_max'] ?? MonitorSettings::DEFAULTS[$valueKey];
+
+            if ($valueKey !== null) {
+                $values[$valueKey] = $body[$rule['key'] . '_max'] ?? MonitorSettings::DEFAULTS[$valueKey];
+            }
+
             // Neodeslaný přepínač = vypnuto.
             $values[$rule['key'] . '_on'] = isset($body[$rule['key'] . '_on']) ? '1' : '0';
         }
@@ -250,6 +272,64 @@ final class SettingsController extends Controller
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uloženy prahy alertů');
 
         return $this->redirectWithFlash('nastaveni/alerty', 'Prahy alertů jsou uložené.');
+    }
+
+    // -----------------------------------------------------------------
+    // Moduly — volitelná měření webů
+    // -----------------------------------------------------------------
+
+    public function modules(): Response
+    {
+        $modules = $this->kernel->modules();
+        $totalSites = $this->kernel->sites()->countActive();
+        $items = [];
+
+        foreach (Modules::REGISTRY as $key => $module) {
+            $siteCount = $modules->siteCount($key);
+            $items[] = $module + [
+                'key' => $key,
+                'on' => $modules->isOn($key),
+                'newSites' => $modules->isOnForNewSites($key),
+                'siteCount' => $siteCount,
+                'offerAll' => $modules->isOn($key) && $siteCount < $totalSites,
+            ];
+        }
+
+        return $this->view('settings/modules', [
+            'title' => 'Nastavení',
+            'activeTab' => 'moduly',
+            'modules' => $items,
+            'totalSites' => $totalSites,
+        ]);
+    }
+
+    public function saveModules(): Response
+    {
+        $key = $this->request()->string('module');
+
+        if (!Modules::exists($key)) {
+            throw new HttpException(404);
+        }
+
+        $on = $this->request()->bool('on');
+        $this->kernel->modules()->save($key, $on, $this->request()->bool('new_sites'));
+        $label = Modules::REGISTRY[$key]['label'];
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Modul ' . $label . ': ' . ($on ? 'zapnutý' : 'vypnutý'));
+
+        return $this->redirectWithFlash('nastaveni/moduly', 'Modul ' . $label . ' je ' . ($on ? 'zapnutý.' : 'vypnutý. U webů zůstává volba uložená pro případ, že ho zase zapnete.'));
+    }
+
+    public function enableModuleForAll(string $key): Response
+    {
+        if (!Modules::exists($key)) {
+            throw new HttpException(404);
+        }
+
+        $count = $this->kernel->modules()->enableForAll($key);
+        $label = Modules::REGISTRY[$key]['label'];
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Modul ' . $label . ' zapnutý u všech webů (' . $count . ')');
+
+        return $this->redirectWithFlash('nastaveni/moduly', 'Modul ' . $label . ' je zapnutý u ' . get_count($count, 'webu', 'webů', 'webů') . '. Data přijdou s další kontrolou webu.');
     }
 
     // -----------------------------------------------------------------

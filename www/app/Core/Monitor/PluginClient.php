@@ -77,10 +77,14 @@ final class PluginClient
         return $this->call($siteUrl, $apiKey, 'ping');
     }
 
-    /** @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string} */
-    public function summary(string $siteUrl, #[\SensitiveParameter] string $apiKey): array
+    /**
+     * @param array<int, string> $modules volitelné moduly zapnuté u webu (`Modules`) —
+     *                                    plugin od 1.6.0 pošle i jejich data
+     * @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string}
+     */
+    public function summary(string $siteUrl, #[\SensitiveParameter] string $apiKey, array $modules = []): array
     {
-        return $this->call($siteUrl, $apiKey, 'summary');
+        return $this->call($siteUrl, $apiKey, self::summaryEndpoint($modules));
     }
 
     /** @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string} */
@@ -173,20 +177,38 @@ final class PluginClient
 
     /**
      * Souhrn z několika webů najednou (curl_multi) — cron jich stahuje
-     * po dávkách. Klíčem výsledku je klíč vstupu (id webu).
+     * po dávkách. Klíčem výsledku je klíč vstupu (id webu). Weby se stejnými
+     * moduly jdou v jedné dávce (adresa endpointu je pro dávku společná).
      *
-     * @param array<int|string, array{url: string, key: string}> $sites
+     * @param array<int|string, array{url: string, key: string, modules?: array<int, string>}> $sites
      * @return array<int|string, array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string}>
      */
     public function summaryMany(array $sites, int $concurrency = 4): array
     {
+        $groups = [];
+
+        foreach ($sites as $id => $site) {
+            $groups[self::summaryEndpoint($site['modules'] ?? [])][$id] = ['url' => $site['url'], 'key' => $site['key']];
+        }
+
         $results = [];
 
-        foreach (array_chunk($sites, max(1, $concurrency), true) as $chunk) {
-            $results += $this->fetchMany($chunk, 'summary');
+        foreach ($groups as $endpoint => $group) {
+            foreach (array_chunk($group, max(1, $concurrency), true) as $chunk) {
+                $results += $this->fetchMany($chunk, $endpoint);
+            }
         }
 
         return $results;
+    }
+
+    /** `summary` nebo `summary?modules=seo`. @param array<int, string> $modules */
+    private static function summaryEndpoint(array $modules): string
+    {
+        $modules = array_values(array_unique(array_filter($modules, static fn (string $m): bool => preg_match('/^[a-z]+$/', $m) === 1)));
+        sort($modules);
+
+        return $modules === [] ? 'summary' : 'summary?modules=' . implode(',', $modules);
     }
 
     /** @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string} */
@@ -197,14 +219,18 @@ final class PluginClient
         return $results['single'];
     }
 
-    /** Adresa endpointu — hezká, nebo přes `?rest_route=` (záložka). */
+    /**
+     * Adresa endpointu — hezká, nebo přes `?rest_route=` (záložka). Dotaz
+     * v endpointu (`summary?modules=seo`) se u záložky připojí přes `&`.
+     */
     public static function endpointUrl(string $siteUrl, string $endpoint, bool $fallback = false): string
     {
         $base = rtrim($siteUrl, '/');
+        [$path, $query] = array_pad(explode('?', $endpoint, 2), 2, '');
 
         return $fallback
-            ? $base . '/?rest_route=/' . self::NAMESPACE . '/' . $endpoint
-            : $base . '/wp-json/' . self::NAMESPACE . '/' . $endpoint;
+            ? $base . '/?rest_route=/' . self::NAMESPACE . '/' . $path . ($query !== '' ? '&' . $query : '')
+            : $base . '/wp-json/' . self::NAMESPACE . '/' . $path . ($query !== '' ? '?' . $query : '');
     }
 
     /**

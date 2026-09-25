@@ -16,6 +16,7 @@
  * @var array{all: int, problem: int, attention: int, ok: int} $counts
  * @var string              $meta
  * @var int                 $shown
+ * @var bool                $seoColumn      sloupec SEO (modul SEO zapnutý globálně); řádky mají `seo` (tone, label, title)
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $title]);
@@ -35,7 +36,7 @@ $segments = [
     ['key' => 'ok', 'label' => 'V pořádku', 'count' => $counts['ok'], 'dot' => 'ok'],
 ];
 
-$renderRow = function (array $site) use ($csrfToken): void {
+$renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
     $detail = get_url('weby/' . (int) $site['id']);
     $level = $site['state']['level'];
     ?>
@@ -54,6 +55,9 @@ $renderRow = function (array $site) use ($csrfToken): void {
             <div class="table__cell table__cell--mono u-truncate<?= $version['value'] === '' ? ' text-faint' : ($version['tone'] !== '' ? ' text-' . $version['tone'] : '') ?>"<?= $version['title'] !== '' ? ' title="' . $this->e($version['title']) . '"' : '' ?>><?= $version['value'] !== '' ? $this->e($version['value']) : '—' ?></div>
         <?php endforeach; ?>
         <div class="table__cell table__cell--right"><?= $site['updates'] > 0 ? '<span title="' . $this->e($site['updatesTitle']) . '">' . get_badge((string) $site['updates'], $site['updates'] >= 5 ? 'warning' : '') . '</span>' : '<span class="text-faint">–</span>' ?></div>
+        <?php if ($seoColumn): ?>
+            <div class="table__cell" title="<?= $this->e($site['seo']['title']) ?>"><?= $site['seo']['tone'] !== '' ? get_status($site['seo']['tone'], $site['seo']['label']) : '<span class="text-faint">' . $this->e($site['seo']['label']) . '</span>' ?></div>
+        <?php endif; ?>
         <div class="table__cell<?= $site['service']['tone'] !== '' ? ' text-' . $site['service']['tone'] : '' ?>" style="font-size:var(--font-size-label)"><?= $this->e($site['service']['label']) ?></div>
         <div class="table__cell<?= $site['report']['tone'] !== '' ? ' text-' . $site['report']['tone'] : ' text-secondary' ?>" style="font-size:var(--font-size-label)"><?= $this->e($site['report']['label']) ?></div>
         <div class="table__cell table__cell--right"><?= get_icon('chevron-right', 'icon--sm icon--subtle') ?></div>
@@ -96,8 +100,8 @@ $renderRow = function (array $site) use ($csrfToken): void {
             </div>
         </form>
 
-        <div class="table table--sites">
-            <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP</div><div>PHP</div><div>Databáze</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div>Report</div><div></div></div>
+        <div class="table table--sites<?= $seoColumn ? ' table--sites-seo' : '' ?>">
+            <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP</div><div>PHP</div><div>Databáze</div><div class="table__cell table__cell--right">Aktualizace</div><?php if ($seoColumn): ?><div>SEO</div><?php endif; ?><div>Servis</div><div>Report</div><div></div></div>
 
             <?php if ($rows === []): ?>
                 <?php if ($counts['all'] === 0 && $q === '' && $clientId === null): ?>

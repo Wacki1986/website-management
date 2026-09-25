@@ -6,6 +6,8 @@ namespace App\Core\Monitor;
 
 use App\Core\Db\Connection;
 use App\Core\Events\EventLog;
+use App\Core\Modules\SeoRepository;
+use App\Core\Modules\SeoScore;
 use App\Core\Sites\PluginOffers;
 use App\Core\Sites\SiteRepository;
 
@@ -25,6 +27,8 @@ final class SnapshotImporter
         private readonly EventLog $events,
         // Bez něj (testy mimo Kernel) se počítá jen to, co hlásí WordPress.
         private readonly ?PluginOffers $offers = null,
+        // Bez něj se SEO uloží jen do snímku, bez denní historie.
+        private readonly ?SeoRepository $seo = null,
     ) {
     }
 
@@ -53,7 +57,19 @@ final class SnapshotImporter
             'payload' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ];
 
+        // Modul SEO: sloupce se přepisují, jen když data přišla — u webu
+        // s vypnutým modulem zůstane poslední stav (a nikde se neukazuje).
+        $seo = is_array($data['seo'] ?? null) ? $data['seo'] : null;
+
+        if ($seo !== null) {
+            $row += self::seoColumns($seo, $now);
+        }
+
         $this->upsertSnapshot($row);
+
+        if ($seo !== null) {
+            $this->seo?->record($siteId, $seo, $now);
+        }
 
         // Změny jádra a PHP proti minulé snapshotě.
         if ($previous !== null) {
@@ -142,6 +158,27 @@ final class SnapshotImporter
             'plugins_updates' => (int) ($plugins['updates'] ?? 0),
             'security_updates' => (int) ($plugins['security_updates'] ?? 0),
             'last_backup_at' => $lastBackup !== '' && strtotime($lastBackup) !== false ? date('Y-m-d H:i:s', (int) strtotime($lastBackup)) : null,
+        ];
+    }
+
+    /**
+     * Sloupce modulu SEO z `data.seo` — nejčastěji čtené hodnoty (seznam
+     * webů, alerty); zbytek zůstává v payloadu.
+     *
+     * @param array<string, mixed> $seo
+     * @return array<string, mixed>
+     */
+    public static function seoColumns(array $seo, string $now): array
+    {
+        $scores = is_array($seo['scores'] ?? null) ? $seo['scores'] : [];
+        $plugin = (string) ($seo['plugin'] ?? '');
+
+        return [
+            'seo_plugin' => isset(SeoScore::THRESHOLDS[$plugin]) ? $plugin : '',
+            'seo_average' => SeoScore::average($scores['average'] ?? null),
+            'seo_bad' => isset($scores['bad']) && is_numeric($scores['bad']) ? (int) $scores['bad'] : null,
+            'seo_indexable' => array_key_exists('indexable', $seo) ? (!empty($seo['indexable']) ? 1 : 0) : null,
+            'seo_checked_at' => $now,
         ];
     }
 

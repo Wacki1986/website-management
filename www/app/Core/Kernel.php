@@ -14,12 +14,15 @@ use App\Controllers\MonitorCronController;
 use App\Controllers\PluginDistributionController;
 use App\Controllers\PluginLibraryController;
 use App\Controllers\ReportController;
+use App\Controllers\SeoController;
 use App\Controllers\TrackingController;
 use App\Controllers\TwoFactorController;
 use App\Controllers\ServiceController;
 use App\Controllers\SettingsController;
 use App\Controllers\SiteActionController;
 use App\Controllers\SiteController;
+use App\Core\Modules\Modules;
+use App\Core\Modules\SeoRepository;
 use App\Core\Monitor\AlertEngine;
 use App\Core\Monitor\AlertRepository;
 use App\Core\Monitor\DbSupport;
@@ -86,16 +89,18 @@ use Throwable;
  * Jádro Správy webů.
  *
  * Převzaté ze správy instancí dispu (stejný Router, View, Connection,
- * Migrator i celá autentizace). Co tu záměrně není: moduly, role s právy
+ * Migrator i celá autentizace). Co tu záměrně není: role s právy
  * (uživatelé jsou si rovni, role je jen štítek), firemní kód a instalační
- * průvodce — aplikaci nasazuje tentýž člověk, který ji používá.
+ * průvodce — aplikaci nasazuje tentýž člověk, který ji používá. „Moduly"
+ * tu nejsou zásuvné balíčky jako v dispu, jen volitelná měření webů
+ * (`Modules\Modules`).
  *
  * Služby vznikají líně: přihlašovací stránka nesmí spadnout jen proto, že
  * databáze zrovna neodpovídá.
  */
 final class Kernel
 {
-    public const VERSION = '0.7.2';
+    public const VERSION = '0.8.0';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
@@ -156,6 +161,8 @@ final class Kernel
     private ?ReportRenderer $reportRenderer = null;
     private ?ReportSender $reportSender = null;
     private ?DashboardData $dashboard = null;
+    private ?Modules $modules = null;
+    private ?SeoRepository $seo = null;
 
     private ?Request $request = null;
     private string $basePath = '';
@@ -449,7 +456,19 @@ final class Kernel
 
     public function snapshots(): SnapshotImporter
     {
-        return $this->snapshots ??= new SnapshotImporter($this->db(), $this->sites(), $this->events(), $this->pluginOffers());
+        return $this->snapshots ??= new SnapshotImporter($this->db(), $this->sites(), $this->events(), $this->pluginOffers(), $this->seo());
+    }
+
+    /** Volitelná měření webů — co je zapnuté globálně a u kterého webu. */
+    public function modules(): Modules
+    {
+        return $this->modules ??= new Modules($this->db(), $this->settings());
+    }
+
+    /** Historie modulu SEO (denní průměry). */
+    public function seo(): SeoRepository
+    {
+        return $this->seo ??= new SeoRepository($this->db());
     }
 
     public function pluginOffers(): PluginOffers
@@ -519,7 +538,7 @@ final class Kernel
 
     public function reportBuilder(): ReportBuilder
     {
-        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit(), $this->snapshots(), $this->pluginDirectory());
+        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit(), $this->snapshots(), $this->pluginDirectory(), $this->modules(), $this->seo());
     }
 
     public function reportRenderer(): ReportRenderer
@@ -547,7 +566,7 @@ final class Kernel
 
     public function alertEngine(): AlertEngine
     {
-        return $this->alertEngine ??= new AlertEngine($this->alerts(), $this->events(), $this->sites(), $this->notifier(), $this->monitorSettings(), $this->pluginDirectory());
+        return $this->alertEngine ??= new AlertEngine($this->alerts(), $this->events(), $this->sites(), $this->notifier(), $this->monitorSettings(), $this->pluginDirectory(), $this->modules());
     }
 
     /** Jeden průchod monitoru — cron i tlačítka „Zkontrolovat". */
@@ -591,6 +610,7 @@ final class Kernel
             $this->storagePath(MonitorRun::LOCK_FILE),
             new UptimeClient($this->monitorSettings()->int('monitor_timeout_s')),
             $this->service(),
+            $this->modules(),
         );
 
         // Reporty: den před termínem příprava ke schválení, v termínu odeslání.
@@ -1098,6 +1118,8 @@ final class Kernel
         $router->add('POST', '/weby/{id}/prihlasit', [SiteActionController::class, 'login'], Router::AUTH_ONLY, 'sites.login');
         $router->add('GET', '/weby/{id}/obsah', [SiteController::class, 'content'], name: 'sites.content');
         $router->add('GET', '/weby/{id}/zabezpeceni', [SiteController::class, 'security'], name: 'sites.security');
+        $router->add('GET', '/weby/{id}/seo', [SeoController::class, 'show'], name: 'sites.seo');
+        $router->add('GET', '/weby/{id}/seo/stranky', [SeoController::class, 'allPages'], name: 'sites.seo.pages');
         $router->add('POST', '/weby/{id}/zabezpeceni/overit', [SiteController::class, 'securityCheck'], Router::AUTH_ONLY, 'sites.security.check');
         $router->add('GET', '/weby/{id}/historie', [SiteController::class, 'history'], name: 'sites.history');
         $router->add('GET', '/weby/{id}/servis', [ServiceController::class, 'show'], name: 'sites.service');
@@ -1215,6 +1237,9 @@ final class Kernel
         $router->add('POST', '/nastaveni/reporty', [SettingsController::class, 'saveReportTemplate'], Router::AUTH_ONLY, 'settings.reports');
         $router->add('GET', '/nastaveni/alerty', [SettingsController::class, 'alerts'], name: 'settings.alerts.show');
         $router->add('POST', '/nastaveni/alerty', [SettingsController::class, 'saveAlerts'], Router::AUTH_ONLY, 'settings.alerts');
+        $router->add('GET', '/nastaveni/moduly', [SettingsController::class, 'modules'], name: 'settings.modules.show');
+        $router->add('POST', '/nastaveni/moduly', [SettingsController::class, 'saveModules'], Router::AUTH_ONLY, 'settings.modules');
+        $router->add('POST', '/nastaveni/moduly/{key}/vsechny-weby', [SettingsController::class, 'enableModuleForAll'], Router::AUTH_ONLY, 'settings.modules.all');
 
         $router->add('GET', '/nastaveni/email', [SettingsController::class, 'email'], name: 'settings.mail.show');
         $router->add('POST', '/nastaveni/email', [SettingsController::class, 'saveMail'], Router::AUTH_ONLY, 'settings.mail');

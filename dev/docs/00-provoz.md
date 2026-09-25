@@ -197,6 +197,12 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   s auditem a historií) a průběh je v okně — fajfka, nebo křížek s důvodem.
   Okno i stránku nechat otevřené do konce; selhání jednoho webu ostatní
   nezastaví. Zavřením okna po konci se stránka načte znovu.
+- **Nová verze MEDIAGRAFIK Monitoru na všechny weby:** po `build-plugin.ps1`
+  a nahrání `storage/plugin/` na server má Monitor v Knihovně pluginů
+  vlastní kartu nahoře — ikona „Aktualizovat všude" funguje stejně jako
+  u pluginů z knihovny. Weby s Monitorem starším než 1.1.0 se ze správy
+  aktualizovat neumí (přeskočí se), ty je potřeba jednou aktualizovat ve
+  wp-admin.
 
 ## 5. Hromadné přidání webů
 
@@ -273,7 +279,51 @@ jde spouštět opakovaně.
 - Logy: `storage/logs/app-*.log` (chyby cronu, odmítnuté klíče), s
   transportem `log` i `*.eml`.
 
-## 9. Když něco nejde
+## 9. Moduly (SEO)
+
+Volitelná měření, která nepotřebuje každý web. Zapínají se na dvou místech
+a platí jen obojí najednou:
+
+1. **Nastavení → Moduly**: modul pro celou aplikaci, volba „Zapnout u nových
+   webů" a tlačítko „Zapnout u všech webů".
+2. **Detail webu → Nastavení → Hlídání**: přepínač modulu u webu (ukazuje se
+   jen u globálně zapnutého modulu).
+
+Globální vypnutí modul schová všude (záložka, sloupec, report, alerty), volby
+u webů zůstanou uložené. Web s vypnutým modulem nic navíc nepočítá — hub mu
+v požadavku `summary` parametr `modules` nepošle.
+
+**Modul SEO** potřebuje MEDIAGRAFIK Monitor **1.6.0** (starší plugin data
+nepošle, záložka SEO to řekne). Plugin čte, co si k publikovaným stránkám
+ukládá **Rank Math** nebo **Yoast SEO**: skóre stránek (průměr; dobré,
+průměrné, slabé podle barev pluginu), stránky bez klíčového slova, bez
+vlastního meta popisu, s noindex, a nejslabších 10 stránek. Bez SEO
+pluginu jen obecné kontroly: jestli web není skrytý před vyhledávači
+(Nastavení → Zobrazení ve WordPressu) a jestli má mapu webu. Skóre vzniká
+v editoru při uložení stránky — stránka, kterou od instalace SEO pluginu
+nikdo neotevřel, je „bez hodnocení".
+
+- **Plugin 1.7.0** posílá navíc pokrytí metadat (klíčové slovo, meta popis,
+  obrázek pro sdílení, alt text v knihovně médií), až 200 slabých stránek
+  s tím, co jim chybí („krátký text" = pod 300 slov; u builderů, které
+  text neukládají do obsahu stránky, se nehlásí), a nefunkční odkazy za
+  7 dní s počtem přesměrování. Ty jsou jen tam, kde je web zaznamenává:
+  Rank Math → moduly 404 Monitor a Přesměrování (výchozí vypnuté), nebo
+  plugin Redirection. Rank Math v jednoduchém režimu 404 Monitoru drží
+  u adresy celkový počet zásahů, číslo tak může zahrnovat i starší.
+- **Kde se ukazuje:** záložka SEO u webu, sloupec SEO v seznamu webů
+  (průměr, „skrytý"), sekce „SEO webu" v klientském reportu (průměr,
+  posun od začátku období, stránky k vylepšení, viditelnost; přepínač
+  v náhledu reportu jen u webů s modulem), skrytý web i v doporučeních
+  reportu.
+- **Alerty** (Nastavení → Alerty a prahy, jen při zapnutém modulu): „Web
+  skrytý před vyhledávači" (vážný) a „Slabé SEO" (průměr pod prahem,
+  výchozí 50). Vypnutí modulu u webu otevřené alerty zavře.
+- Data chodí s daty z pluginu (Monitoring → Data z pluginu), hned je načte
+  „Zkontrolovat teď". Denní průměry leží v `seo_days` (trend na záložce,
+  posun v reportu).
+
+## 10. Když něco nejde
 
 | Příznak | Kde hledat |
 | --- | --- |

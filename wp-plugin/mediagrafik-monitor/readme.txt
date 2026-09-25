@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.5.5
+Stable tag: 1.7.0
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -18,6 +18,9 @@ Na pokyn Správy webů (podepsaný požadavek) umí aktualizovat pluginy, smazat
 a aktualizovat WordPress — stejnou cestou jako wp-admin. Umí i přihlášení do administrace
 jedním klikem ze Správy webů (jednorázový odkaz, bez hesla; jde vypnout v nastavení pluginu).
 
+Když má Správa webů u webu zapnutý modul SEO, posílá plugin navíc skóre stránek z Rank Math
+nebo Yoast SEO a základní SEO kontroly (viditelnost pro vyhledávače, mapa webu).
+
 == Installation ==
 
 1. Pluginy → Nahrát plugin → ZIP → Aktivovat.
@@ -25,6 +28,13 @@ jedním klikem ze Správy webů (jednorázový odkaz, bez hesla; jde vypnout v n
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.7.0 =
+* Modul SEO: pokrytí metadat (klíčové slovo, meta popis, obrázek pro sdílení, alt text obrázků v knihovně médií), až 200 slabě hodnocených stránek s klíčovým slovem a tím, co jim chybí (klíčové slovo, meta popis, krátký text, alt u obrázků v textu).
+* Nefunkční odkazy za 7 dní a počet aktivních přesměrování — z modulů 404 Monitor a Přesměrování v Rank Math, nebo z pluginu Redirection.
+
+= 1.6.0 =
+* Modul SEO pro Správu webů: na vyžádání posílá skóre stránek z Rank Math nebo Yoast SEO (průměr; dobré, průměrné a špatné; nejhůř hodnocené stránky), stránky bez klíčového slova, bez meta popisu a s noindex, jestli web není skrytý před vyhledávači a jestli má mapu webu.
 
 = 1.5.5 =
 * Ve výpisu pluginů odkaz „Nastavení" (vedle Deaktivovat); po první aktivaci (bez uloženého klíče) přesměruje rovnou do nastavení.

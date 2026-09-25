@@ -15,14 +15,16 @@
  * Weby ve sloupci jsou pilulky: oranžová se starší verzí, šedá aktuální.
  * U víc webů se šedé schovají za „+ N aktuálních" (rozbalí skript).
  *
+ * Náš MEDIAGRAFIK Monitor má nad knihovnou vlastní kartu se stejným
+ * řádkem — nenahrává se sem, rozdává ho správa (`storage/plugin/`), ale
+ * po vydání nové verze se odsud rozešle na všechny weby.
+ *
  * @var \App\Core\View\View $this
  * @var string              $title
- * @var array<int, array<string, mixed>> $rows  plugin knihovny + `sites` (je vůbec na nějakém webu),
- *                                              `listedSites` (vypsané jménem) a `hiddenSites` (pod „+ N aktuálních", popisek `hiddenLabel`):
- *                                              id, name, version, url, outdated, blocked (proč ho „všude" přeskočí, null = ne),
- *                                              `outdated` (počet webů se starší verzí),
- *                                              `targets` / `skipped` (weby se starší verzí, které se aktualizují / přeskočí; mají `updateAction`),
- *                                              `dialogId`, `sizeLabel`, `uploaded`, `downloadUrl`, `removeAction`
+ * @var array<string, mixed>|null        $monitor  řádek Monitoru (null = správa žádnou verzi nerozdává)
+ * @var array<int, array<string, mixed>> $rows     pluginy knihovny — řádky z `PluginLibraryController::row()`
+ *                                                 (klíče popisuje partial `library-row`)
+ * @var array<int, array<string, mixed>> $dialogs  řádky s weby k aktualizaci → okno `library-update-dialog`
  * @var string              $since      od které verze MEDIAGRAFIK Monitoru weby knihovnu znají
  * @var string              $maxUpload  limit nahrávání na hostingu (upload_max_filesize)
  * @var string              $csrfToken
@@ -51,6 +53,16 @@ $this->extend('layout/shell', ['title' => $title]);
         </aside>
     </div>
 
+    <?php if ($monitor !== null): ?>
+        <section class="card card--scroll-x">
+            <?php render_card_head('MEDIAGRAFIK Monitor', 'náš plugin — novou verzi rozdává správa sama, do knihovny se nenahrává') ?>
+            <div class="table table--library">
+                <div class="table__head"><div>Plugin</div><div>Verze</div><div>Na webech</div><div>Vydáno</div><div class="table__cell table__cell--right">Akce</div></div>
+                <?= $this->partial('partials/library-row', ['plugin' => $monitor, 'csrfToken' => $csrfToken]) ?>
+            </div>
+        </section>
+    <?php endif; ?>
+
     <section class="card card--scroll-x">
         <?php render_card_head('Pluginy v knihovně', get_count(count($rows), 'plugin', 'pluginy', 'pluginů')) ?>
 
@@ -60,104 +72,13 @@ $this->extend('layout/shell', ['title' => $title]);
             <div class="table table--library">
                 <div class="table__head"><div>Plugin</div><div>Verze</div><div>Na webech</div><div>Nahráno</div><div class="table__cell table__cell--right">Akce</div></div>
                 <?php foreach ($rows as $plugin): ?>
-                    <div class="table__row table__row--top">
-                        <div class="table__cell">
-                            <div class="table__primary u-truncate"><?= $this->e((string) $plugin['name']) ?></div>
-                            <div class="table__secondary u-truncate u-mono"><?= $this->e((string) $plugin['file']) ?></div>
-                        </div>
-                        <div class="table__cell table__cell--mono">
-                            <?= $this->e((string) $plugin['version']) ?>
-                            <div class="table__secondary"><?= $this->e($plugin['sizeLabel']) ?></div>
-                        </div>
-                        <div class="table__cell">
-                            <?php if (!$plugin['sites']): ?>
-                                <span class="text-faint">zatím na žádném webu</span>
-                            <?php else: ?>
-                                <?= $plugin['outdated'] > 0 ? get_status('warning', get_count($plugin['outdated'], 'web čeká', 'weby čekají', 'webů čeká') . ' na aktualizaci') : get_status('ok', 'všude aktuální') ?>
-                                <div class="library-sites">
-                                    <?php foreach ($plugin['listedSites'] as $site): ?>
-                                        <?php if ($site['outdated']): ?>
-                                            <a class="pill pill--sm pill--button pill--warning" href="<?= $site['url'] ?>" title="<?= $this->e($site['blocked'] !== null ? 'Verze ' . $site['version'] . ' — Aktualizovat všude web přeskočí: ' . $site['blocked'] : 'Verze ' . $site['version'] . ', čeká na aktualizaci') ?>"><?= $this->e($site['name']) ?> <span class="u-mono"><?= $this->e($site['version']) ?></span></a>
-                                        <?php else: ?>
-                                            <a class="pill pill--sm pill--button pill--muted" href="<?= $site['url'] ?>" title="Verze <?= $this->e($site['version']) ?>, aktuální"><?= $this->e($site['name']) ?></a>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                    <?php foreach ($plugin['hiddenSites'] as $site): ?>
-                                        <a class="pill pill--sm pill--button pill--muted" href="<?= $site['url'] ?>" title="Verze <?= $this->e($site['version']) ?>, aktuální" data-library-hidden hidden><?= $this->e($site['name']) ?></a>
-                                    <?php endforeach; ?>
-                                    <?php if ($plugin['hiddenSites'] !== []): ?>
-                                        <button type="button" class="pill pill--sm pill--button library-sites__more" data-library-more aria-label="Ukázat <?= $this->e($plugin['hiddenLabel']) ?>"><?= $this->e($plugin['hiddenLabel']) ?></button>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="table__cell text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($plugin['uploaded']) ?></div>
-                        <div class="table__cell table__cell--right">
-                            <form class="row-actions" method="post" action="<?= $plugin['removeAction'] ?>">
-                                <?php render_csrf($csrfToken) ?>
-                                <?php if ($plugin['targets'] !== []): ?>
-                                    <a class="btn btn--secondary btn--icon" href="#" data-confirm="<?= $this->e($plugin['dialogId']) ?>" title="Aktualizovat všude na <?= $this->e((string) $plugin['version']) ?>" aria-label="Aktualizovat <?= $this->e((string) $plugin['name']) ?> všude na <?= $this->e((string) $plugin['version']) ?>"><?= get_icon('refresh', 'icon--sm') ?></a>
-                                <?php elseif ($plugin['skipped'] !== []): ?>
-                                    <button type="button" class="btn btn--secondary btn--icon" disabled title="Žádný z webů se starší verzí teď nejde aktualizovat ze správy — důvod je u verze webu." aria-label="Aktualizovat všude teď nejde"><?= get_icon('refresh', 'icon--sm') ?></button>
-                                <?php endif; ?>
-                                <a class="btn btn--ghost btn--icon" href="<?= $plugin['downloadUrl'] ?>" title="Stáhnout ZIP pro ruční instalaci na nový web" aria-label="Stáhnout <?= $this->e((string) $plugin['name']) ?>"><?= get_icon('download', 'icon--sm') ?></a>
-                                <button type="submit" class="btn btn--ghost btn--icon" title="Odebrat z knihovny (na webech plugin zůstane)" aria-label="Odebrat <?= $this->e((string) $plugin['name']) ?> z knihovny"><?= get_icon('trash', 'icon--sm') ?></button>
-                            </form>
-                        </div>
-                    </div>
+                    <?= $this->partial('partials/library-row', ['plugin' => $plugin, 'csrfToken' => $csrfToken]) ?>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </section>
 
-    <?php foreach ($rows as $plugin): ?>
-        <?php if ($plugin['targets'] !== []): ?>
-            <dialog class="modal modal--wide" id="<?= $this->e($plugin['dialogId']) ?>" aria-labelledby="<?= $this->e($plugin['dialogId']) ?>-title">
-                <form class="modal__body" method="dialog" data-library-update>
-                    <?php render_csrf($csrfToken) ?>
-                    <input type="hidden" name="plugin" value="<?= $this->e((string) $plugin['file']) ?>">
-                    <div>
-                        <div class="card__title modal__title" id="<?= $this->e($plugin['dialogId']) ?>-title">Aktualizovat <?= $this->e($plugin['name'] . ' na ' . $plugin['version']) ?></div>
-                        <div class="card__note">Weby se aktualizují jeden po druhém. Nechte okno otevřené, dokud aktualizace neskončí — po zavření stránky se zbylé weby přeskočí (hotové zůstanou aktualizované).</div>
-                    </div>
-                    <div class="plugin-progress plugin-progress--inline" data-library-progress aria-live="polite" hidden>
-                        <div data-library-progress-text>Připravuji aktualizaci…</div>
-                        <div class="plugin-progress__bar"><div class="plugin-progress__fill" data-library-progress-fill></div></div>
-                    </div>
-                    <div>
-                        <div class="form__label"><?= $this->e(get_count(count($plugin['targets']), 'web', 'weby', 'webů')) ?> k aktualizaci</div>
-                        <ul class="progress-list">
-                            <?php foreach ($plugin['targets'] as $site): ?>
-                                <li class="progress-list__item" data-library-target data-action="<?= $site['updateAction'] ?>" data-name="<?= $this->e($site['name']) ?>">
-                                    <span class="progress-list__icon" data-library-icon title="Čeká"></span>
-                                    <span class="progress-list__name"><?= $this->e($site['name']) ?></span>
-                                    <span class="progress-list__version u-mono" data-library-version><?= $this->e($site['version'] . ' → ' . $plugin['version']) ?></span>
-                                    <span class="progress-list__note" data-library-note hidden></span>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                    <?php if ($plugin['skipped'] !== []): ?>
-                        <div>
-                            <div class="form__label">Přeskočí se</div>
-                            <ul class="progress-list">
-                                <?php foreach ($plugin['skipped'] as $site): ?>
-                                    <li class="progress-list__item progress-list__item--skipped">
-                                        <span class="progress-list__icon"><?= get_icon('minus', 'icon--sm') ?></span>
-                                        <span class="progress-list__name"><?= $this->e($site['name']) ?></span>
-                                        <span class="progress-list__version u-mono"><?= $this->e($site['version']) ?></span>
-                                        <span class="progress-list__note"><?= $this->e((string) $site['blocked']) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-                    <div class="modal__actions">
-                        <button type="button" class="btn btn--ghost" data-dialog-close data-library-close>Zrušit</button>
-                        <button type="submit" class="btn btn--primary" data-library-start><?= get_btn_icon('refresh') ?>Aktualizovat na <?= $this->e(get_count(count($plugin['targets']), 'webu', 'webech', 'webech')) ?></button>
-                    </div>
-                </form>
-            </dialog>
-        <?php endif; ?>
+    <?php foreach ($dialogs as $plugin): ?>
+        <?= $this->partial('partials/library-update-dialog', ['plugin' => $plugin, 'csrfToken' => $csrfToken]) ?>
     <?php endforeach; ?>
 </div>

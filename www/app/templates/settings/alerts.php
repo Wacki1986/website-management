@@ -4,11 +4,12 @@
  *
  * Každé pravidlo: popis, práh (číslo) a přepínač. Vypnuté pravidlo alert
  * nevygeneruje; existující otevřené se při další kontrole samy zavřou.
+ * Pravidlo bez prahu (`valueKey` null) má místo čísla prázdné místo.
  *
  * @var \App\Core\View\View $this
  * @var string              $title
  * @var string              $activeTab
- * @var array<int, array{key: string, label: string, text: string, value: int, unit: string, min: int, max: int, on: bool, note: string}> $rules
+ * @var array<int, array{key: string, valueKey: ?string, label: string, text: string, value: int, unit: string, min: int, max: int, on: bool, note: string}> $rules
  * @var array|null          $lastRun
  * @var string              $appVersion
  * @var int                 $checksToday
@@ -33,7 +34,7 @@ $this->extend('layout/shell', ['title' => $title]);
                         <div class="threshold-row__title"><?= get_dot($rule['on'] ? 'warning' : 'muted') ?><?= $this->e($rule['label']) ?></div>
                         <div class="text-caption" style="margin-top:4px"><?= $this->e($rule['text']) ?><?= $rule['note'] !== '' ? ' ' . $this->e($rule['note']) : '' ?></div>
                     </div>
-                    <?= get_stepper($rule['key'] . '_max', $rule['value'], $rule['min'], $rule['max'], $rule['unit'], $rule['label'], class: 'stepper--sm' . ($rule['on'] ? '' : ' stepper--off')) ?>
+                    <?= $rule['valueKey'] !== null ? get_stepper($rule['key'] . '_max', $rule['value'], $rule['min'], $rule['max'], $rule['unit'], $rule['label'], class: 'stepper--sm' . ($rule['on'] ? '' : ' stepper--off')) : '<div></div>' ?>
                     <div class="row" style="justify-content:flex-end"><?= get_toggle($rule['key'] . '_on', $rule['on'], $rule['label']) ?></div>
                 </div>
             <?php endforeach; ?>
