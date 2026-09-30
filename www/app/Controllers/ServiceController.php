@@ -98,8 +98,11 @@ final class ServiceController extends Controller
             return $this->redirectWithFlash('weby/' . $id . '/servis', 'Datum prvního servisu zadejte ve tvaru RRRR-MM-DD.', 'error');
         }
 
+        // Vypnutý (i nový) plán má tlačítko „Uložit a zapnout plán" —
+        // zapomenutý přepínač nechával plán tiše vypnutý.
+        $activate = $request->bool('activate');
         $plan = [
-            'is_active' => $request->bool('is_active'),
+            'is_active' => $request->bool('is_active') || $activate,
             'kind' => $request->string('kind'),
             'frequency' => $request->string('frequency'),
             'first_date' => $first !== '' ? $first : null,
@@ -117,7 +120,7 @@ final class ServiceController extends Controller
             [], $this->actorName());
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SERVICE, true, 'Uložen plán servisu');
 
-        return $this->redirectWithFlash('weby/' . $id . '/servis', 'Plán je uložený.');
+        return $this->redirectWithFlash('weby/' . $id . '/servis', $activate ? 'Plán je uložený a zapnutý.' : 'Plán je uložený.');
     }
 
     /** „Posunout o týden" — jen další termín, rytmus zůstává. */
@@ -233,9 +236,12 @@ final class ServiceController extends Controller
             return $this->logView($site, $log, $values, $this->formChecklists($log, true), $errors, 422);
         }
 
-        // Plán se úpravou neposouvá: termín posunul už původní zápis
-        // a úprava je oprava údajů, ne nový servis.
+        // Termín posunul už původní zápis a úprava je oprava údajů, ne nový
+        // servis. Posune se jen tehdy, když zápis čekající termín teprve teď
+        // splňuje — servis zapsaný dřív, než se plán zapnul, nebo opravené datum.
         $this->kernel->service()->updateLog((int) $id, (int) $logId, $values);
+        $this->kernel->service()->skipFulfilledTerm((int) $id);
+        $this->kernel->alertEngine()->afterServicePlan($site, $this->kernel->service()->plan((int) $id));
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SERVICE, true,
             'Upraven záznam servisu z ' . get_czech_date($values['performed_on']) . (($progress = ServiceChecklists::progress($values['checklist'])) !== '' ? ' · ' . $progress : ''));
 

@@ -35,7 +35,8 @@ final class SnapshotImporter
     /**
      * @param array<string, mixed> $site   řádek webu
      * @param array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string} $result
-     * @return array{imported: bool, changes: array<int, string>}
+     * @return array{imported: bool, first: bool, changes: array<int, string>}
+     *         `first` = plugin se ozval poprvé (web je právě přidaný)
      */
     public function import(array $site, array $result, ?string $now = null): array
     {
@@ -43,7 +44,7 @@ final class SnapshotImporter
         $siteId = (int) $site['id'];
 
         if (!$result['ok'] || !is_array($result['data'])) {
-            return ['imported' => false, 'changes' => [$this->recordFailure($site, $result, $now)]];
+            return ['imported' => false, 'first' => false, 'changes' => [$this->recordFailure($site, $result, $now)]];
         }
 
         $data = $result['data'];
@@ -92,7 +93,7 @@ final class SnapshotImporter
             $changes[] = 'první načtení dat';
         }
 
-        return ['imported' => true, 'changes' => $changes];
+        return ['imported' => true, 'first' => $previous === null, 'changes' => $changes];
     }
 
     /**

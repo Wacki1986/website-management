@@ -160,12 +160,14 @@ Cron: `GET /system/monitor-cron?token=…` (`PUBLIC_ACCESS`, token v `settings` 
 - `php_eol`: `PhpSupport::TABLE` (ručně udržovaná tabulka konců podpory).
 - `api_error`: `api_failures >= 3`.
 - `updates` (warning): `plugins_updates + core > práh` (default 10), jen při `watch_updates`.
-- `service_overdue` (warning): `service_plans.next_date + N h` bez zápisu v `service_logs`.
+- `service_overdue` (warning): `service_plans.next_date + N h` bez zápisu v `service_logs`. Zápis splní termín vzdálený nejvýš půl rytmu (`ServiceSchedule::fulfilledTerm()`); uložení plánu i úprava zápisu přeskočí termín, který už poslední provedený servis splnil (`unfulfilled()`) — servis zapsaný před zapnutím plánu tak nehlásí „po termínu" (30. 9. 2026).
 - `backup_old` (warning): `last_backup_at` starší než práh; jen pokud plugin datum zálohy umí zjistit (UpdraftPlus `updraft_last_backup`, BackWPup), jinak se pravidlo pro web přeskočí.
 - `domain_expiring` (info): default vypnuto.
 - Prahy + zapnutí každého pravidla v `settings` (Nastavení → Alerty a prahy).
 
 `Notifier`: e-mail na `settings.alert_emails` přes `EmailMessage` + push (`PushNotifier` skupiny `sites, ssl, updates, ops`, `onceKey: 'alert-'.$id`).
+
+Nový web (29. 9. 2026): alerty z první kontroly — první data z pluginu (`SnapshotImporter::import()['first']`), první SSL (`ssl_checked_at` prázdné), první doména — se založí potichu, bez e-mailu a pushe (`AlertEngine` `$quiet`, `notified_at` zůstane NULL). Správce je u přidání a vše vidí v aplikaci. Výpadek (`down`) se neztiší, vzniká až po N selháních.
 
 „Zkontrolovat teď“ (`POST /weby/{id}/zkontrolovat`) i „Zkontrolovat vše“ (`POST /weby/zkontrolovat-vse`, jen uptime všech webů) volají stejné metody `MonitorRun::checkOne()/checkAll()` se `source='manual'`, rate limit 1/min na web.
 

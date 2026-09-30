@@ -81,10 +81,14 @@ $base = 'weby/' . (int) $site['id'];
                 <?php endif; ?>
 
                 <div class="card__footer" style="padding:14px 0 0">
-                    <div class="text-subtle" style="font-size:var(--font-size-label)"><?= $values['is_active'] ? 'Plán je uložený.' : 'Plán je vypnutý.' ?></div>
+                    <div class="text-subtle" style="font-size:var(--font-size-label)"><?= $values['is_active'] ? 'Plán je uložený.' : 'Plán je vypnutý — uložením se zapne.' ?></div>
                     <div class="row u-ml-auto">
                         <a class="btn btn--ghost btn--sm" href="<?= get_url($base . '/servis') ?>">Zrušit změny</a>
-                        <button class="btn btn--secondary btn--sm" type="submit"><?= get_btn_icon('check') ?>Uložit plán</button>
+                        <?php if ($values['is_active']): ?>
+                            <button class="btn btn--secondary btn--sm" type="submit"><?= get_btn_icon('check') ?>Uložit plán</button>
+                        <?php else: ?>
+                            <button class="btn btn--primary btn--sm" type="submit" name="activate" value="1"><?= get_btn_icon('check') ?>Uložit a zapnout plán</button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </form>

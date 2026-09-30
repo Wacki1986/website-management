@@ -26,7 +26,8 @@ final class ServiceRepository
     }
 
     /**
-     * Uložení plánu — `next_date` se přepočítá z prvního data a dneška.
+     * Uložení plánu — `next_date` se přepočítá z prvního data a dneška;
+     * termín, který už splnil zapsaný servis, se přeskočí.
      *
      * @param array{is_active: bool, kind: string, frequency: string, first_date: ?string} $plan
      */
@@ -35,7 +36,7 @@ final class ServiceRepository
         $kind = isset(ServiceSchedule::KINDS[$plan['kind']]) ? $plan['kind'] : 'small';
         $frequency = isset(ServiceSchedule::FREQUENCIES[$plan['frequency']]) ? $plan['frequency'] : 'monthly';
         $first = $plan['first_date'];
-        $next = $first !== null ? ServiceSchedule::next($first, $frequency, $today) : null;
+        $next = $first !== null ? ServiceSchedule::unfulfilled($first, $frequency, ServiceSchedule::next($first, $frequency, $today), $this->lastDoneOn($siteId)) : null;
 
         $this->db->execute(
             'INSERT INTO service_plans (site_id, is_active, kind, frequency, first_date, next_date, updated_at)
@@ -57,6 +58,26 @@ final class ServiceRepository
     public function setNextDate(int $siteId, ?string $nextDate): void
     {
         $this->db->update('service_plans', ['next_date' => $nextDate, 'updated_at' => date('Y-m-d H:i:s')], ['site_id' => $siteId]);
+    }
+
+    /**
+     * Po úpravě zápisu: když poslední provedený servis (třeba s opraveným
+     * datem) splnil aktuální termín, posune ho na další. Jinak nic —
+     * odložený termín ani termín po lhůtě se nepřepisuje.
+     */
+    public function skipFulfilledTerm(int $siteId): void
+    {
+        $plan = $this->plan($siteId);
+
+        if ($plan === null || (int) $plan['is_active'] !== 1 || $plan['first_date'] === null || $plan['next_date'] === null) {
+            return;
+        }
+
+        $next = ServiceSchedule::unfulfilled((string) $plan['first_date'], (string) $plan['frequency'], (string) $plan['next_date'], $this->lastDoneOn($siteId));
+
+        if ($next !== $plan['next_date']) {
+            $this->setNextDate($siteId, $next);
+        }
     }
 
     /**
@@ -203,5 +224,12 @@ final class ServiceRepository
             "SELECT * FROM service_logs WHERE site_id = :site_id AND status = 'done' ORDER BY performed_on DESC, id DESC LIMIT 1",
             ['site_id' => $siteId],
         );
+    }
+
+    private function lastDoneOn(int $siteId): ?string
+    {
+        $last = $this->lastDone($siteId);
+
+        return $last !== null ? (string) $last['performed_on'] : null;
     }
 }

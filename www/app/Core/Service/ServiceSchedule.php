@@ -108,6 +108,65 @@ final class ServiceSchedule
         return self::next($firstDate, $frequency, $dayAfter);
     }
 
+    /**
+     * Který termín plánu zápis servisu splnil: nejbližší termín v rytmu,
+     * nejvýš půl rytmu od dne provedení (servis o pár dní dřív i později
+     * plní tentýž termín). Null = servis s plánem nesouvisí — třeba úvodní
+     * servis půl roku před prvním termínem.
+     */
+    public static function fulfilledTerm(string $firstDate, string $frequency, string $performedOn): ?string
+    {
+        $months = self::FREQUENCIES[$frequency]['months'] ?? 1;
+        $first = new DateTimeImmutable($firstDate);
+        $done = new DateTimeImmutable($performedOn);
+        $before = null;
+        $after = $first;
+
+        if ($months === 0) {
+            if ($first < $done) {
+                [$before, $after] = [$first, null];
+            }
+        } else {
+            $i = 0;
+
+            while ($after < $done) {
+                $before = $after;
+                $after = self::addMonths($first, $months * ++$i);
+            }
+        }
+
+        // Půl rytmu ve dnech (měsíc ≈ 30 dní); jednorázový plán jako měsíční.
+        $limit = max(1, $months) * 15;
+        $best = null;
+        $bestDays = PHP_INT_MAX;
+
+        foreach ([$after, $before] as $term) {
+            $days = $term !== null ? abs(self::daysUntil($term->format('Y-m-d'), $performedOn)) : PHP_INT_MAX;
+
+            if ($days <= $limit && $days < $bestDays) {
+                [$best, $bestDays] = [$term->format('Y-m-d'), $days];
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Termín, který ještě čeká: když `$next` už splnil poslední provedený
+     * servis, vrátí další v rytmu. Pro servis zapsaný dřív, než se plán
+     * zapnul — jinak by plán hned po zapnutí hlásil „po termínu".
+     */
+    public static function unfulfilled(string $firstDate, string $frequency, ?string $next, ?string $lastDone): ?string
+    {
+        if ($next === null || $lastDone === null) {
+            return $next;
+        }
+
+        $term = self::fulfilledTerm($firstDate, $frequency, $lastDone);
+
+        return $term !== null && $term >= $next ? self::afterPerformed($firstDate, $frequency, $term) : $next;
+    }
+
     /** Posun termínu o týden (tlačítko „Posunout o týden"). */
     public static function postpone(string $date, int $days = 7): string
     {

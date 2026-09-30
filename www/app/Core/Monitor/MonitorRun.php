@@ -177,7 +177,7 @@ final class MonitorRun
             $import = $this->importer->import($this->sites->find((int) $site['id']) ?? $site, $plugin, $stamp);
             $changes = $import['changes'];
             $fresh = $this->sites->find((int) $site['id']) ?? $site;
-            $this->alerts->afterSnapshot($fresh, $this->importer->snapshot((int) $site['id']), $stamp);
+            $this->alerts->afterSnapshot($fresh, $this->importer->snapshot((int) $site['id']), $stamp, quiet: $import['first']);
 
             if ($import['imported']) {
                 $audit = $this->security->run($fresh, (array) ($plugin['data']['security'] ?? []), $stamp);
@@ -344,7 +344,7 @@ final class MonitorRun
 
             $import = $this->importer->import($site, $result, $stamp);
             $fresh = $this->sites->find((int) $site['id']) ?? $site;
-            $this->alerts->afterSnapshot($fresh, $this->importer->snapshot((int) $site['id']), $stamp);
+            $this->alerts->afterSnapshot($fresh, $this->importer->snapshot((int) $site['id']), $stamp, quiet: $import['first']);
 
             // Bezpečnostní kontrola jednou denně, ne s každou snapshotou.
             if ($import['imported'] && ($site['snap_security_checked_at'] ?? null) === null) {

@@ -1,5 +1,22 @@
 # Změny
 
+## 0.8.1 — 30. 9. 2026
+
+- **Nový web neposílá hned e-mail.** Alerty z úplně první kontroly
+  (první data z pluginu, první SSL, první doména) se založí a jsou vidět
+  v aplikaci, ale e-mail ani push neodejde — web jste právě přidali
+  a díváte se na něj. Výpadek webu se neztišuje.
+- **Sloupec Vydáno u pluginů se srovná s novou verzí do hodiny.** Když
+  web hlásí dostupnou verzi, kterou uložený údaj z wordpress.org ještě
+  nezná, ověří se plugin znovu hned, ne až po týdnu.
+- **Servis zapsaný před zapnutím plánu už nehlásí „po termínu".**
+  Uložení plánu i úprava zápisu přeskočí termín, který poslední provedený
+  servis splnil (servis nejvýš půl rytmu od termínu).
+- **„Uložit a zapnout plán"** — vypnutý i nový plán servisu se uložením
+  zapne, zapomenutý přepínač ho už nenechá tiše vypnutý.
+- **Trvání alertů v hodinách a dnech:** „14 h 43 min", „3 dny 14 h"
+  místo tisíců minut; minuty a sekundy zůstávají jen do hodiny.
+
 ## 0.8.0 — 25. 9. 2026
 
 - **Moduly — volitelná měření webů.** Nová záložka Nastavení → Moduly:

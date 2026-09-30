@@ -34,6 +34,13 @@ final class PluginDirectory
     /** Do kolika dní od vydání je plugin „čerstvý" (zelená pilulka ve sloupci Vydáno). */
     public const FRESH_DAYS = 183;
 
+    /**
+     * Web hlásí jinou dostupnou verzi, než jakou známe z adresáře — vyšla
+     * nová. Pak se neověřuje až za týden, ale nejpozději po tolika hodinách
+     * (ne v každém běhu cronu: verze se můžou lišit i trvale, třeba betou).
+     */
+    public const NEW_VERSION_HOURS = 1;
+
     /** Kolik pluginů nejvýš ověřit za jeden průchod cronu. */
     public const PER_RUN = 40;
 
@@ -87,18 +94,26 @@ final class PluginDirectory
 
     /**
      * Pluginy z webů, které adresář ještě nezná nebo je znal před víc než
-     * `REFRESH_DAYS` dny — nejdřív nikdy neověřené.
+     * `REFRESH_DAYS` dny — nejdřív nikdy neověřené. Navíc hned ty, u kterých
+     * web hlásí novou verzi, kterou uložený záznam ještě nezná — jinak by
+     * sloupec Vydáno až týden ukazoval datum předchozí verze.
      *
      * @return array<int, string> slugy
      */
     public function dueSlugs(?int $now = null, int $limit = self::PER_RUN): array
     {
+        $now ??= time();
         $rows = $this->db->select(
             'SELECT DISTINCT ' . self::SLUG_SQL . ' AS slug, pd.checked_at
              FROM site_plugins sp LEFT JOIN plugin_directory pd ON pd.slug = ' . self::SLUG_SQL . '
              WHERE pd.slug IS NULL OR pd.checked_at < :before
+                OR (pd.status = \'found\' AND ' . self::RATED_SQL . ' AND sp.new_version IS NOT NULL
+                    AND sp.new_version <> pd.version AND pd.checked_at < :newBefore)
              ORDER BY pd.checked_at IS NOT NULL, pd.checked_at',
-            ['before' => date('Y-m-d H:i:s', ($now ?? time()) - self::REFRESH_DAYS * 86400)],
+            [
+                'before' => date('Y-m-d H:i:s', $now - self::REFRESH_DAYS * 86400),
+                'newBefore' => date('Y-m-d H:i:s', $now - self::NEW_VERSION_HOURS * 3600),
+            ],
         );
         $slugs = array_values(array_diff(array_unique(array_map(static fn (array $row): string => (string) $row['slug'], $rows)), self::SKIP, ['']));
 

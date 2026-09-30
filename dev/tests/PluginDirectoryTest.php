@@ -81,6 +81,14 @@ return [
         assertSame([], $directory->dueSlugs($now), 'Týden se znovu neověřuje');
         assertSame(4, count($directory->dueSlugs($now + 8 * 86400)));
 
+        // Web hlásí WooCommerce 9.3.2, adresář zná 9.3.1 — ověřit znovu hned
+        // (po hodině), ne až za týden, ať Vydáno ukáže datum nové verze.
+        $kernel->db()->execute("UPDATE site_plugins SET new_version = '9.3.2' WHERE file = 'woocommerce/woocommerce.php'");
+        assertSame([], $directory->dueSlugs($now), 'Právě ověřeno — ne v každém běhu cronu');
+        assertSame(['woocommerce'], $directory->dueSlugs($now + 2 * 3600));
+        $kernel->db()->execute("UPDATE site_plugins SET new_version = '9.3.1' WHERE file = 'woocommerce/woocommerce.php'");
+        assertSame([], $directory->dueSlugs($now + 2 * 3600), 'Adresář už novou verzi zná');
+
         $snapshot = $kernel->db()->selectOne('SELECT plugins_abandoned, plugins_closed, plugins_insecure FROM site_snapshots WHERE site_id = :id', ['id' => $siteId]);
         assertSame([1, 1, 1], array_map('intval', array_values($snapshot)));
 

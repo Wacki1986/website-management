@@ -100,7 +100,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.8.0';
+    public const VERSION = '0.8.1';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
@@ -624,7 +624,8 @@ final class Kernel
             return 0;
         });
 
-        // Pluginy na wordpress.org: nejvýš 40 za průchod, každý jednou týdně.
+        // Pluginy na wordpress.org: nejvýš 40 za průchod, každý jednou týdně
+        // a navíc hned, když web hlásí novou verzi (PluginDirectory::dueSlugs).
         $this->monitor->addStep('plugin-directory', function (int $now, float $deadline): int {
             $this->pluginDirectory()->refresh($this->pluginDirectory()->dueSlugs($now), $now, $deadline);
 

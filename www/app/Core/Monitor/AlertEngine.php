@@ -15,6 +15,11 @@ use App\Core\Sites\SiteRepository;
  *
  * Čistá logika nad repozitáři, bez sítě: testuje se s poli místo
  * skutečných kontrol. Prahy bere z `MonitorSettings`.
+ *
+ * Tichý režim (`$quiet`): co se zjistí při úplně první kontrole nového
+ * webu (první data z pluginu, první SSL, první doména), se založí jako
+ * alert, ale e-mail ani push neodejde. Web jste právě přidali a díváte
+ * se na něj — upozornění by jen opakovalo, co je vidět na obrazovce.
  */
 final class AlertEngine
 {
@@ -96,6 +101,7 @@ final class AlertEngine
     {
         $now ??= date('Y-m-d H:i:s');
         $siteId = (int) $site['id'];
+        $quiet = ($site['ssl_checked_at'] ?? null) === null;
 
         $this->sites->update($siteId, [
             'ssl_checked_at' => $now,
@@ -123,7 +129,7 @@ final class AlertEngine
                     'Certifikát vypršel ' . get_czech_date((string) $ssl['valid_to']) . '. Prohlížeč návštěvníkům zobrazuje varování.',
                     'pravidlo: platnost SSL < 0 dní', ['valid_to' => $ssl['valid_to']], $now);
                 $this->events->record($siteId, EventLog::KIND_ALERT, 'error', 'SSL certifikát vypršel', ['alert_id' => $id]);
-                $this->notify($site, $id);
+                $this->notify($site, $id, $quiet);
             }
 
             return;
@@ -140,7 +146,7 @@ final class AlertEngine
                     'Platí do ' . get_czech_date((string) $ssl['valid_to']) . ($ssl['issuer'] !== null ? ' (' . $ssl['issuer'] . ')' : '') . '. Ověřte, že automatické obnovení funguje.',
                     'pravidlo: platnost SSL < ' . $warnDays . ' dní', ['valid_to' => $ssl['valid_to'], 'days_left' => $days], $now);
                 $this->events->record($siteId, EventLog::KIND_ALERT, 'warning', 'SSL certifikát vyprší za ' . get_count($days, 'den', 'dny', 'dní'), ['alert_id' => $id]);
-                $this->notify($site, $id);
+                $this->notify($site, $id, $quiet);
             }
         } elseif ($expiring !== null) {
             $this->alerts->resolve((int) $expiring['id'], 'monitor', 'Certifikát je obnovený, platí do ' . get_czech_date((string) $ssl['valid_to']) . '.', $now);
@@ -158,6 +164,7 @@ final class AlertEngine
     {
         $now ??= date('Y-m-d H:i:s');
         $siteId = (int) $site['id'];
+        $quiet = ($site['domain_checked_at'] ?? null) === null;
 
         $this->sites->update($siteId, ['domain_checked_at' => $now, 'domain_expires_on' => $domain['expires_on']]);
 
@@ -173,7 +180,7 @@ final class AlertEngine
                 $id = $this->alerts->open($siteId, 'domain_expiring', 'info', 'Doména ' . $domain['domain'] . ' expiruje za ' . get_count((int) $domain['days_left'], 'den', 'dny', 'dní'),
                     'Registrace končí ' . get_czech_date((string) $domain['expires_on']) . '. Ověřte u registrátora, že se prodlouží.',
                     'pravidlo: expirace domény < ' . $warnDays . ' dní', ['expires_on' => $domain['expires_on']], $now);
-                $this->notify($site, $id);
+                $this->notify($site, $id, $quiet);
             }
         } elseif ($open !== null) {
             $this->alerts->resolve((int) $open['id'], 'monitor', 'Doména je prodloužená do ' . get_czech_date((string) $domain['expires_on']) . '.', $now);
@@ -186,8 +193,9 @@ final class AlertEngine
      *
      * @param array<string, mixed> $site       řádek webu PO importu (aktuální api_status/api_failures)
      * @param array<string, mixed>|null $snapshot řádek `site_snapshots` (null = zatím žádná data)
+     * @param bool $quiet první data nového webu — alerty bez e-mailu a pushe
      */
-    public function afterSnapshot(array $site, ?array $snapshot, ?string $now = null): void
+    public function afterSnapshot(array $site, ?array $snapshot, ?string $now = null, bool $quiet = false): void
     {
         $now ??= date('Y-m-d H:i:s');
         $siteId = (int) $site['id'];
@@ -197,7 +205,7 @@ final class AlertEngine
         $apiDown = ($site['api_status'] ?? 'ok') !== 'ok' && (int) ($site['api_failures'] ?? 0) >= 3;
         $this->toggle($site, 'api_error', $apiDown, 'warning', 'Plugin MEDIAGRAFIK Monitor neodpovídá',
             (string) ($site['snapshot_error'] ?? '') . ' Data v detailu jsou z poslední úspěšné kontroly.',
-            'pravidlo: 3 neúspěšné pokusy o načtení dat', 'Plugin zase odpovídá, data jsou čerstvá.', $now);
+            'pravidlo: 3 neúspěšné pokusy o načtení dat', 'Plugin zase odpovídá, data jsou čerstvá.', $now, $quiet);
 
         if ($snapshot === null) {
             return;
@@ -208,7 +216,7 @@ final class AlertEngine
         $eol = $php !== '' && PhpSupport::isEol($php, $nowTs);
         $this->toggle($site, 'php_eol', $eol, 'warning', 'PHP bez bezpečnostní podpory',
             'Hosting běží na PHP ' . $php . ', které už nedostává opravy. Doporučen přechod na ' . PhpSupport::RECOMMENDED . '.',
-            'pravidlo: verze PHP po konci podpory', 'PHP je aktualizované na ' . $php . '.', $now);
+            'pravidlo: verze PHP po konci podpory', 'PHP je aktualizované na ' . $php . '.', $now, $quiet);
 
         // Čekající aktualizace nad prahem.
         $updates = (int) $snapshot['plugins_updates'] + ($snapshot['wp_update_version'] !== null ? 1 : 0);
@@ -216,7 +224,7 @@ final class AlertEngine
         $tooMany = $this->settings->bool('rule_updates_on') && (int) $site['watch_updates'] === 1 && $updates > $max;
         $this->toggle($site, 'updates', $tooMany, 'warning', get_count($updates, 'čekající aktualizace', 'čekající aktualizace', 'čekajících aktualizací'),
             'Web má ' . get_count($updates, 'nenainstalovanou aktualizaci', 'nenainstalované aktualizace', 'nenainstalovaných aktualizací') . ($snapshot['wp_update_version'] !== null ? ' včetně WordPressu ' . $snapshot['wp_update_version'] : '') . '.',
-            'pravidlo: více než ' . $max . ' aktualizací', 'Aktualizace jsou pod prahem.', $now);
+            'pravidlo: více než ' . $max . ' aktualizací', 'Aktualizace jsou pod prahem.', $now, $quiet);
 
         // Opuštěné a z adresáře stažené pluginy (data z wordpress.org).
         if ($this->directory !== null) {
@@ -227,7 +235,7 @@ final class AlertEngine
             $this->toggle($site, 'plugins_outdated', $this->settings->bool('rule_abandoned_on') && $issues !== [], $closed !== [] ? 'error' : 'warning',
                 $closed !== [] ? get_count(count($closed), 'plugin stažený', 'pluginy stažené', 'pluginů stažených') . ' z wordpress.org' : get_count(count($issues), 'opuštěný plugin', 'opuštěné pluginy', 'opuštěných pluginů'),
                 'Na webu ' . (count($issues) === 1 ? 'je plugin, který se nevyvíjí nebo byl stažen z adresáře: ' : 'jsou pluginy, které se nevyvíjejí nebo byly staženy z adresáře: ') . $names . '. Nahraďte je, nedostávají opravy.',
-                'pravidlo: plugin bez vydání déle než ' . $this->directory->months() . ' měsíců nebo stažený z adresáře', 'Opuštěné pluginy jsou pryč.', $now);
+                'pravidlo: plugin bez vydání déle než ' . $this->directory->months() . ' měsíců nebo stažený z adresáře', 'Opuštěné pluginy jsou pryč.', $now, $quiet);
         }
 
         // Stará záloha — jen když plugin datum zálohy vůbec zjistil.
@@ -239,10 +247,10 @@ final class AlertEngine
             $old = $this->settings->bool('rule_backup_on') && $hours > $limit;
             $this->toggle($site, 'backup_old', $old, 'warning', 'Poslední záloha je ' . get_count((int) round($hours / 24), 'den', 'dny', 'dní') . ' stará',
                 'Poslední úspěšná záloha ' . get_when((string) $backupAt) . '. Zálohovací plugin možná neběží.',
-                'pravidlo: záloha starší než ' . $limit . ' h', 'Záloha je zase čerstvá.', $now);
+                'pravidlo: záloha starší než ' . $limit . ' h', 'Záloha je zase čerstvá.', $now, $quiet);
         }
 
-        $this->afterSeo($site, $snapshot, $now);
+        $this->afterSeo($site, $snapshot, $now, $quiet);
     }
 
     /**
@@ -253,7 +261,7 @@ final class AlertEngine
      * @param array<string, mixed> $site
      * @param array<string, mixed> $snapshot řádek `site_snapshots` (sloupce `seo_*`)
      */
-    private function afterSeo(array $site, array $snapshot, string $now): void
+    private function afterSeo(array $site, array $snapshot, string $now, bool $quiet): void
     {
         $on = $this->modules?->forSite((int) $site['id'], Modules::SEO) === true && ($snapshot['seo_checked_at'] ?? null) !== null;
         $offNote = 'Modul SEO je u webu vypnutý.';
@@ -261,7 +269,7 @@ final class AlertEngine
         $hidden = $on && $this->settings->bool('rule_seo_hidden_on') && ($snapshot['seo_indexable'] ?? null) !== null && (int) $snapshot['seo_indexable'] === 0;
         $this->toggle($site, 'seo_hidden', $hidden, 'error', 'Web je skrytý před vyhledávači',
             'Ve WordPressu je zapnuté „Požádat vyhledávače o neindexování tohoto webu" (Nastavení → Zobrazení). Google web nezařadí do výsledků hledání.',
-            'pravidlo: web skrytý před vyhledávači', $on ? 'Web je zase viditelný pro vyhledávače.' : $offNote, $now);
+            'pravidlo: web skrytý před vyhledávači', $on ? 'Web je zase viditelný pro vyhledávače.' : $offNote, $now, $quiet);
 
         $average = ($snapshot['seo_average'] ?? null) !== null ? (int) $snapshot['seo_average'] : null;
         $limit = $this->settings->int('rule_seo_low_score');
@@ -271,7 +279,7 @@ final class AlertEngine
         $this->toggle($site, 'seo_low', $low, 'warning', 'Slabé SEO – průměrné skóre ' . (int) $average . ' ze 100',
             'Stránky webu mají v ' . (SeoScore::PLUGIN_NAMES[$plugin] ?? 'SEO pluginu') . ' průměrné skóre ' . (int) $average . ' ze 100'
                 . ($bad > 0 ? ', ' . get_count($bad, 'stránka má', 'stránky mají', 'stránek má') . ' slabé hodnocení' : '') . '. Seznam je na záložce SEO.',
-            'pravidlo: průměrné SEO skóre pod ' . $limit, $on ? 'Průměrné SEO skóre je zase nad prahem.' : $offNote, $now);
+            'pravidlo: průměrné SEO skóre pod ' . $limit, $on ? 'Průměrné SEO skóre je zase nad prahem.' : $offNote, $now, $quiet);
     }
 
     /**
@@ -338,7 +346,7 @@ final class AlertEngine
      *
      * @param array<string, mixed> $site
      */
-    private function toggle(array $site, string $type, bool $active, string $severity, string $title, string $body, string $rule, string $resolveNote, string $now): void
+    private function toggle(array $site, string $type, bool $active, string $severity, string $title, string $body, string $rule, string $resolveNote, string $now, bool $quiet = false): void
     {
         $siteId = (int) $site['id'];
         $open = $this->alerts->openOf($siteId, $type);
@@ -346,16 +354,24 @@ final class AlertEngine
         if ($active && $open === null) {
             $id = $this->alerts->open($siteId, $type, $severity, $title, trim($body), $rule, [], $now);
             $this->events->record($siteId, EventLog::KIND_ALERT, $severity === 'error' ? 'error' : 'warning', $title, ['alert_id' => $id]);
-            $this->notify($site, $id);
+            $this->notify($site, $id, $quiet);
         } elseif (!$active && $open !== null) {
             $this->alerts->resolve((int) $open['id'], 'monitor', $resolveNote, $now);
             $this->events->record($siteId, EventLog::KIND_ALERT, 'ok', 'Vyřešeno samo: ' . $open['title'], ['alert_id' => (int) $open['id']]);
         }
     }
 
-    /** @param array<string, mixed> $site */
-    private function notify(array $site, int $alertId): void
+    /**
+     * `notified_at` zůstane u tichého alertu prázdné — e-mail opravdu neodešel.
+     *
+     * @param array<string, mixed> $site
+     */
+    private function notify(array $site, int $alertId, bool $quiet = false): void
     {
+        if ($quiet) {
+            return;
+        }
+
         $alert = $this->alerts->find($alertId);
 
         if ($alert === null) {

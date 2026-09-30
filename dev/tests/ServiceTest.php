@@ -48,6 +48,41 @@ return [
         assertSame('po termínu 5 d', ServiceSchedule::countdown('2026-09-04', '2026-09-09'));
     },
 
+    'který termín zápis splnil; zapsaný servis se při zapnutí plánu nepočítá jako zmeškaný' => function (): void {
+        assertSame('2026-09-29', ServiceSchedule::fulfilledTerm('2026-09-29', 'halfyearly', '2026-09-29'));
+        assertSame('2026-09-29', ServiceSchedule::fulfilledTerm('2026-09-29', 'halfyearly', '2026-10-05'), 'O týden později plní tentýž termín');
+        assertSame('2027-03-29', ServiceSchedule::fulfilledTerm('2026-09-29', 'halfyearly', '2027-03-20'), 'O týden dřív plní ten nadcházející');
+        assertSame(null, ServiceSchedule::fulfilledTerm('2027-03-29', 'halfyearly', '2026-09-29'), 'Úvodní servis půl roku před prvním termínem ho neplní');
+        assertSame(null, ServiceSchedule::fulfilledTerm('2026-10-30', 'once', '2026-09-29'));
+        assertSame('2026-10-01', ServiceSchedule::fulfilledTerm('2026-10-01', 'once', '2026-09-29'));
+
+        // Web dinoo.cz: servis zapsaný 29. 9., plán zapnutý týž den od 29. 9.
+        assertSame('2027-03-29', ServiceSchedule::unfulfilled('2026-09-29', 'halfyearly', '2026-09-29', '2026-09-29'));
+        // Starší servis čekající termín nesplnil; odložený termín zůstává.
+        assertSame('2026-09-29', ServiceSchedule::unfulfilled('2026-09-29', 'halfyearly', '2026-09-29', '2026-03-01'));
+        assertSame('2026-10-06', ServiceSchedule::unfulfilled('2026-09-29', 'halfyearly', '2026-10-06', '2026-03-01'));
+        assertSame(null, ServiceSchedule::unfulfilled('2026-10-01', 'once', '2026-10-01', '2026-09-29'));
+
+        $db = freshTestDb();
+        $sites = new SiteRepository($db, new Secrets(str_repeat('ab', 32)));
+        $service = new ServiceRepository($db);
+        $id = $sites->create(['name' => 'Dinoo', 'url' => 'https://dinoo.cz']);
+        $plan = ['is_active' => false, 'kind' => 'medium', 'frequency' => 'halfyearly', 'first_date' => '2026-09-29'];
+
+        // Vypnutý plán, zapsaný servis (termín se neposouvá), pak zapnutí.
+        $service->savePlan($id, $plan, '2026-09-29');
+        $service->addLog($id, ['performed_on' => '2026-09-29', 'kind' => 'medium', 'description' => 'Servis', 'minutes' => 60, 'status' => 'done', 'user_name' => 'Jan']);
+        $service->savePlan($id, ['is_active' => true] + $plan, '2026-09-29');
+        assertSame('2027-03-29', $service->plan($id)['next_date']);
+
+        // Stav uložený starou verzí (termín 29. 9. visí) opraví úprava zápisu.
+        $service->setNextDate($id, '2026-09-29');
+        $service->skipFulfilledTerm($id);
+        assertSame('2027-03-29', $service->plan($id)['next_date']);
+        $service->skipFulfilledTerm($id);
+        assertSame('2027-03-29', $service->plan($id)['next_date'], 'Opakovaná úprava termín dál neposouvá');
+    },
+
     'plán a historie v databázi: uložení, next_date, statistika, servis po termínu' => function (): void {
         $db = freshTestDb();
         $sites = new SiteRepository($db, new Secrets(str_repeat('ab', 32)));

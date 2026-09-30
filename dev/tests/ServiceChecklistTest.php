@@ -104,6 +104,15 @@ return [
     'úprava zápisu: doodškrtnout a dopsat; změna seznamu v nastavení starý zápis nemění' => function (): void {
         [$kernel, $token, $siteId] = scKernel();
         $kernel->serviceChecklists()->save('small', "Aktualizace\nZáloha");
+
+        // Nový (vypnutý) plán se uloží tlačítkem „Uložit a zapnout plán" — i bez přepínače.
+        assertContainsString('Uložit a zapnout plán', kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis')->body());
+        kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/servis/plan', [
+            '_token' => $token, 'kind' => 'small', 'frequency' => 'monthly', 'first_date' => '2026-09-01', 'activate' => '1',
+        ]);
+        assertSame(1, (int) $kernel->service()->plan($siteId)['is_active']);
+        assertContainsString('>Uložit plán</button>', kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis')->body());
+
         $plan = ['is_active' => true, 'kind' => 'small', 'frequency' => 'monthly', 'first_date' => '2026-09-01'];
         $kernel->service()->savePlan($siteId, $plan, '2026-09-20');
 

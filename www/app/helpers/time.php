@@ -48,7 +48,11 @@ function get_ago(?string $datetime, ?int $now = null): string
     return 'před ' . $days . ' ' . get_plural($days, 'dnem', 'dny', 'dny');
 }
 
-/** „1 min 12 s" — trvání mezi dvěma časy (fronta migrací, kroky založení). */
+/**
+ * Trvání mezi dvěma časy — alerty, výpadky. Přesnost podle délky:
+ * „12 min 5 s", „5 h 20 min", „3 dny 14 h". Alert, který se řeší
+ * s klientem několik dní, nemá smysl počítat v minutách.
+ */
 function get_duration(?string $from, ?string $to): string
 {
     if ($from === null || $to === null) {
@@ -68,7 +72,20 @@ function get_duration(?string $from, ?string $to): string
         return $seconds . ' s';
     }
 
-    return intdiv($seconds, 60) . ' min' . ($seconds % 60 !== 0 ? ' ' . ($seconds % 60) . ' s' : '');
+    if ($seconds < 3600) {
+        return intdiv($seconds, 60) . ' min' . ($seconds % 60 !== 0 ? ' ' . ($seconds % 60) . ' s' : '');
+    }
+
+    if ($seconds < 86400) {
+        $minutes = intdiv($seconds % 3600, 60);
+
+        return intdiv($seconds, 3600) . ' h' . ($minutes !== 0 ? ' ' . $minutes . ' min' : '');
+    }
+
+    $days = intdiv($seconds, 86400);
+    $hours = intdiv($seconds % 86400, 3600);
+
+    return get_count($days, 'den', 'dny', 'dní') . ($hours !== 0 ? ' ' . $hours . ' h' : '');
 }
 
 /**

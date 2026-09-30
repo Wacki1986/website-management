@@ -98,6 +98,16 @@ return [
         assertSame(2, count(glob($f['logDir'] . '/*.eml') ?: []), 'Druhý e-mail o obnovení');
     },
 
+    'trvání alertu: do hodiny minuty a sekundy, pak hodiny, nad den dny a hodiny' => function (): void {
+        assertSame('45 s', get_duration('2026-09-18 08:00:00', '2026-09-18 08:00:45'));
+        assertSame('12 min 5 s', get_duration('2026-09-18 08:00:00', '2026-09-18 08:12:05'));
+        assertSame('14 h 43 min', get_duration('2026-09-18 08:00:00', '2026-09-18 22:43:51'));
+        assertSame('2 h', get_duration('2026-09-18 08:00:00', '2026-09-18 10:00:30'));
+        assertSame("5\u{00A0}dní 18 h", get_duration('2026-09-18 08:00:00', '2026-09-24 02:23:12'));
+        assertSame("1\u{00A0}den", get_duration('2026-09-18 08:00:00', '2026-09-19 08:30:00'));
+        assertSame("3\u{00A0}dny 14 h", get_duration('2026-09-18 08:00:00', '2026-09-21 22:00:00'));
+    },
+
     'vypnuté hlídání dostupnosti alert nezaloží, stav webu se přesto sleduje' => function (): void {
         $f = monitorFixture();
         $id = $f['sites']->create(['name' => 'B', 'url' => 'https://b.cz', 'watch_uptime' => 0]);
@@ -168,6 +178,31 @@ return [
         $f['settings']->set('rule_updates_on', '0');
         $f['engine']->afterSnapshot($site(), $snapshot(['plugins_updates' => 40]), $now);
         assertSame(null, $f['alerts']->openOf($id, 'updates'));
+    },
+
+    'nový web: první kontrola založí alerty bez e-mailu, další už s e-mailem' => function (): void {
+        $f = monitorFixture();
+        $id = $f['sites']->create(['name' => 'Nový', 'url' => 'https://novy.cz']);
+        $site = fn (): array => $f['sites']->find($id);
+        $mails = static fn (): int => count(glob($f['logDir'] . '/*.eml') ?: []);
+        $now = '2026-09-18 12:00:00';
+
+        // První data z pluginu: 14 aktualizací i starý WordPress — alert ano, e-mail ne.
+        $f['engine']->afterSnapshot($site(), ['php_version' => '8.2.1', 'plugins_updates' => 14, 'wp_update_version' => '6.8', 'last_backup_at' => null], $now, quiet: true);
+        $updates = $f['alerts']->openOf($id, 'updates');
+        assertTrue($updates !== null, 'Alert je vidět v aplikaci');
+        assertSame(null, $updates['notified_at']);
+
+        // První SSL kontrola s certifikátem před koncem — taky potichu.
+        $ssl = ['ok' => true, 'valid_to' => '2026-10-01', 'valid_from' => '2026-07-01', 'issuer' => "Let's Encrypt", 'days_left' => 13, 'error' => null];
+        $f['engine']->afterSsl($site(), $ssl, $now);
+        assertTrue($f['alerts']->openOf($id, 'ssl_expiring') !== null);
+        assertSame(0, $mails(), 'Při přidání webu žádný e-mail');
+
+        // Pozdější zhoršení už e-mail pošle.
+        $f['engine']->afterSnapshot($site(), ['php_version' => '7.4.33', 'plugins_updates' => 14, 'wp_update_version' => '6.8', 'last_backup_at' => null], $now);
+        assertTrue($f['alerts']->openOf($id, 'php_eol')['notified_at'] !== null);
+        assertSame(1, $mails());
     },
 
     'ruční akce: vyřešit, ignorovat, vrátit — s událostí' => function (): void {

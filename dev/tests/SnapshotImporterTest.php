@@ -51,6 +51,7 @@ return [
         $result = $importer->import($sites->find($id), importerResult(importerPayload()));
 
         assertTrue($result['imported']);
+        assertTrue($result['first'], 'První import = alerty potichu (AlertEngine $quiet)');
         $snapshot = $importer->snapshot($id);
         assertSame('6.8.2', $snapshot['wp_version']);
         assertSame('8.2.20', $snapshot['php_version']);
@@ -69,6 +70,7 @@ return [
 
         // WooCommerce povýšen, CF7 vypnutý, WordPress povýšen.
         $result = $importer->import($sites->find($id), importerResult(importerPayload('9.3.0', false, '6.9')));
+        assertSame(false, $result['first']);
 
         assertContainsString('WooCommerce 9.2.1 → 9.3.0', implode('; ', $result['changes']));
         assertContainsString('Contact Form 7 deaktivován', implode('; ', $result['changes']));
