@@ -74,6 +74,25 @@ final class MG_Library
         return $body['plugins'];
     }
 
+    /**
+     * Seznam přímo ze správy, bez 12hodinové cache — pro instalaci
+     * (`MG_Plugin_Install`): plugin mohl do knihovny přibýt před minutou.
+     *
+     * @return array|null
+     */
+    public function fresh_manifest()
+    {
+        delete_transient(self::CACHE);
+
+        return $this->manifest();
+    }
+
+    /** Vede odkaz na balíček do naší správy? Cizí adresu instalace odmítne. */
+    public function owns_package($url)
+    {
+        return strpos((string) $url, $this->hub_url . '/plugin/mediagrafik-monitor/knihovna/') === 0;
+    }
+
     public function check_for_updates($transient)
     {
         if (empty($transient->checked)) {

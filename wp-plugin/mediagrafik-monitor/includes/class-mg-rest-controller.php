@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 
 /**
  * REST endpointy pro hub: `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`
- * (GET; `summary?modules=seo` přidá data volitelných modulů) a akce `POST /actions/{plugin-update,plugin-delete,plugin-activation,
+ * (GET; `summary?modules=seo` přidá data volitelných modulů) a akce `POST /actions/{plugin-update,plugin-install,plugin-delete,plugin-activation,
  * core-update,login-link}`.
  *
  * Všechno za klíčem v hlavičce `X-MG-Key`. Odpověď má vždy obálku
@@ -41,6 +41,7 @@ final class MG_Rest_Controller
     {
         $actions = array(
             'plugin-update' => 'plugin_update',
+            'plugin-install' => 'plugin_install',
             'plugin-delete' => 'plugin_delete',
             'core-update' => 'core_update',
             'login-link' => 'login_link',
@@ -181,6 +182,23 @@ final class MG_Rest_Controller
         $body = json_decode((string) $request->get_body(), true);
         $files = is_array($body) && isset($body['plugins']) && is_array($body['plugins']) ? $body['plugins'] : array();
         $items = MG_Plugin_Updates::run($files);
+
+        if (is_wp_error($items)) {
+            return $items;
+        }
+
+        return self::respond(array('plugins' => $items));
+    }
+
+    /**
+     * @param WP_REST_Request $request tělo `{"plugins": ["slozka/soubor.php", …], "activate": true}`
+     * @return WP_REST_Response|WP_Error
+     */
+    public static function plugin_install($request)
+    {
+        $body = json_decode((string) $request->get_body(), true);
+        $files = is_array($body) && isset($body['plugins']) && is_array($body['plugins']) ? $body['plugins'] : array();
+        $items = MG_Plugin_Install::run($files, is_array($body) && !empty($body['activate']));
 
         if (is_wp_error($items)) {
             return $items;

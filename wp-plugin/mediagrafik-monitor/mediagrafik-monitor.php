@@ -4,7 +4,7 @@
  * Plugin Name: MEDIAGRAFIK Monitor
  * Plugin URI: https://mediagrafik.cz
  * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.7.0
+ * Version: 1.8.0
  * Requires at least: 6.8
  * Requires PHP: 7.4
  * Author: Mediagrafik.cz
@@ -26,7 +26,8 @@ if (!defined('ABSPATH')) {
  * Hub (Správa webů) se ptá sám — model „pull" — a pověřuje se hlavičkou
  * `X-MG-Key`. Klíč vydává hub, tady se ukládá jen jeho SHA-256 hash.
  * Na webu něco mění jen akce na pokyn hubu (podepsaný požadavek):
- * aktualizace pluginů (`MG_Plugin_Updates`); aktivace, deaktivace a smazání
+ * aktualizace pluginů (`MG_Plugin_Updates`) a instalace pluginu z knihovny
+ * Správy webů (`MG_Plugin_Install`); aktivace, deaktivace a smazání
  * neaktivních pluginů a aktualizace WordPressu (`MG_Site_Actions`);
  * přihlášení jedním klikem (`MG_Login`). Na vyžádání hubu posílá i data
  * volitelných modulů — SEO z Rank Math / Yoastu (`MG_Seo`). Aktualizace
@@ -38,7 +39,7 @@ if (!defined('ABSPATH')) {
  */
 final class MG_Monitor
 {
-    const VERSION = '1.7.0';
+    const VERSION = '1.8.0';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';
@@ -100,6 +101,7 @@ final class MG_Monitor
         require_once $dir . 'includes/class-mg-seo.php';
         require_once $dir . 'includes/class-mg-site-actions.php';
         require_once $dir . 'includes/class-mg-plugin-updates.php';
+        require_once $dir . 'includes/class-mg-plugin-install.php';
         require_once $dir . 'includes/class-mg-login.php';
         require_once $dir . 'includes/class-mg-rest-controller.php';
         require_once $dir . 'includes/class-mg-updater.php';

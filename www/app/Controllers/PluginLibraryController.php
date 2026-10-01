@@ -13,12 +13,14 @@ use App\Core\Monitor\PluginClient;
 use App\Core\Plugin\PluginDistribution;
 use App\Core\Plugin\PluginLibrary;
 use App\Core\Sites\SiteActions;
+use App\Core\Sites\SiteRepository;
 
 /**
  * Knihovna pluginů — placené a vlastní pluginy mimo wordpress.org.
  *
  * Stránka `/knihovna` (nahrání ZIPu, přehled, na kterých webech plugin je,
- * „Aktualizovat všude" — i pro náš MEDIAGRAFIK Monitor v samostatné kartě)
+ * „Nainstalovat na weby", „Aktualizovat všude" — to i pro náš MEDIAGRAFIK
+ * Monitor v samostatné kartě)
  * a dvě veřejné adresy pro plugin MEDIAGRAFIK Monitor na webech — pod
  * `/plugin/mediagrafik-monitor/`, kde už je výjimka z Basic auth:
  *
@@ -38,10 +40,13 @@ final class PluginLibraryController extends Controller
     {
         $library = $this->kernel->pluginLibrary();
         $usage = $library->usage();
+        $plugins = $library->all();
+        $installs = $this->installSites($plugins);
         $rows = [];
 
-        foreach ($library->all() as $plugin) {
+        foreach ($plugins as $plugin) {
             $rows[] = $this->row($plugin, $usage[(string) $plugin['file']] ?? [], true) + [
+                'install' => $this->installDialog($plugin, $installs[(string) $plugin['file']] ?? ['targets' => [], 'skipped' => []]),
                 'sizeLabel' => self::size((int) $plugin['size']),
                 'uploaded' => get_when((string) $plugin['uploaded_at']) . ((string) $plugin['uploaded_by'] !== '' ? ' · ' . $plugin['uploaded_by'] : ''),
                 'downloadUrl' => get_url('knihovna/' . rawurlencode((string) $plugin['slug']) . '/stahnout'),
@@ -57,7 +62,9 @@ final class PluginLibraryController extends Controller
             'rows' => $rows,
             // Okno „Aktualizovat všude" jen u pluginů, kde je co aktualizovat.
             'dialogs' => array_values(array_filter([$monitor, ...$rows], static fn (?array $row): bool => $row !== null && $row['targets'] !== [])),
+            'installDialogs' => array_values(array_filter(array_column($rows, 'install'))),
             'since' => PluginClient::LIBRARY_SINCE,
+            'installSince' => PluginClient::ACTIONS_SINCE[PluginClient::ACTION_PLUGIN_INSTALL],
             'maxUpload' => (string) ini_get('upload_max_filesize'),
         ]);
     }
@@ -92,6 +99,81 @@ final class PluginLibraryController extends Controller
             'uploaded' => isset($info['last_updated']) ? get_when((string) $info['last_updated']) : '',
             'downloadUrl' => (string) $info['download_url'],
             'removeAction' => null,
+            // Monitor se na web instaluje ručně — bez něj správa na web nedosáhne.
+            'install' => null,
+        ];
+    }
+
+    /**
+     * Weby, kde plugin z knihovny chybí — pro okno „Nainstalovat na weby".
+     * Stejná pravidla jako okno „Přidat z knihovny" na záložce Pluginy
+     * webu: verze Monitoru (`SiteActions::blocked()`), požadavky pluginu
+     * a obsazená složka (`SiteActions::installable()`).
+     *
+     * @param array<int, array<string, mixed>> $library řádky `plugin_library`
+     * @return array<string, array{targets: array<int, array<string, mixed>>, skipped: array<int, array<string, mixed>>}> podle souboru pluginu
+     */
+    private function installSites(array $library): array
+    {
+        if ($library === []) {
+            return [];
+        }
+
+        $sites = [];
+
+        foreach ($this->kernel->sites()->all() as $site) {
+            $snapshot = $this->kernel->snapshots()->snapshot((int) $site['id']);
+            $blocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_INSTALL);
+            $plugins = $snapshot !== null ? $this->kernel->snapshots()->plugins((int) $site['id']) : [];
+
+            foreach (SiteActions::installable($library, $plugins, $snapshot) as $file => $why) {
+                $item = [
+                    'name' => (string) $site['name'],
+                    'secondary' => SiteRepository::host((string) $site['url']),
+                    'detail' => $snapshot !== null && (string) $snapshot['wp_version'] !== '' ? 'WP ' . $snapshot['wp_version'] : '',
+                    'file' => $file,
+                    'action' => get_url('weby/' . (int) $site['id'] . '/pluginy/instalovat'),
+                    'value' => (string) $site['id'],
+                ];
+                $why ??= $blocked;
+
+                if ($why === null) {
+                    $sites[$file]['targets'][] = $item;
+                } else {
+                    $sites[$file]['skipped'][] = $item + ['blocked' => $why];
+                }
+            }
+        }
+
+        return $sites;
+    }
+
+    /**
+     * Okno „Nainstalovat na weby" (partial `plugin-install-dialog`).
+     * Null = plugin je na všech webech, ikona se neukáže.
+     *
+     * @param array<string, mixed> $plugin řádek `plugin_library`
+     * @param array{targets?: array<int, array<string, mixed>>, skipped?: array<int, array<string, mixed>>} $sites z `installSites()`
+     * @return array<string, mixed>|null
+     */
+    private function installDialog(array $plugin, array $sites): ?array
+    {
+        $targets = $sites['targets'] ?? [];
+        $skipped = $sites['skipped'] ?? [];
+
+        if ($targets === [] && $skipped === []) {
+            return null;
+        }
+
+        return [
+            'id' => 'library-install-' . preg_replace('/[^a-z0-9-]/', '-', strtolower((string) $plugin['slug'])),
+            'title' => 'Nainstalovat ' . $plugin['name'] . ' ' . $plugin['version'],
+            'note' => 'Plugin se na vybrané weby nainstaluje jeden po druhém. Nechte okno otevřené, dokud instalace neskončí — po zavření stránky se zbylé weby přeskočí.',
+            'targetsLabel' => 'Weby, kde plugin chybí',
+            'action' => null,
+            'start' => 'Nainstalovat',
+            'targets' => $targets,
+            'skipped' => $skipped,
         ];
     }
 

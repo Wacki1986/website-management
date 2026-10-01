@@ -9,7 +9,9 @@
  * Akce v řádku jsou ikony s popisem v `title`/`aria-label`; ikona koše vede
  * na potvrzovací stránku — se skriptem místo ní otevře modální okno
  * `plugin-delete` (`confirm-dialog.js`); oko a vypínač míří přes
- * `formaction` jinam (vnořený formulář HTML nedovolí).
+ * `formaction` jinam (vnořený formulář HTML nedovolí). Tlačítko „Přidat
+ * z knihovny" otevře okno se zaškrtávacím seznamem pluginů z knihovny,
+ * které na webu nejsou (`plugin-install.js` je pak instaluje po jednom).
  *
  * @var \App\Core\View\View $this
  * @var array               $site
@@ -22,6 +24,8 @@
  * @var string              $q
  * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int, outdated: int} $metrics
  * @var bool                $hasSnapshot
+ * @var array<string, mixed> $install   okno „Přidat z knihovny" (partial `plugin-install-dialog`)
+ *                                      a `unavailable` — proč tlačítko nejde (null = otevře okno)
  * @var ?string             $updateBlocked proč teď aktualizace nejde (null = jde)
  * @var ?string             $deleteBlocked proč teď mazání nejde (null = jde; řádek pak má `deleteUrl`)
  * @var int                 $maxUpdates    kolik pluginů najednou
@@ -61,6 +65,11 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
             <label class="search"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat plugin…" class="search__input" aria-label="Hledat plugin"></label>
             <div class="u-ml-auto row">
                 <noscript><button type="submit" class="btn btn--secondary btn--sm">Hledat</button></noscript>
+                <?php if ($install['unavailable'] === null): ?>
+                    <a class="btn btn--secondary btn--sm" href="#" data-confirm="<?= $this->e($install['id']) ?>"><?= get_btn_icon('plus') ?>Přidat z knihovny</a>
+                <?php else: ?>
+                    <button type="button" class="btn btn--secondary btn--sm" disabled title="<?= $this->e($install['unavailable']) ?>"><?= get_btn_icon('plus') ?>Přidat z knihovny</button>
+                <?php endif; ?>
                 <button class="btn btn--primary btn--sm" type="submit" form="plugin-update" data-selection-button data-plugin-bulk<?= $updateBlocked !== null ? ' disabled title="' . $this->e($updateBlocked) . '"' : ' title="Nejvýš ' . $maxUpdates . ' najednou"' ?>>Aktualizovat vybrané</button>
             </div>
         </form>
@@ -152,6 +161,10 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                 </div>
             </form>
         </dialog>
+    <?php endif; ?>
+
+    <?php if ($install['unavailable'] === null): ?>
+        <?= $this->partial('partials/plugin-install-dialog', ['dialog' => $install, 'csrfToken' => $csrfToken]) ?>
     <?php endif; ?>
 
     <?php if ($rows !== [] && $deleteBlocked === null): ?>

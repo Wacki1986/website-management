@@ -1,5 +1,31 @@
 # Změny
 
+## 0.8.2 — 1. 10. 2026
+
+- **Instalace pluginu z knihovny** (potřebuje MEDIAGRAFIK Monitor 1.8.0).
+  Jde ze dvou míst, obě volají stejnou akci `weby/<id>/pluginy/instalovat`:
+  - záložka Pluginy webu → tlačítko **Přidat z knihovny** → okno
+    s pluginy z knihovny, které na webu ještě nejsou;
+  - Knihovna pluginů → ikona **plus** v Akcích řádku → okno s weby,
+    kde plugin chybí.
+
+  V okně se zaškrtne, co instalovat, a volbou „Po instalaci aktivovat"
+  (výchozí zapnutá) plugin rovnou zapne. `plugin-install.js` posílá
+  položky po jednom a průběh ukazuje přímo v okně — kolečko, pak fajfka,
+  nebo křížek s důvodem. Šedě a s důvodem je, co nainstalovat nejde:
+  starý Monitor, plugin chce novější WordPress nebo PHP, nebo je na webu
+  stejně pojmenovaná složka (`SiteActions::installable()`). Okno je jeden
+  partial `plugin-install-dialog` pro obě místa. Po instalaci se načtou
+  čerstvá data, do historie přibude „X nainstalován" a do auditu nová akce
+  „Instalace pluginu".
+- **MEDIAGRAFIK Monitor 1.8.0:** akce `plugin-install`. Správa posílá jen
+  cestu pluginu. Odkaz na ZIP si plugin vezme z čerstvého seznamu knihovny
+  a jinou adresu než knihovnu správy odmítne, takže kdo by ukradl API klíč,
+  stejně na web nepodstrčí cizí balíček. Před instalací kontroluje
+  požadovanou verzi WordPressu a PHP a obsazenou složku. Instaluje cestou
+  wp-admin (`Plugin_Upgrader::install()`) pod stejným zámkem jako ostatní
+  akce.
+
 ## 0.8.1 — 30. 9. 2026
 
 - **Nový web neposílá hned e-mail.** Alerty z úplně první kontroly

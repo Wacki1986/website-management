@@ -383,6 +383,7 @@ final class SiteController extends Controller
                 'outdated' => $outdated,
             ],
             'hasSnapshot' => $snapshot !== null,
+            'install' => $this->installDialog($site, $snapshot, $q === '' ? $plugins : $this->kernel->snapshots()->plugins((int) $id)),
             'updateBlocked' => SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_UPDATE),
             'deleteBlocked' => $deleteBlocked,
             'maxUpdates' => PluginClient::MAX_UPDATES,
@@ -923,6 +924,61 @@ final class SiteController extends Controller
             ['value' => (string) ($site['snap_wp_version'] ?? ''), 'tone' => $wpUpdate !== null ? 'warning' : '', 'title' => $wpUpdate !== null ? 'Čeká aktualizace na WordPress ' . $wpUpdate : ''],
             ['value' => PhpSupport::minor($php), 'tone' => PhpSupport::tone($php), 'title' => PhpSupport::advice($php) ?? ''],
             ['value' => $db !== '' ? DbSupport::label($dbType, $db) : '', 'tone' => DbSupport::tone($dbType, $db), 'title' => DbSupport::advice($dbType, $db) ?? ''],
+        ];
+    }
+
+    /**
+     * Okno „Přidat z knihovny" na záložce Pluginy: pluginy z knihovny, které
+     * na webu nejsou. Ty, co jde nainstalovat, mají zaškrtávátko, ostatní
+     * jsou šedě s důvodem (stará verze WordPressu, obsazená složka…).
+     *
+     * @param array<string, mixed>             $site
+     * @param array<string, mixed>|null        $snapshot
+     * @param array<int, array<string, mixed>> $plugins všechny pluginy webu (ne jen nalezené hledáním)
+     * @return array<string, mixed> data partialu `plugin-install-dialog` a `unavailable`
+     *                              (proč tlačítko nejde, null = otevře okno)
+     */
+    private function installDialog(array $site, ?array $snapshot, array $plugins): array
+    {
+        $library = $this->kernel->pluginLibrary()->all();
+        $entries = array_column($library, null, 'file');
+        $action = get_url('weby/' . (int) $site['id'] . '/pluginy/instalovat');
+        $blocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_INSTALL);
+        $targets = [];
+        $skipped = [];
+
+        foreach (SiteActions::installable($library, $plugins, $snapshot) as $file => $why) {
+            $item = [
+                'name' => (string) $entries[$file]['name'],
+                'secondary' => (string) $entries[$file]['author'],
+                'detail' => (string) $entries[$file]['version'],
+                'file' => $file,
+                'action' => $action,
+                'value' => $file,
+            ];
+
+            if ($why === null) {
+                $targets[] = $item;
+            } else {
+                $skipped[] = $item + ['blocked' => $why];
+            }
+        }
+
+        return [
+            'id' => 'plugin-install',
+            'title' => 'Přidat plugin z knihovny',
+            'note' => 'Vybrané pluginy se na web nainstalují z Knihovny pluginů jeden po druhém. Pluginy, které na webu už jsou, se tu nenabízejí.',
+            'targetsLabel' => 'Pluginy z knihovny',
+            'action' => $action,
+            'start' => 'Nainstalovat',
+            'targets' => $targets,
+            'skipped' => $skipped,
+            'unavailable' => match (true) {
+                $library === [] => 'Knihovna pluginů je prázdná — plugin nejdřív nahrajte v Knihovně pluginů.',
+                $blocked !== null => $blocked,
+                $targets === [] && $skipped === [] => 'Všechny pluginy z knihovny už na webu jsou.',
+                default => null,
+            },
         ];
     }
 

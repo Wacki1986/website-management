@@ -16,7 +16,8 @@ declare(strict_types=1);
  *  FAKE_WP_PLUGIN_VERSION verze jednoho z pluginů v souhrnu (pro test rozdílů)
  *  FAKE_WP_RELEASE verze pluginu MEDIAGRAFIK Monitor v obálce (výchozí 1.0.0)
  *  FAKE_WP_STATE  soubor, kam si web zapíše aktualizovaný Elementor — další
- *                 souhrn ho pak hlásí v nové verzi (php -S je bez paměti)
+ *                 souhrn ho pak hlásí v nové verzi (php -S je bez paměti);
+ *                 vedle něj `.installed` = pluginy nainstalované z knihovny
  *  FAKE_WP_ICON   '' | link (ikony v <head>) | favicon (jen /favicon.ico)
  *                 | wplogo (/favicon.ico přesměruje na logo WordPressu)
  */
@@ -81,6 +82,7 @@ function fake_action(string $action, string $mode, string $key): void
     $request = (array) json_decode($body, true);
     $data = match ($action) {
         'plugin-update' => ['plugins' => fake_plugin_update((array) ($request['plugins'] ?? []))],
+        'plugin-install' => ['plugins' => fake_plugin_install((array) ($request['plugins'] ?? []), !empty($request['activate']))],
         'plugin-delete' => ['plugins' => fake_plugin_delete((array) ($request['plugins'] ?? []))],
         'core-update' => ['core' => fake_core_update((string) ($request['version'] ?? ''))],
         'login-link' => ['login' => fake_login_link((string) ($request['user'] ?? ''))],
@@ -108,6 +110,50 @@ function fake_plugin_update(array $files): array
             $items[] = ['file' => $file, 'name' => $file, 'status' => 'failed', 'from' => '1.0', 'to' => '1.0', 'message' => 'Balíček pro aktualizaci není k dispozici.'];
         }
     }
+
+    return $items;
+}
+
+/** Pluginy nainstalované z knihovny (akce plugin-install) — soubor => {name, version, active}. */
+function fake_installed(): array
+{
+    $file = fake_state('installed');
+
+    return $file !== '' && is_file($file) ? (array) json_decode((string) file_get_contents($file), true) : [];
+}
+
+/**
+ * Jako `MG_Plugin_Install::run()`: v „knihovně" je FlipBook Pro, Broken Pro
+ * se nestáhne, jiný plugin v knihovně není, nainstalovaný se přeskočí.
+ *
+ * @param array<int, string> $files
+ */
+function fake_plugin_install(array $files, bool $activate): array
+{
+    $library = ['flipbook-pro/flipbook-pro.php' => ['FlipBook Pro', '2.1.0'], 'broken-pro/broken-pro.php' => ['Broken Pro', '1.0.0']];
+    $installed = fake_installed();
+    $items = [];
+
+    foreach ($files as $file) {
+        [$name, $version] = $library[$file] ?? [$file, ''];
+        $item = ['file' => $file, 'name' => $name, 'version' => $version, 'status' => 'failed', 'active' => false, 'message' => ''];
+
+        if (isset($installed[$file])) {
+            $item = ['status' => 'skipped', 'active' => $installed[$file]['active'], 'message' => 'Plugin už na webu je.'] + $item;
+        } elseif (!isset($library[$file])) {
+            $item['message'] = 'Plugin v knihovně Správy webů není — načtěte stránku znovu.';
+        } elseif ($file === 'broken-pro/broken-pro.php') {
+            $item['message'] = 'Stažení balíčku selhalo.';
+        } else {
+            $installed[$file] = ['name' => $name, 'version' => $version, 'active' => $activate];
+            $item['status'] = 'installed';
+            $item['active'] = $activate;
+        }
+
+        $items[] = $item;
+    }
+
+    file_put_contents(fake_state('installed'), json_encode($installed));
 
     return $items;
 }
@@ -182,6 +228,11 @@ function fake_summary(): array
 {
     $summary = fake_summary_base();
     $active = 0;
+
+    foreach (fake_installed() as $file => $plugin) {
+        $summary['plugins']['items'][] = ['file' => $file, 'name' => $plugin['name'], 'author' => 'MEDIAGRAFIK', 'version' => $plugin['version'], 'is_active' => $plugin['active'], 'has_update' => false, 'new_version' => null, 'auto_update' => false];
+        $summary['plugins']['total']++;
+    }
 
     foreach ($summary['plugins']['items'] as $i => $item) {
         $summary['plugins']['items'][$i]['is_active'] = fake_active_overrides()[$item['file']] ?? $item['is_active'];

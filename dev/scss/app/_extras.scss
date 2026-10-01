@@ -658,6 +658,19 @@ a.btn--ghost-inverse:hover { color: var(--color-text-inverse-subtle); }
 
 .progress-list__item--done .progress-list__version { color: var(--color-status-ok-text); font-weight: var(--font-weight-semibold); }
 
+.progress-list__secondary { margin-left: 4px; color: var(--color-text-subtle); font-size: var(--font-size-caption); }
+
+// Okno instalace z knihovny: řádek je <label> se zaškrtávátkem v místě
+// ikony průběhu (stav kreslí `.checkbox:has(input:checked)` výše). Po
+// spuštění zaškrtávátko zmizí — s ním i ruka a podbarvení.
+.progress-list__item--pick:has(input) {
+  cursor: pointer;
+
+  &:hover { background: var(--color-surface-hover); }
+}
+
+.progress-list__item--pick:has(input:focus-visible) .checkbox { @include focus-ring; }
+
 // --- akční ikony a průběh aktualizace pluginů --------------------------
 
 // Oko pro „Sledovat" / „Nesledovat" a vypínač pro aktivaci pluginu —

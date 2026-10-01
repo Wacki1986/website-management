@@ -27,6 +27,7 @@ const modules = [
     ['./modules/pending.js', 'initPending'],
     ['./modules/plugin-update.js', 'initPluginUpdate'],
     ['./modules/library-update.js', 'initLibraryUpdate'],
+    ['./modules/plugin-install.js', 'initPluginInstall'],
     ['./modules/confirm-dialog.js', 'initConfirmDialogs'],
     ['./modules/service-tasks.js', 'initServiceTasks'],
     ['./modules/report-template.js', 'initReportTemplate'],

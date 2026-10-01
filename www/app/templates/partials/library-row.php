@@ -4,7 +4,8 @@
  * Monitor v samostatné kartě. Weby jako pilulky: oranžová s verzí = čeká
  * na aktualizaci, šedá = aktuální (u víc webů schované za „+ N aktuálních",
  * rozbalí `library-update.js`). Ikona „Aktualizovat všude" otevře okno
- * z partialu `library-update-dialog`.
+ * z partialu `library-update-dialog`, ikona plus „Nainstalovat na weby"
+ * okno z partialu `plugin-install-dialog`.
  *
  * @var \App\Core\View\View  $this
  * @var array<string, mixed> $plugin řádek z `PluginLibraryController::row()`: name, file, version,
@@ -12,7 +13,9 @@
  *                                   `listedSites` (vypsané) a `hiddenSites` (pod „+ N aktuálních", popisek `hiddenLabel`)
  *                                   — id, name, version, url, outdated, blocked (proč ho „všude" přeskočí, null = ne);
  *                                   `targets` / `skipped`, `dialogId`; k tomu sizeLabel, uploaded, downloadUrl,
- *                                   removeAction (null = z knihovny nejde odebrat — Monitor)
+ *                                   removeAction (null = z knihovny nejde odebrat — Monitor),
+ *                                   install (okno „Nainstalovat na weby" z partialu `plugin-install-dialog`,
+ *                                   null = plugin je na všech webech, nebo jde o Monitor)
  * @var string               $csrfToken
  */
 ?>
@@ -50,6 +53,9 @@
     <div class="table__cell text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($plugin['uploaded']) ?></div>
     <div class="table__cell table__cell--right">
         <div class="row-actions">
+            <?php if ($plugin['install'] !== null): ?>
+                <a class="btn btn--ghost btn--icon" href="#" data-confirm="<?= $this->e($plugin['install']['id']) ?>" title="Nainstalovat na weby" aria-label="Nainstalovat <?= $this->e((string) $plugin['name']) ?> na weby"><?= get_icon('plus', 'icon--sm') ?></a>
+            <?php endif; ?>
             <?php if ($plugin['targets'] !== []): ?>
                 <a class="btn btn--secondary btn--icon" href="#" data-confirm="<?= $this->e($plugin['dialogId']) ?>" title="Aktualizovat všude na <?= $this->e((string) $plugin['version']) ?>" aria-label="Aktualizovat <?= $this->e((string) $plugin['name']) ?> všude na <?= $this->e((string) $plugin['version']) ?>"><?= get_icon('refresh', 'icon--sm') ?></a>
             <?php elseif ($plugin['skipped'] !== []): ?>

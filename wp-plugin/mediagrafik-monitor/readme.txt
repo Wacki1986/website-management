@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -14,7 +14,8 @@ Plugin vystavuje REST endpointy `/wp-json/mediagrafik-monitor/v1/{ping,summary,s
 chráněné API klíčem v hlavičce `X-MG-Key`. Klíč vydává Správa webů; plugin ukládá jen jeho
 SHA-256 hash. Plugin nic neposílá, nemá cron ani e-maily — hub se ptá sám.
 
-Na pokyn Správy webů (podepsaný požadavek) umí aktualizovat pluginy, smazat neaktivní pluginy
+Na pokyn Správy webů (podepsaný požadavek) umí aktualizovat pluginy, nainstalovat plugin
+z knihovny Správy webů, smazat neaktivní pluginy
 a aktualizovat WordPress — stejnou cestou jako wp-admin. Umí i přihlášení do administrace
 jedním klikem ze Správy webů (jednorázový odkaz, bez hesla; jde vypnout v nastavení pluginu).
 
@@ -28,6 +29,9 @@ nebo Yoast SEO a základní SEO kontroly (viditelnost pro vyhledávače, mapa we
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.8.0 =
+* Instalace pluginů z knihovny Správy webů, volitelně rovnou s aktivací. Správa posílá jen to, který plugin chce; odkaz na ZIP si web vezme z knihovny sám, takže cizí balíček nainstalovat nejde. Před instalací kontroluje požadovanou verzi WordPressu a PHP a stejně pojmenovanou složku.
 
 = 1.7.0 =
 * Modul SEO: pokrytí metadat (klíčové slovo, meta popis, obrázek pro sdílení, alt text obrázků v knihovně médií), až 200 slabě hodnocených stránek s klíčovým slovem a tím, co jim chybí (klíčové slovo, meta popis, krátký text, alt u obrázků v textu).

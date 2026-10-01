@@ -18,6 +18,7 @@ use App\Core\Sites\SiteActions;
  * plugin MEDIAGRAFIK Monitor:
  *
  *  - aktualizace pluginů (záložka Pluginy, hromadně i z řádku),
+ *  - instalace pluginu z knihovny (okno na záložce Pluginy a v Knihovně),
  *  - aktivace a deaktivace pluginu (ikona v řádku),
  *  - smazání neaktivního pluginu (potvrzovací stránka),
  *  - aktualizace WordPressu (odkaz na Přehledu → potvrzovací stránka),
@@ -111,6 +112,106 @@ final class SiteActionController extends Controller
         }
 
         return $this->redirectWithFlash($back, $message, $failed === [] ? 'success' : 'warning');
+    }
+
+    // -----------------------------------------------------------------
+    // Instalace pluginu z knihovny
+    // -----------------------------------------------------------------
+
+    /**
+     * Okno „Přidat z knihovny" na záložce Pluginy i „Nainstalovat na weby"
+     * v Knihovně pluginů. Hromadně (`plugins[]`) nebo jeden (`plugin`);
+     * posílají se jen pluginy z knihovny, které na webu nejsou a jde je
+     * nainstalovat (`SiteActions::installable()`), ostatní se tiše vynechají.
+     * `activate=1` plugin po instalaci rovnou zapne.
+     *
+     * Skript (`plugin-install.js`) posílá pluginy po jednom a čeká JSON;
+     * data z webu se načtou jen po posledním pluginu daného webu (`refresh=1`).
+     * Událost „X nainstalován" zapíše do historie import z rozdílu.
+     */
+    public function installPlugins(string $id): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $back = 'weby/' . $id . '/pluginy';
+        $json = $this->request()->wantsJson();
+        $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
+        $blocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_INSTALL);
+
+        if ($blocked !== null) {
+            return $json ? Response::json(['ok' => false, 'error' => $blocked], 422) : $this->redirectWithFlash($back, $blocked, 'warning');
+        }
+
+        $library = [];
+
+        foreach ($this->kernel->pluginLibrary()->all() as $entry) {
+            $library[(string) $entry['file']] = $entry;
+        }
+
+        $single = $this->request()->string('plugin');
+        $requested = $single !== '' ? [$single] : array_map('strval', array_filter((array) $this->request()->input('plugins', []), 'is_scalar'));
+        $installable = array_filter(
+            SiteActions::installable(array_values($library), $this->kernel->snapshots()->plugins((int) $id), $snapshot),
+            static fn (?string $why): bool => $why === null,
+        );
+        $files = array_values(array_intersect(array_unique($requested), array_keys($installable)));
+
+        if ($files === [] || count($files) > PluginClient::MAX_UPDATES) {
+            $why = $files === [] ? 'Vyberte plugin z knihovny, který na webu ještě není.' : 'Najednou jde nainstalovat nejvýš ' . PluginClient::MAX_UPDATES . ' pluginů — vyberte méně.';
+
+            return $json ? Response::json(['ok' => false, 'error' => $why], 422) : $this->redirectWithFlash($back, $why, 'warning');
+        }
+
+        $activate = $this->request()->bool('activate');
+        $this->keepRunning();
+        $result = $this->kernel->pluginClient()->installPlugins((string) $site['url'], $this->apiKey($site), $files, $activate);
+        $names = implode(', ', array_map(static fn (string $file): string => (string) $library[$file]['name'], $files));
+
+        if (!$result['ok']) {
+            $failure = $this->failed($site, $back, AuditLog::ACTION_PLUGIN_INSTALL, 'Instalace se nezdařila (' . $names . ')', (string) $result['error']);
+
+            return $json ? Response::json(['ok' => false, 'error' => (string) $result['error']], 502) : $failure;
+        }
+
+        $items = array_values((array) ($result['data']['plugins'] ?? []));
+        $installed = [];
+        $problems = [];
+
+        foreach ($items as $item) {
+            $name = (string) ($item['name'] ?? $item['file'] ?? '');
+            $status = (string) ($item['status'] ?? '');
+
+            if ($status === 'installed') {
+                $installed[] = $name . ' ' . (string) ($item['version'] ?? '') . (!empty($item['active']) ? ' (aktivní)' : '');
+
+                // Nainstalovaný, ale nezapnutý: aktivace selhala, plugin zůstal vypnutý.
+                if ($activate && empty($item['active'])) {
+                    $problems[] = $name . ' (' . (string) ($item['message'] ?? 'aktivace se nezdařila') . ')';
+                }
+            } elseif ($status === 'failed') {
+                $problems[] = $name . ' (' . (string) ($item['message'] ?? '') . ')';
+                $this->kernel->events()->record((int) $id, EventLog::KIND_PLUGIN, 'error', $name . ' se nepodařilo nainstalovat: ' . (string) ($item['message'] ?? ''), ['action' => 'install_failed', 'plugin' => $name], $this->actorName());
+            }
+        }
+
+        if (!$json || $this->request()->bool('refresh')) {
+            $this->refresh((int) $id);
+        }
+
+        $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_PLUGIN_INSTALL, $problems === [],
+            'Instalace z knihovny: ' . ($installed !== [] ? implode(', ', $installed) : 'nic') . ($problems !== [] ? ' · problém: ' . implode(', ', $problems) : ''),
+            ['plugins' => $items, 'activate' => $activate]);
+
+        $message = $installed !== [] ? 'Nainstalováno: ' . implode(', ', $installed) : 'Nic se nenainstalovalo.';
+
+        if ($problems !== []) {
+            $message .= ' · Nepodařilo se: ' . implode(', ', $problems);
+        }
+
+        if ($json) {
+            return Response::json(['ok' => true, 'items' => $items, 'message' => $message]);
+        }
+
+        return $this->redirectWithFlash($back, $message, $problems === [] ? 'success' : 'warning');
     }
 
     // -----------------------------------------------------------------

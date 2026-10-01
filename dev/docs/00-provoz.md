@@ -197,6 +197,22 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   s auditem a historií) a průběh je v okně — fajfka, nebo křížek s důvodem.
   Okno i stránku nechat otevřené do konce; selhání jednoho webu ostatní
   nezastaví. Zavřením okna po konci se stránka načte znovu.
+- **Instalace pluginu z knihovny** (plugin 1.8.0+) jde ze dvou míst:
+  - u webu: záložka Pluginy → **Přidat z knihovny** → okno s pluginy
+    z knihovny, které na webu nejsou → zaškrtnout → Nainstalovat;
+  - v knihovně: ikona **plus** v Akcích řádku → okno s weby, kde plugin
+    chybí → zaškrtnout weby → Nainstalovat.
+
+  Volba „Po instalaci aktivovat" je zapnutá; když aktivace selže, plugin
+  zůstane na webu vypnutý a důvod je u položky. Správa posílá jen to,
+  který plugin chce. Odkaz na ZIP si web vezme z knihovny sám a jinou adresu
+  odmítne, takže ani s ukradeným API klíčem nejde na web podstrčit cizí
+  balíček. Šedě a s důvodem se ukazuje, co nainstalovat nejde: starý
+  Monitor, plugin chce novější WordPress nebo PHP, nebo na webu už je
+  stejně pojmenovaná složka. Po instalaci se načtou čerstvá data, do
+  historie přibude „X nainstalován" a do auditu „Instalace pluginu".
+  MEDIAGRAFIK Monitor se takhle neinstaluje — bez něj správa na web
+  nedosáhne.
 - **Nová verze MEDIAGRAFIK Monitoru na všechny weby:** po `build-plugin.ps1`
   a nahrání `storage/plugin/` na server má Monitor v Knihovně pluginů
   vlastní kartu nahoře — ikona „Aktualizovat všude" funguje stejně jako

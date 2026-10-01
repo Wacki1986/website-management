@@ -11,8 +11,9 @@ use App\Core\Plugin\PluginDistribution;
  * Co jde na webu ze správy udělat — čistá logika bez sítě a databáze,
  * sdílená záložkami (co nabídnout) i akcemi (co opravdu poslat).
  *
- * Akce jsou tři: aktualizace pluginů, smazání neaktivního pluginu,
- * aktualizace WordPressu. Každou web zná až od určité verze pluginu
+ * Akce: aktualizace pluginů, instalace pluginu z knihovny, aktivace
+ * a smazání neaktivního pluginu, aktualizace WordPressu, přihlášení do
+ * wp-admin. Každou web zná až od určité verze pluginu
  * MEDIAGRAFIK Monitor (`PluginClient::ACTIONS_SINCE`).
  */
 final class SiteActions
@@ -196,6 +197,58 @@ final class SiteActions
         }
 
         return 'Web aktualizaci teď nenabízí — zkuste ji na záložce Pluginy webu.';
+    }
+
+    /**
+     * Pluginy z knihovny, které na webu ještě nejsou — pro okno „Přidat
+     * z knihovny" (záložka Pluginy) i „Nainstalovat na weby" (Knihovna).
+     * U každého proč instalace nepůjde (null = půjde); stejná kontrola
+     * běží i v pluginu na webu, tady je kvůli tomu, aby to člověk viděl
+     * předem.
+     *
+     * Verzi MEDIAGRAFIK Monitoru tohle neřeší — tu hlídá `blocked()`.
+     *
+     * @param array<int, array<string, mixed>> $library  řádky `plugin_library`
+     * @param array<int, array<string, mixed>> $plugins  řádky `site_plugins` webu
+     * @param array<string, mixed>|null        $snapshot řádek `site_snapshots` (verze WordPressu a PHP)
+     * @return array<string, ?string> cesta pluginu => proč nejde (null = jde), v pořadí knihovny
+     */
+    public static function installable(array $library, array $plugins, ?array $snapshot): array
+    {
+        $files = [];
+        $folders = [];
+
+        foreach ($plugins as $plugin) {
+            $files[(string) $plugin['file']] = true;
+            $folders[dirname((string) $plugin['file'])] = (string) $plugin['name'];
+        }
+
+        $wordpress = (string) ($snapshot['wp_version'] ?? '');
+        $php = (string) ($snapshot['php_version'] ?? '');
+        $installable = [];
+
+        foreach ($library as $entry) {
+            $file = (string) $entry['file'];
+
+            if (isset($files[$file])) {
+                continue;
+            }
+
+            $folder = dirname($file);
+            $installable[$file] = match (true) {
+                $wordpress !== '' && (string) $entry['requires_wp'] !== '' && version_compare($wordpress, (string) $entry['requires_wp'], '<')
+                    => sprintf('Plugin potřebuje WordPress %s, web má %s.', $entry['requires_wp'], $wordpress),
+                $php !== '' && (string) $entry['requires_php'] !== '' && version_compare($php, (string) $entry['requires_php'], '<')
+                    => sprintf('Plugin potřebuje PHP %s, web má %s.', $entry['requires_php'], $php),
+                // Jiný plugin ve stejně pojmenované složce — WordPress by
+                // instalaci odmítl („Cílová složka již existuje").
+                $folder !== '.' && isset($folders[$folder])
+                    => sprintf('Na webu už je složka %s (plugin %s) — WordPress by ji nepřepsal.', $folder, $folders[$folder]),
+                default => null,
+            };
+        }
+
+        return $installable;
     }
 
     /**

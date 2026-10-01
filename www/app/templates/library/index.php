@@ -12,6 +12,10 @@
  * kolečko, pak fajfka nebo křížek u každého webu. Po zavření se stránka
  * načte znovu s čerstvými verzemi.
  *
+ * Ikona plus „Nainstalovat na weby" otevře okno se zaškrtávacím seznamem
+ * webů, kde plugin chybí; `plugin-install.js` ho pak na vybrané weby
+ * nainstaluje po jednom (stejná akce jako „Přidat z knihovny" u webu).
+ *
  * Weby ve sloupci jsou pilulky: oranžová se starší verzí, šedá aktuální.
  * U víc webů se šedé schovají za „+ N aktuálních" (rozbalí skript).
  *
@@ -25,7 +29,9 @@
  * @var array<int, array<string, mixed>> $rows     pluginy knihovny — řádky z `PluginLibraryController::row()`
  *                                                 (klíče popisuje partial `library-row`)
  * @var array<int, array<string, mixed>> $dialogs  řádky s weby k aktualizaci → okno `library-update-dialog`
+ * @var array<int, array<string, mixed>> $installDialogs okna „Nainstalovat na weby" → partial `plugin-install-dialog`
  * @var string              $since      od které verze MEDIAGRAFIK Monitoru weby knihovnu znají
+ * @var string              $installSince od které verze umí plugin z knihovny nainstalovat
  * @var string              $maxUpload  limit nahrávání na hostingu (upload_max_filesize)
  * @var string              $csrfToken
  */
@@ -49,7 +55,7 @@ $this->extend('layout/shell', ['title' => $title]);
         </form>
 
         <aside class="split__aside">
-            <div class="card card--note">Weby si novou verzi nabídnou k aktualizaci samy (ve správě i ve wp-admin), když mají plugin MEDIAGRAFIK Monitor <?= $this->e($since) ?> nebo novější. Ikonou „Aktualizovat všude" ji rozešlete na všechny weby najednou. ZIPy nejsou veřejně ke stažení — každý web dostane odkaz podepsaný jen pro sebe.</div>
+            <div class="card card--note">Weby si novou verzi nabídnou k aktualizaci samy (ve správě i ve wp-admin), když mají plugin MEDIAGRAFIK Monitor <?= $this->e($since) ?> nebo novější. Ikonou „Aktualizovat všude" ji rozešlete na všechny weby najednou, ikonou plus plugin nainstalujete na weby, kde ještě není (potřebují Monitor <?= $this->e($installSince) ?>). ZIPy nejsou veřejně ke stažení — každý web dostane odkaz podepsaný jen pro sebe.</div>
         </aside>
     </div>
 
@@ -80,5 +86,9 @@ $this->extend('layout/shell', ['title' => $title]);
 
     <?php foreach ($dialogs as $plugin): ?>
         <?= $this->partial('partials/library-update-dialog', ['plugin' => $plugin, 'csrfToken' => $csrfToken]) ?>
+    <?php endforeach; ?>
+
+    <?php foreach ($installDialogs as $dialog): ?>
+        <?= $this->partial('partials/plugin-install-dialog', ['dialog' => $dialog, 'csrfToken' => $csrfToken]) ?>
     <?php endforeach; ?>
 </div>

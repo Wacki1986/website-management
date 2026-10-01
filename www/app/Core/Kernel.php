@@ -100,7 +100,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.8.1';
+    public const VERSION = '0.8.2';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
@@ -1106,6 +1106,7 @@ final class Kernel
         $router->add('GET', '/weby/{id}/prehled', [SiteController::class, 'overview'], name: 'sites.overview');
         $router->add('GET', '/weby/{id}/pluginy', [SiteController::class, 'plugins'], name: 'sites.plugins');
         $router->add('POST', '/weby/{id}/pluginy/aktualizovat', [SiteActionController::class, 'updatePlugins'], Router::AUTH_ONLY, 'sites.plugins.update');
+        $router->add('POST', '/weby/{id}/pluginy/instalovat', [SiteActionController::class, 'installPlugins'], Router::AUTH_ONLY, 'sites.plugins.install');
         $router->add('GET', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deleteForm'], name: 'sites.plugins.delete.form');
         $router->add('POST', '/weby/{id}/pluginy/smazat', [SiteActionController::class, 'deletePlugin'], Router::AUTH_ONLY, 'sites.plugins.delete');
         $router->add('POST', '/weby/{id}/pluginy/mimo-adresar', [SiteController::class, 'markExternal'], Router::AUTH_ONLY, 'sites.plugins.external');
