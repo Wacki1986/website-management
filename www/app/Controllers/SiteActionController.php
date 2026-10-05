@@ -411,7 +411,7 @@ final class SiteActionController extends Controller
         $blocked = SiteActions::blocked($site, $this->kernel->snapshots()->snapshot((int) $id), PluginClient::ACTION_LOGIN_LINK);
 
         if ($blocked !== null || $user === '') {
-            return Response::redirect($this->adminUrl($site));
+            return $this->leaveTo($site, $this->adminUrl($site));
         }
 
         $result = $this->kernel->pluginClient()->loginLink((string) $site['url'], $this->apiKey($site), $user);
@@ -421,7 +421,21 @@ final class SiteActionController extends Controller
             return $this->redirectWithFlash('weby/' . $id, 'Přihlášení jedním klikem se nepodařilo: ' . ($result['error'] ?? 'web nevrátil odkaz') . ' Otevřete wp-admin a přihlaste se heslem.', 'error');
         }
 
-        return Response::redirect($url);
+        return $this->leaveTo($site, $url);
+    }
+
+    /**
+     * Odchod z formuláře na web klienta — přes stránku s meta refresh,
+     * ne přesměrováním, které by zablokovalo CSP `form-action 'self'`
+     * (víc v šabloně). `no-store`: jednorázový odkaz nemá zůstat v cache
+     * a tlačítko Zpět ho nemá zkoušet znovu.
+     *
+     * @param array<string, mixed> $site
+     */
+    private function leaveTo(array $site, string $url): Response
+    {
+        return $this->view('sites/prihlaseni', ['target' => $url, 'siteName' => (string) $site['name']])
+            ->withHeader('Cache-Control', 'no-store');
     }
 
     // -----------------------------------------------------------------

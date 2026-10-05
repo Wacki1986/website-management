@@ -1,5 +1,18 @@
 # Změny
 
+## 0.8.3 — 5. 10. 2026
+
+- **Hledání webů při psaní.** Seznam webů se filtruje už během psaní
+  (od dvou znaků, po krátké pauze), bez odeslání formuláře. Vymění se jen
+  tabulka, počty ve filtrech a patička — pole hledání zůstane, jak je,
+  i s kurzorem. Adresa v liště se průběžně přepisuje, takže obnovení
+  stránky nebo poslaný odkaz ukáže totéž hledání (`live-search.js`).
+- **Oprava tlačítka wp-admin.** Přihlášení jedním klikem otevíralo
+  prázdné okno: prohlížeč podle CSP `form-action 'self'` zablokoval
+  přesměrování po odeslání formuláře na cizí doménu. Na web klienta se
+  teď odchází přes krátkou stránku s meta refresh (bez cache, aby se
+  jednorázový odkaz nezkoušel znovu).
+
 ## 0.8.2 — 1. 10. 2026
 
 - **Instalace pluginu z knihovny** (potřebuje MEDIAGRAFIK Monitor 1.8.0).

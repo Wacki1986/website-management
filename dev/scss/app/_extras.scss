@@ -736,6 +736,11 @@ a.btn--ghost-inverse:hover { color: var(--color-text-inverse-subtle); }
 .table__row[aria-busy="true"] > .table__cell:not(:last-child) { opacity: 0.45; }
 form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
 
+// Hledání při psaní (live-search.js): bloky čekající na výsledek se
+// ztlumí, ale až se zpožděním — rychlá odpověď tak nebliká.
+[data-live-region] { transition: opacity 0.15s; }
+[data-live-region][aria-busy="true"] { opacity: 0.55; transition-delay: 0.2s; }
+
 @media (prefers-reduced-motion: reduce) {
   .plugin-progress--indeterminate .plugin-progress__fill { animation-duration: 3s; }
 }

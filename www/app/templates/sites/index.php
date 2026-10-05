@@ -2,7 +2,9 @@
 /**
  * Seznam webů (návrh `weby.html`, `weby-seskupeno.html`, `weby-prazdno.html`).
  *
- * Filtry jsou obyčejné odkazy s parametry — fungují bez JavaScriptu.
+ * Filtry jsou obyčejné odkazy s parametry. Hledání běží při psaní
+ * (`live-search.js`): vyměňuje bloky s `data-live-region`, pole hledání
+ * a výběr klienta proto stojí mimo ně.
  *
  * @var \App\Core\View\View $this
  * @var string              $title
@@ -70,7 +72,7 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
 
 <div class="app__content">
     <section class="card card--scroll-x">
-        <form class="card__header card__header--filters" method="get" action="<?= get_url('weby') ?>">
+        <form class="card__header card__header--filters" method="get" action="<?= get_url('weby') ?>" data-live-search>
             <label class="search" style="max-width:320px">
                 <?= get_icon('search', 'icon--sm') ?>
                 <input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat web nebo klienta…" class="search__input" aria-label="Hledat">
@@ -79,7 +81,7 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
             <?php if ($grouped): ?><input type="hidden" name="seskupit" value="1"><?php endif; ?>
             <?php if ($level !== ''): ?><input type="hidden" name="stav" value="<?= $this->e($level) ?>"><?php endif; ?>
 
-            <div class="segmented">
+            <div class="segmented" data-live-region="segments">
                 <?php foreach ($segments as $segment): ?>
                     <a class="segmented__item<?= $level === $segment['key'] ? ' segmented__item--active' : '' ?>" href="<?= $filterUrl(['stav' => $segment['key']]) ?>">
                         <?php if ($segment['dot'] !== ''): ?><span class="segmented__dot" style="background:var(--color-status-<?= $segment['dot'] ?>)"></span><?php endif; ?>
@@ -95,12 +97,12 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
                         <option value="<?= (int) $id ?>"<?= $clientId === (int) $id ? ' selected' : '' ?>><?= $this->e($name) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <a class="btn btn--secondary btn--sm<?= $grouped ? ' btn--active' : '' ?>" href="<?= $filterUrl(['seskupit' => $grouped ? null : 1]) ?>"><?= get_btn_icon('users') ?><?= $grouped ? 'Zrušit seskupení' : 'Seskupit podle klienta' ?></a>
+                <a class="btn btn--secondary btn--sm<?= $grouped ? ' btn--active' : '' ?>" data-live-region="group" href="<?= $filterUrl(['seskupit' => $grouped ? null : 1]) ?>"><?= get_btn_icon('users') ?><?= $grouped ? 'Zrušit seskupení' : 'Seskupit podle klienta' ?></a>
                 <noscript><button type="submit" class="btn btn--secondary btn--sm">Filtrovat</button></noscript>
             </div>
         </form>
 
-        <div class="table table--sites<?= $seoColumn ? ' table--sites-seo' : '' ?>">
+        <div class="table table--sites<?= $seoColumn ? ' table--sites-seo' : '' ?>" data-live-region="table">
             <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP</div><div>PHP</div><div>Databáze</div><div class="table__cell table__cell--right">Aktualizace</div><?php if ($seoColumn): ?><div>SEO</div><?php endif; ?><div>Servis</div><div>Report</div><div></div></div>
 
             <?php if ($rows === []): ?>
@@ -121,7 +123,7 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
             <?php endif; ?>
         </div>
 
-        <div class="card__footer card__footer--muted">
+        <div class="card__footer card__footer--muted" data-live-region="footer">
             <span>Zobrazeno <?= $shown ?> z <?= $counts['all'] ?> <?= get_plural($counts['all'], 'webu', 'webů', 'webů') ?></span>
             <a class="u-ml-auto" href="<?= get_url('/') ?>">Zpět na dashboard</a>
         </div>

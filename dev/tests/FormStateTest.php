@@ -61,6 +61,14 @@ return [
         assertContainsString('href="/weby?q=kav&stav=ok"', $sites);
         assertContainsString('href="/weby?q=kav"', $sites);
 
+        // Hledání při psaní (live-search.js) vyměňuje jen označené bloky —
+        // každý musí být na stránce jednou a pole hledání v žádném z nich.
+        assertContainsString('data-live-search>', $sites);
+        foreach (['segments', 'group', 'table', 'footer'] as $region) {
+            assertSame(1, substr_count($sites, 'data-live-region="' . $region . '"'), 'Blok ' . $region);
+        }
+        assertTrue(strpos($sites, 'name="q"') < strpos($sites, 'data-live-region="segments"'), 'Pole hledání nesmí být ve vyměňovaném bloku');
+
         // Dashboard bez webů ukazuje uvítání bez filtrů — potřebuje aspoň jeden web.
         $kernel->sites()->create(['name' => 'Kavárna', 'url' => 'https://kavarnadobra.cz']);
         $dashboard = kernelRequest($kernel, 'GET', '/', [], ['stav' => 'problem'])->body();

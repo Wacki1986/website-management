@@ -357,10 +357,13 @@ return [
         withUpdatableWp(8241, ['FAKE_WP_MODE' => 'ok', 'FAKE_WP_RELEASE' => '1.3.0'], function (string $url): void {
             [$kernel, $token, $siteId] = puKernel($url);
             $location = static fn ($response): string => (string) ($response->headers()['Location'] ?? '');
+            // Na web klienta se odchází meta refreshem — přesměrování po POST
+            // by v prohlížeči zablokovala CSP `form-action 'self'`.
+            $leavesTo = static fn ($response): string => preg_match('~http-equiv="refresh" content="0;url=([^"]+)"~', $response->body(), $m) === 1 ? html_entity_decode($m[1]) : '';
 
             // Bez nastaveného účtu: obyčejný odkaz na přihlášení.
             assertContainsString('href="' . $url . '/wp-admin/"', kernelRequest($kernel, 'GET', '/weby/' . $siteId)->body());
-            assertSame($url . '/wp-admin/', $location(kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/prihlasit', ['_token' => $token])));
+            assertSame($url . '/wp-admin/', $leavesTo(kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/prihlasit', ['_token' => $token])));
 
             // Výchozí účet studia z nastavení: tlačítko posílá formulář do nového okna.
             $kernel->settings()->set(SiteActions::LOGIN_USER_SETTING, 'mediagrafik');
@@ -369,8 +372,9 @@ return [
             assertContainsString('Přihlásit jako mediagrafik', $html);
 
             $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/prihlasit', ['_token' => $token]);
-            assertSame(302, $response->status());
-            assertSame($url . '/?mg_login=' . str_repeat('ab', 32), $location($response));
+            assertSame(200, $response->status());
+            assertSame('no-store', $response->headers()['Cache-Control'] ?? '');
+            assertSame($url . '/?mg_login=' . str_repeat('ab', 32), $leavesTo($response));
 
             // Vlastní účet u webu přebije výchozí; neexistující účet = zpět do správy s chybou.
             $kernel->sites()->update($siteId, ['wp_login_user' => 'neexistuje']);
@@ -420,7 +424,7 @@ return [
 
             assertFalse(str_contains(kernelRequest($kernel, 'GET', '/weby/' . $siteId)->body(), '/prihlasit"'));
             $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/prihlasit', ['_token' => $token]);
-            assertSame($url . '/wp-admin/', (string) ($response->headers()['Location'] ?? ''));
+            assertContainsString('http-equiv="refresh" content="0;url=' . $url . '/wp-admin/"', $response->body());
 
             Urls::reset();
         });
