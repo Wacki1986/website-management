@@ -23,6 +23,13 @@ final class DashboardData
     /** Po kolika minutách bez běhu cronu se monitor hlásí jako neběžící. */
     public const STALE_FACTOR = 3;
 
+    /**
+     * Jak často má cron běžet nejméně (cPanel ho volá každých 5 minut,
+     * viz `dev/docs/00-provoz.md`). Neodvozuje se z frekvence kontrol webů —
+     * ta může být i 12 hodin a zastavený cron by se ohlásil za den a půl.
+     */
+    public const CRON_INTERVAL_MIN = 15;
+
     public function __construct(
         private readonly SiteRepository $sites,
         private readonly UptimeRepository $uptime,
@@ -113,7 +120,7 @@ final class DashboardData
                 'alerts' => ['value' => $alertCounts['open'], 'sub' => $alertCounts['open'] > 0 ? get_count($alertCounts['today'], 'nový dnes', 'nové dnes', 'nových dnes') . ' · ' . get_count($alertCounts['ignored'], 'ignorovaný', 'ignorované', 'ignorovaných') : 'žádné aktivní alerty'],
             ],
             'rows' => $rows,
-            'monitor' => self::monitorState($lastRun, $this->settings->int('monitor_interval_min'), $now),
+            'monitor' => self::monitorState($lastRun, self::CRON_INTERVAL_MIN, $now),
             'loading' => $counts['all'] > 0 && !$checkedAny && $lastRun === null,
         ];
     }

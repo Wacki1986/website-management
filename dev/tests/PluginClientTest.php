@@ -83,6 +83,21 @@ return [
         });
     },
 
+    'přesměrovaný web: hláška řekne, na jakou adresu změnit web' => function (): void {
+        withFakeWp(8207, ['FAKE_WP_MODE' => 'redirect', 'FAKE_WP_KEY' => FAKE_WP_KEY], function (string $url): void {
+            $result = (new PluginClient(timeout: 5))->summary($url, FAKE_WP_KEY);
+
+            assertSame('error', $result['code']);
+            assertSame(301, $result['status']);
+            assertContainsString('přesměrovává (HTTP 301) na http://localhost:8207 —', (string) $result['error']);
+        });
+
+        // Adresa se očistí od cesty k REST API i od záložky ?rest_route=.
+        assertContainsString('na https://www.opravzaluzii.cz —', PluginClient::redirectMessage('https://www.opravzaluzii.cz/wp-json/mediagrafik-monitor/v1/summary', 301));
+        assertContainsString('na https://www.opravzaluzii.cz —', PluginClient::redirectMessage('https://www.opravzaluzii.cz/?rest_route=/mediagrafik-monitor/v1/summary', 302));
+        assertContainsString('na https://firma.cz/blog —', PluginClient::redirectMessage('https://firma.cz/blog/wp-json/mediagrafik-monitor/v1/ping', 301));
+    },
+
     'nedostupný web = unreachable, ne error' => function (): void {
         $result = (new PluginClient(timeout: 2))->summary('http://127.0.0.1:8299', FAKE_WP_KEY);
 

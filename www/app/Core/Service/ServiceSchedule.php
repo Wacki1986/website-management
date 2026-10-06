@@ -11,7 +11,7 @@ use DateTimeImmutable;
  * Počítání termínů servisu — čistá logika bez databáze.
  *
  * Druhy servisu (návrh: Malý / Střední / Velký) a opakování (měsíčně,
- * čtvrtletně, pololetně, jednorázově). Termíny se odvíjejí od „prvního
+ * čtvrtletně, pololetně, ročně, jednorázově). Termíny se odvíjejí od „prvního
  * servisu"; po zapsaném servisu se další termín posune na nejbližší
  * budoucí podle rytmu, ne od data zápisu (servis o týden dřív neposune
  * celý plán).
@@ -30,6 +30,7 @@ final class ServiceSchedule
         'monthly' => ['label' => 'Měsíčně', 'months' => 1],
         'quarterly' => ['label' => 'Čtvrtletně', 'months' => 3],
         'halfyearly' => ['label' => 'Pololetně', 'months' => 6],
+        'yearly' => ['label' => 'Ročně', 'months' => 12],
         'once' => ['label' => 'Jednorázově', 'months' => 0],
     ];
 

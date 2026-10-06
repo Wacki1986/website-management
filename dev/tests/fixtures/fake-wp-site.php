@@ -9,6 +9,8 @@ declare(strict_types=1);
  * WordPressu i chování bez hezkých adres. Podobu řídí proměnné prostředí:
  *
  *  FAKE_WP_MODE   ok | bad_key | no_plugin | html | no_pretty | slow | no_filemods
+ *                 | redirect (všechno 301 na `localhost` — web běží na jiném hostu,
+ *                 jako bez www → www)
  *  FAKE_WP_KEY    klíč, který plugin přijme (výchozí mg_live_test…)
  *  FAKE_WP_LOGIN  public | hidden   (je /wp-login.php veřejný?)
  *  FAKE_WP_BASIC  1 = /wp-admin/ chráněný Basic auth
@@ -27,6 +29,11 @@ $query = [];
 parse_str((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_QUERY), $query);
 $mode = getenv('FAKE_WP_MODE') ?: 'ok';
 $expectedKey = getenv('FAKE_WP_KEY') ?: 'mg_live_TESTKEY0000000000000000000000';
+
+if ($mode === 'redirect') {
+    header('Location: http://localhost:' . (int) ($_SERVER['SERVER_PORT'] ?? 80) . (string) ($_SERVER['REQUEST_URI'] ?? '/'), true, 301);
+    exit;
+}
 
 function fake_json(int $status, array $body): void
 {

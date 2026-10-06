@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Sites\SiteRepository;
+
 /**
  * Klient pluginu MEDIAGRAFIK Monitor na straně WordPress webu.
  *
@@ -321,6 +323,14 @@ final class PluginClient
                 ? self::result(false, 'unreachable', $httpStatus, null, $error)
                 : self::classify($httpStatus, is_string($body) ? $body : '');
 
+            // Přesměrování (web běží na www, nebo se přestěhoval): říct kam,
+            // ať jde adresa v Nastavení opravit — klíč se tam sám neposílá.
+            $location = (string) curl_getinfo($handle, CURLINFO_REDIRECT_URL);
+
+            if ($result['code'] === 'error' && in_array($httpStatus, [301, 302, 307, 308], true) && $location !== '') {
+                $result['error'] = self::redirectMessage($location, $httpStatus);
+            }
+
             // HTML 404 (nebo přesměrování) na hezké adrese: web nejspíš nemá
             // zapnuté hezké trvalé odkazy — zkusí se `?rest_route=`.
             if (!$fallback && $result['code'] === 'error' && in_array($httpStatus, [404, 301, 302], true)) {
@@ -343,6 +353,20 @@ final class PluginClient
         }
 
         return $results;
+    }
+
+    /**
+     * Hláška pro přesměrovaný požadavek: adresa webu, na kterou
+     * přesměrovává (bez cesty k REST API), aby šla zkopírovat do Nastavení.
+     */
+    public static function redirectMessage(string $location, int $status): string
+    {
+        // `https://www.web.cz/wp-json/…` i `https://www.web.cz/?rest_route=…` → `https://www.web.cz`
+        $base = (string) preg_replace('#/(wp-json/.*|\?rest_route=.*|index\.php.*)$#', '', $location);
+        $base = SiteRepository::normalizeUrl($base);
+
+        return 'Web přesměrovává (HTTP ' . $status . ') na ' . ($base !== '' ? $base : $location)
+            . ' — změňte adresu webu v Nastavení na tuhle. Klíč se na jinou adresu z bezpečnosti neposílá.';
     }
 
     /** @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string} */

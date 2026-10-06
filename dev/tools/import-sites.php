@@ -10,7 +10,8 @@ declare(strict_types=1);
  * CSV (UTF-8, oddělovač čárka nebo středník, první řádek hlavička):
  *   nazev;url;klient;interval;hosting;zalohy
  * Povinné jsou `nazev` a `url`. `klient` je název klienta — když
- * neexistuje, založí se. `interval` v minutách (5/15/30/60, výchozí 15).
+ * neexistuje, založí se. `interval` v minutách (5/15/30/60/180/360/720,
+ * výchozí 60).
  *
  * S `--klice` se každému novému webu rovnou vygeneruje API klíč a vypíše
  * se do `www/storage/import-klice.txt` (jen jednou — klíče se ukládají
@@ -120,7 +121,7 @@ while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
         'name' => $name,
         'url' => $url,
         'client_id' => $clientId,
-        'check_interval_min' => isset(SiteRepository::INTERVALS[$interval]) ? $interval : 15,
+        'check_interval_min' => isset(SiteRepository::INTERVALS[$interval]) ? $interval : SiteRepository::DEFAULT_INTERVAL,
         'hosting_note' => mb_substr($col($row, 'hosting'), 0, 120),
         'backup_note' => mb_substr($col($row, 'zalohy'), 0, 120),
     ]);

@@ -24,6 +24,7 @@ use App\Core\Notifications\PushSubscriptions;
 use App\Core\Reports\ReportRepository;
 use App\Core\Reports\ReportTemplate;
 use App\Core\Service\ServiceChecklists;
+use App\Core\Sites\SiteRepository;
 use App\Core\Service\ServiceSchedule;
 use App\Core\Sites\SiteActions;
 
@@ -67,6 +68,8 @@ final class SettingsController extends Controller
             'cronLine' => $token !== null ? MonitorCronController::cronLine($this->kernel->appUrl(), $token) : '',
             'lastRun' => MonitorRun::lastRun($this->kernel->settings()),
             'siteCount' => $this->kernel->sites()->countActive(),
+            'intervals' => SiteRepository::INTERVALS,
+            'retryInterval' => SiteRepository::RETRY_INTERVAL,
             'checksToday' => $this->kernel->uptime()->countToday(),
             'appVersion' => Kernel::VERSION,
             'support' => $this->supportSummary(),

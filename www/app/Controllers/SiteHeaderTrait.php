@@ -68,7 +68,7 @@ trait SiteHeaderTrait
             // Jiný systém: odkaz jen na vyplněnou adresu administrace, nic se nehádá.
             'adminUrl' => (string) $site['admin_url'] !== '' ? (string) $site['admin_url'] : ($wordpress ? rtrim((string) $site['url'], '/') . '/wp-admin/' : ''),
             'login' => $wordpress ? $this->headerLogin($site) : null,
-            'intervalLabel' => 'kontrola ' . (SiteRepository::INTERVALS[(int) $site['check_interval_min']] ?? 'každých 15 min'),
+            'intervalLabel' => 'kontrola ' . (SiteRepository::INTERVALS[(int) $site['check_interval_min']] ?? 'každých ' . (int) $site['check_interval_min'] . ' min'),
             'apiWarning' => $apiDown ? [
                 'title' => 'Web neodpovídá monitorovacímu API',
                 'text' => 'Plugin MEDIAGRAFIK Monitor neodpověděl' . ($site['last_snapshot_at'] !== null ? ' od ' . get_when((string) $site['last_snapshot_at']) : '')

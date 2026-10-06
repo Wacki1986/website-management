@@ -165,8 +165,16 @@ final class SiteController extends Controller
             'client_id' => $this->request()->int('klient'),
             'platform' => SiteRepository::PLATFORM_WORDPRESS,
             'platform_name' => '',
-            'check_interval_min' => 15,
+            'check_interval_min' => $this->defaultInterval(),
         ], []);
+    }
+
+    /** Frekvence kontrol nového webu z Nastavení → Monitoring (jen hodnota z nabídky). */
+    private function defaultInterval(): int
+    {
+        $minutes = $this->kernel->monitorSettings()->int('monitor_interval_min');
+
+        return isset(SiteRepository::INTERVALS[$minutes]) ? $minutes : SiteRepository::DEFAULT_INTERVAL;
     }
 
     /**
@@ -198,7 +206,7 @@ final class SiteController extends Controller
             'client_id' => $request->int('client_id'),
             'platform' => $request->string('platform') === SiteRepository::PLATFORM_OTHER ? SiteRepository::PLATFORM_OTHER : SiteRepository::PLATFORM_WORDPRESS,
             'platform_name' => mb_substr($request->string('platform_name'), 0, 60),
-            'check_interval_min' => $request->int('check_interval_min', 15),
+            'check_interval_min' => $request->int('check_interval_min', $this->defaultInterval()),
         ];
         $errors = [];
 
@@ -217,7 +225,7 @@ final class SiteController extends Controller
         }
 
         if (!isset(SiteRepository::INTERVALS[$values['check_interval_min']])) {
-            $values['check_interval_min'] = 15;
+            $values['check_interval_min'] = $this->defaultInterval();
         }
 
         if ($values['client_id'] !== null && $this->kernel->clients()->find($values['client_id']) === null) {
@@ -671,7 +679,7 @@ final class SiteController extends Controller
 
         $data = [
             'name' => mb_substr($request->string('name'), 0, 150) ?: (string) $site['name'],
-            'check_interval_min' => isset(SiteRepository::INTERVALS[$request->int('check_interval_min', 15)]) ? $request->int('check_interval_min', 15) : 15,
+            'check_interval_min' => isset(SiteRepository::INTERVALS[$request->int('check_interval_min', 0)]) ? $request->int('check_interval_min', 0) : (int) $site['check_interval_min'],
             'admin_url' => mb_substr($request->string('admin_url'), 0, 255),
             'wp_login_user' => mb_substr($request->string('wp_login_user'), 0, 100),
             'backup_note' => mb_substr($request->string('backup_note'), 0, 120),

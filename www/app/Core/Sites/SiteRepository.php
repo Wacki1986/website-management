@@ -20,7 +20,32 @@ use App\Core\Security\Secrets;
  */
 final class SiteRepository
 {
-    public const INTERVALS = [5 => 'každých 5 min', 15 => 'každých 15 min', 30 => 'každých 30 min', 60 => 'každou hodinu'];
+    /**
+     * Frekvence kontrol dostupnosti (minuty => popisek). Dlouhé intervaly
+     * jsou pro weby s pár návštěvníky denně — výpadek se u nich stejně
+     * potvrdí rychle, viz `RETRY_INTERVAL`.
+     */
+    public const INTERVALS = [
+        5 => 'každých 5 min',
+        15 => 'každých 15 min',
+        30 => 'každých 30 min',
+        60 => 'každou hodinu',
+        180 => 'každé 3 hodiny',
+        360 => 'každých 6 hodin',
+        720 => 'každých 12 hodin',
+    ];
+
+    /** Výchozí frekvence nového webu. */
+    public const DEFAULT_INTERVAL = 60;
+
+    /**
+     * Po selhané kontrole se web kontroluje znovu nejpozději po tolika
+     * minutách, dokud neodpoví. Alert chce několik selhání za sebou
+     * (`monitor_fail_threshold`) a u webu s kontrolou jednou za 12 hodin by
+     * jinak přišel za den a půl. Tolik minut se také počítá do výpadku za
+     * jednu selhanou kontrolu — ne celý interval.
+     */
+    public const RETRY_INTERVAL = 15;
 
     /** WordPress s pluginem MEDIAGRAFIK Monitor — API klíč, pluginy, aktualizace, zabezpečení. */
     public const PLATFORM_WORDPRESS = 'wordpress';

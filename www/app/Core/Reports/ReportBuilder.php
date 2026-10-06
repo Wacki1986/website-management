@@ -81,7 +81,7 @@ final class ReportBuilder
         }
 
         $percent = $stats['percent'];
-        $interval = (int) ($site['check_interval_min'] ?? 15);
+        $interval = (int) ($site['check_interval_min'] ?? SiteRepository::DEFAULT_INTERVAL);
 
         // --- Aktualizace --------------------------------------------------
         $coreUpdates = [];
@@ -237,7 +237,7 @@ final class ReportBuilder
                 'downtimeLabel' => $stats['downtime_min'] > 0 ? self::minutes($stats['downtime_min']) . ' mimo provoz' : 'žádný výpadek',
                 'checks' => $stats['checks'],
                 'checksLabel' => number_format($stats['checks'], 0, ',', ' '),
-                'intervalLabel' => 'každých ' . $interval . ' minut',
+                'intervalLabel' => SiteRepository::INTERVALS[$interval] ?? 'každých ' . $interval . ' minut',
                 'outages' => $outages,
                 'days' => $dayRows,
                 'note' => $uptimeNote,

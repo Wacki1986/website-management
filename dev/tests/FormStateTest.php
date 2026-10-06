@@ -21,7 +21,6 @@ return [
         $kernel->service()->savePlan($siteId, ['is_active' => true, 'kind' => 'medium', 'frequency' => 'quarterly', 'first_date' => '2026-09-01'], '2026-09-23');
 
         $pages = [
-            '/nastaveni/monitoring',
             '/nastaveni/email',
             '/weby/' . $siteId . '/servis',
             '/weby/' . $siteId . '/servis/zapsat',
@@ -42,7 +41,10 @@ return [
         $alerts = kernelRequest($kernel, 'GET', '/nastaveni/alerty')->body();
         assertContainsString('<span class="stepper__unit" aria-hidden="true">dní</span>', $alerts);
         assertContainsString('aria-label="Stáří zálohy (h)"', $alerts);
-        assertContainsString('<span class="stepper__unit" aria-hidden="true">měsíců</span>', kernelRequest($kernel, 'GET', '/nastaveni/monitoring')->body());
+        $monitoring = kernelRequest($kernel, 'GET', '/nastaveni/monitoring')->body();
+        assertContainsString('<span class="stepper__unit" aria-hidden="true">měsíců</span>', $monitoring);
+        // Frekvence nového webu je výběr (sedm možností do přepínače nevejde), výchozí každou hodinu.
+        assertContainsString('<option value="60" selected>každou hodinu</option>', $monitoring);
 
         // Plán servisu: zapnutý přepínač i vybraný druh jsou jen `checked`.
         $service = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis')->body();

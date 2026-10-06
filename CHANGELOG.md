@@ -1,5 +1,25 @@
 # Změny
 
+## 0.9.1 — 6. 10. 2026
+
+- **Servis ročně.** Plán servisu má vedle měsíčně, čtvrtletně, pololetně
+  a jednorázově i roční opakování. Termíny drží den v měsíci (plán od
+  29. 2. má v přestupném roce zase 29.), zápis do půl roku od termínu ho
+  splní.
+- **Kontroly webu každé 3, 6 nebo 12 hodin** — pro weby s pár návštěvníky
+  denně. Výpadek se potvrdí rychle i tak: web, který neodpoví, se zkouší
+  znovu po 15 minutách, dokud se neozve, a do výpadku se za jednu selhanou
+  kontrolu počítá nejvýš 15 minut (ne celý interval).
+- **Nový web se kontroluje každou hodinu** (dřív 15 minut). Výchozí
+  frekvenci určuje Nastavení → Monitoring — formulář Přidat web ji dřív
+  ignoroval. Stávající weby si frekvenci nechávají. Hlídání, jestli běží
+  cron, už se od této frekvence neodvozuje (zůstává 45 minut).
+- **Srozumitelnější chyba přesměrovaného webu.** Když web přesměrovává
+  (typicky běží na www, ale v aplikaci je adresa bez www), plugin dřív
+  hlásil „Odpověď není JSON (HTTP 301)". Teď hláška řekne, na jakou
+  adresu web přesměrovává a že ji stačí dát do Nastavení webu. Klíč se na
+  přesměrovanou adresu dál z bezpečnosti neposílá.
+
 ## 0.9.0 — 5. 10. 2026
 
 Projekty: klient → projekt → služby. Projekt („pekarnanovak.cz") drží

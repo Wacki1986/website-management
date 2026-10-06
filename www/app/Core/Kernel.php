@@ -107,7 +107,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.9.0';
+    public const VERSION = '0.9.1';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
@@ -966,7 +966,7 @@ final class Kernel
             $raw = $this->settings()->get('monitor_last_run');
             $decoded = $raw !== '' ? json_decode($raw, true) : null;
             $counters['monitorStatus'] = is_array($decoded) ? $decoded : null;
-            $counters['monitorState'] = DashboardData::monitorState($counters['monitorStatus'], $this->monitorSettings()->int('monitor_interval_min'), time());
+            $counters['monitorState'] = DashboardData::monitorState($counters['monitorStatus'], DashboardData::CRON_INTERVAL_MIN, time());
         } catch (Throwable) {
             $counters['monitorState'] = ['state' => 'never', 'at' => null, 'error' => ''];
         }

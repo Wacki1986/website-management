@@ -19,6 +19,10 @@ return [
         assertSame('2026-10-21', ServiceSchedule::next('2026-09-21', 'monthly', '2026-09-22'));
         assertSame('2026-12-21', ServiceSchedule::next('2026-09-21', 'quarterly', '2026-09-22'));
         assertSame('2027-03-21', ServiceSchedule::next('2026-09-21', 'halfyearly', '2026-09-22'));
+        assertSame('2027-09-21', ServiceSchedule::next('2026-09-21', 'yearly', '2026-09-22'));
+        assertSame(['2027-02-28', '2028-02-29', '2029-02-28'], ServiceSchedule::upcoming('2024-02-29', 'yearly', '2026-10-06'), 'Ročně od 29. 2.: v přestupném roce zase 29.');
+        // Ročně: servis o měsíc později (do půl roku) pořád plní tentýž termín.
+        assertSame('2026-09-21', ServiceSchedule::fulfilledTerm('2026-09-21', 'yearly', '2026-10-20'));
         assertSame('2026-09-21', ServiceSchedule::next('2026-09-21', 'once', '2026-09-09'));
         assertSame(null, ServiceSchedule::next('2026-09-21', 'once', '2026-09-22'));
         // Termín dnes = dnes, ne za měsíc.

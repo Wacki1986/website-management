@@ -157,7 +157,7 @@ final class MonitorRun
         $client = $this->uptimeClient();
 
         $result = $client->check((string) $site['url']);
-        $this->uptime->record((int) $site['id'], $result, 'manual', (int) $site['check_interval_min'], $stamp);
+        $this->uptime->record((int) $site['id'], $result, 'manual', SiteRepository::RETRY_INTERVAL, $stamp);
         $this->alerts->afterUptime($site, $result, $stamp);
 
         $ssl = null;
@@ -231,7 +231,8 @@ final class MonitorRun
                 continue;
             }
 
-            $this->uptime->record((int) $site['id'], $result, $source, (int) $site['check_interval_min'], $stamp);
+            // Selhaná kontrola = nejvýš RETRY_INTERVAL minut výpadku, ne celý (třeba 12h) interval.
+            $this->uptime->record((int) $site['id'], $result, $source, min((int) $site['check_interval_min'], SiteRepository::RETRY_INTERVAL), $stamp);
             $state = $this->alerts->afterUptime($site, $result, $stamp);
 
             if ($state['status'] === 'down') {
@@ -242,15 +243,22 @@ final class MonitorRun
         return count($sites);
     }
 
-    /** Weby, kterým vypršel interval kontroly. @return array<int, array<string, mixed>> */
+    /**
+     * Weby, kterým vypršel interval kontroly. Web, který naposledy
+     * neodpověděl, se kontroluje znovu po `RETRY_INTERVAL` minutách (když
+     * má delší interval), ať se výpadek potvrdí nebo vyvrátí rychle.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function dueForUptime(int $now): array
     {
         return $this->db->select(
             'SELECT s.*, c.name AS client_name FROM sites s LEFT JOIN clients c ON c.id = s.client_id
              WHERE s.removed_at IS NULL AND s.watch_uptime = 1
-               AND (s.last_check_at IS NULL OR s.last_check_at <= DATE_SUB(:now, INTERVAL s.check_interval_min MINUTE))
+               AND (s.last_check_at IS NULL OR s.last_check_at <= DATE_SUB(:now, INTERVAL
+                   CASE WHEN s.consecutive_failures > 0 THEN LEAST(s.check_interval_min, :retry) ELSE s.check_interval_min END MINUTE))
              ORDER BY s.last_check_at',
-            ['now' => date('Y-m-d H:i:s', $now)],
+            ['now' => date('Y-m-d H:i:s', $now), 'retry' => SiteRepository::RETRY_INTERVAL],
         );
     }
 

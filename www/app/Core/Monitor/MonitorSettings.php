@@ -17,7 +17,8 @@ final class MonitorSettings
 {
     /** @var array<string, int> klíč => výchozí hodnota */
     public const DEFAULTS = [
-        'monitor_interval_min' => 15,
+        // Výchozí frekvence kontrol nově přidaného webu (`SiteRepository::INTERVALS`).
+        'monitor_interval_min' => 60,
         'monitor_timeout_s' => 10,
         'monitor_fail_threshold' => 3,
         'monitor_history_months' => 12,
@@ -45,7 +46,7 @@ final class MonitorSettings
 
     /** @var array<string, array{0: int, 1: int}> meze hodnot */
     private const LIMITS = [
-        'monitor_interval_min' => [5, 60],
+        'monitor_interval_min' => [5, 720],
         'monitor_timeout_s' => [3, 60],
         'monitor_fail_threshold' => [1, 10],
         'monitor_history_months' => [1, 60],

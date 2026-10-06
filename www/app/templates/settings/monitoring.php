@@ -15,6 +15,8 @@
  * @var string              $cronLine
  * @var array|null          $lastRun
  * @var int                 $siteCount
+ * @var array<int, string>  $intervals   frekvence kontrol webů (`SiteRepository::INTERVALS`)
+ * @var int                 $retryInterval po selhané kontrole znovu za tolik minut
  * @var int                 $checksToday
  * @var string              $appVersion
  * @var array{source: string, checkedAt: string, due: bool, error: ?string, changes: array<int, string>, rows: array<int, array{label: string, end: string, tone: string, state: string, text: string}>} $support konce podpory PHP a databází
@@ -23,7 +25,6 @@
 $this->extend('layout/shell', ['title' => $title]);
 
 $form = $this->form();
-$intervals = [5 => '5 minut', 15 => '15 minut', 30 => '30 minut', 60 => '1 hodina'];
 ?>
 <?= $this->partial('partials/settings-tabs', ['activeTab' => $activeTab]) ?>
 
@@ -38,15 +39,8 @@ $intervals = [5 => '5 minut', 15 => '15 minut', 30 => '30 minut', 60 => '1 hodin
                         <div class="card__note">Výchozí hodnoty pro nově přidané weby. U jednotlivých webů jde frekvence přepsat.</div>
                     </div>
 
-                    <div class="form__field">
-                        <span class="form__label form__label--caps">Frekvence kontrol</span>
-                        <div class="segmented">
-                            <?php foreach ($intervals as $minutes => $label): ?>
-                                <label class="segmented__item"><input type="radio" name="monitor_interval_min" value="<?= $minutes ?>"<?= $values['monitor_interval_min'] === $minutes ? ' checked' : '' ?> class="visually-hidden"><?= $this->e($label) ?></label>
-                            <?php endforeach; ?>
-                        </div>
-                        <div class="form__hint">Každý web se zkontroluje každých <?= $values['monitor_interval_min'] ?> minut · <?= number_format($siteCount * intdiv(1440, max(1, $values['monitor_interval_min'])), 0, ',', ' ') ?> kontrol denně při <?= get_count($siteCount, 'webu', 'webech', 'webech') ?></div>
-                    </div>
+                    <?= $form->select('monitor_interval_min', 'Frekvence kontrol nového webu', $intervals, $values['monitor_interval_min'], class: 'form__field--caps',
+                        hint: 'U každého webu jde změnit v jeho Nastavení. Web, který neodpoví, se zkouší znovu po ' . (int) $retryInterval . ' minutách, ať se výpadek potvrdí rychle i při dlouhé frekvenci.') ?>
 
                     <div class="form__row">
                         <div class="form__field">

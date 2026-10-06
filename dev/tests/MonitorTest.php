@@ -301,6 +301,25 @@ return [
         }
     },
 
+    'dlouhá frekvence: po selhání znovu za 15 minut, do výpadku jen 15 minut za kontrolu' => function (): void {
+        $f = monitorFixture();
+        $start = strtotime('2026-10-06 10:00:00');
+        // Nikdo neposlouchá — spojení se odmítne hned.
+        $dead = $f['sites']->create(['name' => 'Mrtvý', 'url' => 'http://127.0.0.1:8299', 'check_interval_min' => 720]);
+        $quiet = $f['sites']->create(['name' => 'Klidný', 'url' => 'http://127.0.0.1:8298', 'check_interval_min' => 720,
+            'last_check_at' => date('Y-m-d H:i:s', $start - 600), 'status' => 'ok']);
+
+        assertSame(1, $f['run']->run($start, 40)['checked'], 'Klidný web má kontrolu za 12 hodin');
+        assertSame(1, (int) $f['sites']->find($dead)['consecutive_failures']);
+        assertSame(15, (int) $f['db']->scalar('SELECT downtime_min FROM uptime_days WHERE site_id = :id', ['id' => $dead]), 'Ne 720 minut výpadku za jednu kontrolu');
+
+        // Po 16 minutách: selhaný web znovu (potvrzení výpadku), klidný ne.
+        assertSame(1, $f['run']->run($start + 16 * 60, 40)['checked']);
+        assertSame(2, (int) $f['sites']->find($dead)['consecutive_failures']);
+        assertSame(0, (int) $f['sites']->find($quiet)['consecutive_failures']);
+        assertSame(date('Y-m-d H:i:s', $start - 600), $f['sites']->find($quiet)['last_check_at']);
+    },
+
     'zámek: druhý souběžný běh se přeskočí' => function (): void {
         $f = monitorFixture();
         $lock = fopen($f['logDir'] . '/monitor.lock', 'c');
