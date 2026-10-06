@@ -111,6 +111,28 @@ return [
         assertSame('Active24 (účet klienta)', $services->find($id)['provider'], 'Ruční oprava zůstává');
     },
 
+    'oprava schématu: databáze se starou podobou migrace dostane registrar_detected a ztratí dkim_selector' => function (): void {
+        $f = monitorFixture();
+        $pdo = $f['db']->pdo();
+        // Stav po první podobě 2026_10_05_000004 — tak to vypadá na serveru, kde chyba nastala.
+        $pdo->exec('ALTER TABLE project_services DROP COLUMN registrar_detected');
+        $pdo->exec("ALTER TABLE project_services ADD COLUMN dkim_selector varchar(60) NOT NULL DEFAULT '' AFTER expiry_error");
+
+        $migration = require WWW_ROOT . '/database/migrations/2026_10_06_000001_registrar_detected.php';
+        $migration($pdo);
+        $migration($pdo);
+
+        $columns = array_column($f['db']->select('SHOW COLUMNS FROM project_services'), 'Field');
+        assertTrue(in_array('registrar_detected', $columns, true));
+        assertFalse(in_array('dkim_selector', $columns, true));
+
+        // Krok cronu, který padal: uložení registrátora z RDAPu.
+        $services = new ProjectServices($f['db']);
+        $id = $services->create((new ProjectRepository($f['db']))->create(['name' => 'mhbst.cz']), 'domain', ['name' => 'mhbst.cz']);
+        $services->saveExpiry($id, ['ok' => true, 'expires_on' => '2027-05-01', 'registrar' => 'Forpsi', 'error' => null], '2026-10-06 12:00:00');
+        assertSame('Forpsi', $services->find($id)['provider']);
+    },
+
     'migrace převede hosting a doménu webů na služby projektu, jednou' => function (): void {
         [$kernel] = loggedInKernel();
         $db = $kernel->db();

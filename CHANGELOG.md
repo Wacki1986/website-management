@@ -1,5 +1,16 @@
 # Změny
 
+## 0.9.3 — 6. 10. 2026
+
+- **Datum spuštění webu.** Nové nepovinné pole v Nastavení webu; přehled
+  webu ho ukazuje v bočním souhrnu i s tím, jak dlouho web běží
+  („15. 3. 2021 · 5 let"). Migrace `2026_10_06_000002`.
+- **Oprava: cron padal v kroku „renewals"** s chybou `Unknown column
+  'registrar_detected'`. Migrace `2026_10_05_000004` se během vývoje měnila
+  na místě a databáze, kde stihla proběhnout její první podoba, sloupec
+  nedostala. Nová migrace `2026_10_06_000001` schéma srovná: sloupec
+  doplní a nepoužívaný `dkim_selector` odstraní.
+
 ## 0.9.2 — 6. 10. 2026
 
 - **Databáze bez podpory v přehledu webu.** Dlaždice Databáze ukazuje

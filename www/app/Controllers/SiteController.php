@@ -337,6 +337,7 @@ final class SiteController extends Controller
             ['label' => 'SSL certifikát', 'value' => $site['ssl_valid_to'] !== null ? 'do ' . get_czech_date((string) $site['ssl_valid_to']) : 'zatím nezjištěno', 'tone' => ''],
             ['label' => 'Zálohy', 'value' => $snapshot !== null && $snapshot['last_backup_at'] !== null ? 'poslední ' . get_when((string) $snapshot['last_backup_at']) : ((string) $site['backup_note'] !== '' ? (string) $site['backup_note'] : '—'), 'tone' => ''],
             ['label' => 'Hosting', 'value' => SiteRepository::hostingLabel($site), 'tone' => ''],
+            ['label' => 'Spuštění webu', 'value' => self::launchedLabel($site['launched_on'] ?? null, $now), 'tone' => ''],
             ['label' => 'Poslední kontrola', 'value' => $site['last_check_at'] !== null ? get_when((string) $site['last_check_at']) : ($site['last_snapshot_at'] !== null ? get_when((string) $site['last_snapshot_at']) : 'zatím žádná'), 'tone' => ''],
         ];
 
@@ -691,6 +692,15 @@ final class SiteController extends Controller
             'wp_login_user' => mb_substr($request->string('wp_login_user'), 0, 100),
             'backup_note' => mb_substr($request->string('backup_note'), 0, 120),
         ];
+
+        // Datum spuštění je nepovinné; prázdné pole ho smaže.
+        $launched = $request->string('launched_on');
+
+        if ($launched !== '' && \DateTime::createFromFormat('!Y-m-d', $launched)?->format('Y-m-d') !== $launched) {
+            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Datum spuštění zadejte ve tvaru RRRR-MM-DD.', 'error');
+        }
+
+        $data['launched_on'] = $launched !== '' ? $launched : null;
 
         // Formulář bez volby systému (starší odeslání) systém nemění.
         $platform = in_array($request->string('platform'), [SiteRepository::PLATFORM_WORDPRESS, SiteRepository::PLATFORM_OTHER], true)
@@ -1182,6 +1192,27 @@ final class SiteController extends Controller
             $inactive => ['tone' => 'error', 'label' => 'Neaktivní · riziko'],
             $assessment['tone'] === 'warning' => ['tone' => 'warning', 'label' => $label . ' · ' . mb_strtolower($assessment['label'])],
             default => ['tone' => 'ok', 'label' => $label],
+        };
+    }
+
+    /**
+     * „15. 3. 2021 · 5 let" — datum spuštění a jak dlouho web běží
+     * (celé roky, v prvním roce měsíce). Budoucí datum = plánované spuštění.
+     */
+    private static function launchedLabel(?string $launchedOn, int $now): string
+    {
+        if ($launchedOn === null || $launchedOn === '') {
+            return '—';
+        }
+
+        $date = get_czech_date($launchedOn);
+        $age = (new \DateTimeImmutable($launchedOn))->diff((new \DateTimeImmutable())->setTimestamp($now));
+
+        return match (true) {
+            $age->invert === 1 => 'plánováno na ' . $date,
+            $age->y > 0 => $date . ' · ' . get_count($age->y, 'rok', 'roky', 'let'),
+            $age->m > 0 => $date . ' · ' . get_count($age->m, 'měsíc', 'měsíce', 'měsíců'),
+            default => $date,
         };
     }
 

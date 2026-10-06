@@ -84,6 +84,8 @@ $base = 'weby/' . (int) $site['id'];
                                 attributes: ['placeholder' => $defaultLoginUser !== '' ? $defaultLoginUser : 'mediagrafik', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
                                 hint: $defaultLoginUser !== '' ? 'Prázdné = výchozí účet studia „' . $defaultLoginUser . '" z Nastavení → Monitoring.' : 'Účet, do kterého „wp-admin" přihlásí bez hesla. Výchozí pro všechny weby nastavíte v Nastavení → Monitoring.') ?>
                             <?= $form->text('backup_note', 'Zálohy', (string) $site['backup_note'], class: 'form__field--caps', attributes: ['placeholder' => 'denně · 03:00'], hint: 'Jen poznámka do přehledu, dokud plugin zálohy neumí zjistit.') ?>
+                            <?= $form->text('launched_on', 'Datum spuštění webu', (string) ($site['launched_on'] ?? ''), type: 'date', class: 'form__field--caps', keyLabel: '· nepovinné',
+                                hint: 'Ukazuje se v přehledu webu i s tím, jak dlouho web běží.') ?>
                         </div>
                         <div class="row"><button class="btn btn--primary" type="submit">Uložit změny</button><a class="btn btn--ghost" href="<?= get_url($base) ?>">Zrušit</a></div>
                     </form>
