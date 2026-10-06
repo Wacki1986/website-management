@@ -56,6 +56,11 @@ return [
         assertContainsString('text-error" title="Databáze MariaDB 10.6 už nedostává', $html);
         assertContainsString('>MariaDB 10.6</div>', $html);
 
+        // Přehled webu: dlaždice Databáze hlásí konec podpory jako PHP.
+        $overview = kernelRequest($kernel, 'GET', '/weby/' . $siteId)->body();
+        assertContainsString('metric metric--compact metric--error" title="Databáze MariaDB 10.6 už nedostává', $overview);
+        assertContainsString('konec podpory</span>', $overview);
+
         $form = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/servis/zapsat')->body();
         assertContainsString('PHP 8.2 přestane', $form);
         assertContainsString('Databáze MariaDB 10.6 už nedostává bezpečnostní opravy', $form);

@@ -311,7 +311,14 @@ final class SiteController extends Controller
                         : null,
                 ],
                 'php' => ['value' => (string) $snapshot['php_version'], 'eol' => $phpEol, 'daysLeft' => PhpSupport::daysLeft((string) $snapshot['php_version'], $now)],
-                'db' => ['value' => trim($snapshot['db_type'] . ' ' . PhpSupport::minor((string) $snapshot['db_version'])), 'size' => $snapshot['db_size_mb'] !== null ? $snapshot['db_size_mb'] . ' MB' : ''],
+                // Konec podpory jako u PHP: po něm červeně, do půl roku odznak (DbSupport z endoflife.date).
+                'db' => [
+                    'value' => trim($snapshot['db_type'] . ' ' . PhpSupport::minor((string) $snapshot['db_version'])),
+                    'size' => $snapshot['db_size_mb'] !== null ? $snapshot['db_size_mb'] . ' MB' : '',
+                    'eol' => DbSupport::tone((string) $snapshot['db_type'], (string) $snapshot['db_version'], $now) === 'error',
+                    'daysLeft' => DbSupport::daysLeft((string) $snapshot['db_type'], (string) $snapshot['db_version'], $now),
+                    'advice' => DbSupport::advice((string) $snapshot['db_type'], (string) $snapshot['db_version'], $now) ?? '',
+                ],
                 'theme' => ['value' => (string) $snapshot['theme_name'], 'note' => trim($snapshot['theme_version'] . ((int) $snapshot['theme_is_child'] === 1 ? ' · child theme' : ''))],
             ];
         }

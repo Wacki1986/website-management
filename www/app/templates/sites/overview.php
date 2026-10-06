@@ -52,10 +52,10 @@ $percentTone = $percent === null ? 'text-faint' : ($percent < 99 ? 'metric__valu
                         <div class="metric__value<?= $metrics['php']['eol'] ? ' metric__value--error' : '' ?>"><?= $this->e($metrics['php']['value']) ?></div>
                         <div class="metric__note"><?= $metrics['php']['eol'] ? get_badge('konec podpory', 'error') : ($metrics['php']['daysLeft'] !== null && $metrics['php']['daysLeft'] < 180 ? get_badge('podpora končí za ' . $metrics['php']['daysLeft'] . ' d', 'warning') : 'podporované') ?></div>
                     </div>
-                    <div class="metric metric--compact">
+                    <div class="metric metric--compact<?= $metrics['db']['eol'] ? ' metric--error' : '' ?>"<?= $metrics['db']['advice'] !== '' ? ' title="' . $this->e($metrics['db']['advice']) . '"' : '' ?>>
                         <div class="metric__label">Databáze</div>
-                        <div class="metric__value"><?= $this->e($metrics['db']['value']) ?></div>
-                        <div class="metric__note"><?= $this->e($metrics['db']['size']) ?></div>
+                        <div class="metric__value<?= $metrics['db']['eol'] ? ' metric__value--error' : '' ?>"><?= $this->e($metrics['db']['value']) ?></div>
+                        <div class="metric__note"><?= $metrics['db']['eol'] ? get_badge('konec podpory', 'error') . ' ' : ($metrics['db']['daysLeft'] !== null && $metrics['db']['daysLeft'] < 180 ? get_badge('podpora končí za ' . $metrics['db']['daysLeft'] . ' d', 'warning') . ' ' : '') ?><?= $this->e($metrics['db']['size']) ?></div>
                     </div>
                     <div class="metric metric--compact">
                         <div class="metric__label">Šablona</div>

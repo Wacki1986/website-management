@@ -1,5 +1,12 @@
 # Změny
 
+## 0.9.2 — 6. 10. 2026
+
+- **Databáze bez podpory v přehledu webu.** Dlaždice Databáze ukazuje
+  konec podpory stejně jako PHP: po něm červeně s odznakem „konec
+  podpory", půl roku předem odznak „podpora končí za N d". Bublina
+  řekne, do kdy podpora byla a na co přejít.
+
 ## 0.9.1 — 6. 10. 2026
 
 - **Servis ročně.** Plán servisu má vedle měsíčně, čtvrtletně, pololetně
