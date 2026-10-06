@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Monitor;
 
 /**
- * Expirace domény přes RDAP (nástupce WHOIS, JSON).
+ * Expirace a registrátor domény přes RDAP (nástupce WHOIS, JSON).
  *
  * `.cz` obsluhuje `rdap.nic.cz`, ostatní přes `rdap.org`, který přesměruje
  * na správný registr. Pravidlo je ve výchozím stavu vypnuté (návrh:
@@ -13,6 +13,22 @@ namespace App\Core\Monitor;
  */
 final class DomainChecker
 {
+    /**
+     * Registrátoři `.cz`: rdap.nic.cz vrací jen zkratku (`REG-WEDOS`), jméno
+     * ne — a dotaz na zkratku vrací kontaktní osobu, ne firmu. Neznámá
+     * zkratka se ukáže bez `REG-` (`REG-EXONHOST` → „EXONHOST").
+     */
+    private const CZ_REGISTRARS = [
+        'REG-WEDOS' => 'WEDOS',
+        'REG-ACTIVE24' => 'Active24',
+        'REG-INTERNET-CZ' => 'Forpsi',
+        'REG-GRANSY' => 'Subreg',
+        'REG-SEZNAM' => 'Seznam.cz',
+        'REG-ZONER' => 'Zoner',
+        'REG-IPI' => 'IPI',
+        'REG-WEBGLOBE' => 'Webglobe',
+    ];
+
     /** @param callable|null $fetcher pro testy: fn(string $url): array{status: int, body: string} */
     public function __construct(private readonly int $timeout = 8, private $fetcher = null)
     {
@@ -42,14 +58,14 @@ final class DomainChecker
     }
 
     /**
-     * @return array{ok: bool, domain: ?string, expires_on: ?string, days_left: ?int, error: ?string}
+     * @return array{ok: bool, domain: ?string, expires_on: ?string, days_left: ?int, registrar: ?string, error: ?string}
      */
     public function check(string $host, ?int $now = null): array
     {
         $domain = self::registrableDomain($host);
 
         if ($domain === null) {
-            return ['ok' => false, 'domain' => null, 'expires_on' => null, 'days_left' => null, 'error' => 'Adresa nemá registrovatelnou doménu.'];
+            return ['ok' => false, 'domain' => null, 'expires_on' => null, 'days_left' => null, 'registrar' => null, 'error' => 'Adresa nemá registrovatelnou doménu.'];
         }
 
         $url = str_ends_with($domain, '.cz')
@@ -59,14 +75,14 @@ final class DomainChecker
         $response = $this->fetcher !== null ? ($this->fetcher)($url) : $this->fetch($url);
 
         if (($response['status'] ?? 0) !== 200) {
-            return ['ok' => false, 'domain' => $domain, 'expires_on' => null, 'days_left' => null,
+            return ['ok' => false, 'domain' => $domain, 'expires_on' => null, 'days_left' => null, 'registrar' => null,
                 'error' => 'RDAP neodpověděl (HTTP ' . (int) ($response['status'] ?? 0) . ').'];
         }
 
         $expires = self::expirationFrom((string) ($response['body'] ?? ''));
 
         if ($expires === null) {
-            return ['ok' => false, 'domain' => $domain, 'expires_on' => null, 'days_left' => null, 'error' => 'RDAP nevrátil datum expirace.'];
+            return ['ok' => false, 'domain' => $domain, 'expires_on' => null, 'days_left' => null, 'registrar' => self::registrarFrom((string) ($response['body'] ?? '')), 'error' => 'RDAP nevrátil datum expirace.'];
         }
 
         return [
@@ -74,8 +90,38 @@ final class DomainChecker
             'domain' => $domain,
             'expires_on' => $expires,
             'days_left' => (int) floor((strtotime($expires . ' 23:59:59') - ($now ?? time())) / 86400),
+            'registrar' => self::registrarFrom((string) ($response['body'] ?? '')),
             'error' => null,
         ];
+    }
+
+    /**
+     * Registrátor z RDAP JSONu: entita s rolí `registrar` — jméno z vCard
+     * (`fn`, gTLD), jinak zkratka (`.cz`) přeložená přes `CZ_REGISTRARS`.
+     */
+    public static function registrarFrom(string $json): ?string
+    {
+        $data = json_decode($json, true);
+
+        foreach ((array) ($data['entities'] ?? []) as $entity) {
+            if (!is_array($entity) || !in_array('registrar', (array) ($entity['roles'] ?? []), true)) {
+                continue;
+            }
+
+            foreach ((array) ($entity['vcardArray'][1] ?? []) as $property) {
+                if (is_array($property) && ($property[0] ?? '') === 'fn' && is_string($property[3] ?? null) && trim($property[3]) !== '') {
+                    return mb_substr(trim($property[3]), 0, 120);
+                }
+            }
+
+            $handle = strtoupper(trim((string) ($entity['handle'] ?? '')));
+
+            if ($handle !== '') {
+                return self::CZ_REGISTRARS[$handle] ?? mb_substr(str_replace('-', ' ', (string) preg_replace('/^REG-/', '', $handle)), 0, 120);
+            }
+        }
+
+        return null;
     }
 
     /** Datum expirace z RDAP JSONu (`events[].eventAction = expiration`). */

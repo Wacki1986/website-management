@@ -1,18 +1,25 @@
 <?php
 /**
  * Přidání a úprava přístupu v trezoru. Pole podle druhu
- * (`SiteCredentials::KINDS`) — FTP má server a protokol, hosting odkaz
- * do administrace, databáze jméno databáze.
+ * (`Credentials::KINDS`) — FTP má server a protokol, hosting odkaz
+ * do administrace, databáze jméno databáze, e-mail adresu a webmail.
+ * Hlavička podle toho, odkud se trezor otevřel (`$headerPartial`).
  *
  * Uložené heslo se do formuláře nevrací nikdy: prázdné pole při úpravě
  * znamená „nechat, jak je".
  *
  * @var \App\Core\View\View  $this
- * @var array                $site
+ * @var string               $headerPartial `partials/site-header` / `partials/project-header`
+ * @var string               $pageTitle
  * @var string               $kind
  * @var string               $kindLabel
  * @var array<string, bool>  $fields      která pole druh má
- * @var string               $urlLabel    popisek odkazu (administrace hostingu, phpMyAdmin…)
+ * @var string               $labelLabel  popisek pole `label` (Název / Kde schránka běží)
+ * @var string               $labelPlaceholder
+ * @var bool                 $labelRequired
+ * @var string               $usernameLabel Uživatel / E-mailová adresa
+ * @var bool                 $loginFirst  uživatel a heslo nahoře (e-mail: adresa schránky je to hlavní)
+ * @var string               $urlLabel    popisek odkazu (administrace hostingu, phpMyAdmin, webmail…)
  * @var string               $hostLabel
  * @var string               $hostPlaceholder
  * @var bool                 $hostRequired server je povinný (FTP)
@@ -25,11 +32,24 @@
  * @var string               $backUrl
  * @var string               $csrfToken
  */
-$this->extend('layout/shell', ['title' => $site['name'] . ' — ' . ($isEdit ? 'Upravit přístup' : 'Nový přístup')]);
+$this->extend('layout/shell', ['title' => $pageTitle . ' — ' . ($isEdit ? 'Upravit přístup' : 'Nový přístup')]);
 
 $form = $this->form($errors, array_key_first($errors));
+
+// Řádek uživatel + heslo — u e-mailu nahoře, jinak pod servery.
+$loginRow = function () use ($form, $values, $usernameLabel, $hasPassword): void {
+    ?>
+    <div class="form__row">
+        <?= $form->text('username', $usernameLabel, $values['username'], attributes: ['class' => 'form__control--mono', 'spellcheck' => 'false', 'autocomplete' => 'off']) ?>
+        <?php // `new-password`: správce hesel prohlížeče sem jinak doplní heslo do Správy webů. ?>
+        <?= $form->text('password', 'Heslo', '', type: 'password',
+            hint: $hasPassword ? 'Heslo je uložené. Nechte prázdné, zůstane beze změny.' : '',
+            attributes: ['class' => 'form__control--mono', 'autocomplete' => 'new-password', 'placeholder' => $hasPassword ? '••••••••' : '']) ?>
+    </div>
+    <?php
+};
 ?>
-<?= $this->partial('partials/site-header', get_defined_vars()) ?>
+<?= $this->partial($headerPartial, get_defined_vars()) ?>
 
 <div class="app__content">
     <div class="split split--settings">
@@ -45,9 +65,11 @@ $form = $this->form($errors, array_key_first($errors));
                     <?php render_notice($this, 'error', message: (string) reset($errors)) ?>
                 <?php endif; ?>
 
+                <?php if ($loginFirst) { $loginRow(); } ?>
+
                 <div class="form__row">
                     <?php if (isset($fields['label'])): ?>
-                        <?= $form->text('label', 'Název', $values['label'], required: true, attributes: ['placeholder' => 'Google Analytics', 'maxlength' => '150']) ?>
+                        <?= $form->text('label', $labelLabel, $values['label'], required: $labelRequired, attributes: ['placeholder' => $labelPlaceholder, 'maxlength' => '150']) ?>
                     <?php endif; ?>
 
                     <?php if (isset($fields['protocol'])): ?>
@@ -71,13 +93,7 @@ $form = $this->form($errors, array_key_first($errors));
                     <?php endif; ?>
                 </div>
 
-                <div class="form__row">
-                    <?= $form->text('username', 'Uživatel', $values['username'], attributes: ['class' => 'form__control--mono', 'spellcheck' => 'false', 'autocomplete' => 'off']) ?>
-                    <?php // `new-password`: správce hesel prohlížeče sem jinak doplní heslo do Správy webů. ?>
-                    <?= $form->text('password', 'Heslo', '', type: 'password',
-                        hint: $hasPassword ? 'Heslo je uložené. Nechte prázdné, zůstane beze změny.' : '',
-                        attributes: ['class' => 'form__control--mono', 'autocomplete' => 'new-password', 'placeholder' => $hasPassword ? '••••••••' : '']) ?>
-                </div>
+                <?php if (!$loginFirst) { $loginRow(); } ?>
 
                 <?= $form->textarea('note', 'Poznámka', $values['note'], hint: 'Cokoli dalšího — kdo účet spravuje, kam volat, PIN k podpoře hostingu.', attributes: ['rows' => '3', 'maxlength' => '5000']) ?>
 

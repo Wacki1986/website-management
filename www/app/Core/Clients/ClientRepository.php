@@ -92,9 +92,10 @@ final class ClientRepository
         $this->db->update('clients', $data + ['updated_at' => date('Y-m-d H:i:s')], ['id' => $id]);
     }
 
-    /** Archivace — weby zůstanou v monitoringu bez klienta (návrh: karta „Odebrat klienta"). */
+    /** Archivace — projekty i weby zůstanou bez klienta (návrh: karta „Odebrat klienta"). */
     public function archive(int $id): void
     {
+        $this->db->execute('UPDATE projects SET client_id = NULL WHERE client_id = :id', ['id' => $id]);
         $this->db->execute('UPDATE sites SET client_id = NULL WHERE client_id = :id', ['id' => $id]);
         $this->update($id, ['archived_at' => date('Y-m-d H:i:s')]);
     }

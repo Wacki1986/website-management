@@ -25,6 +25,9 @@ final class AlertRepository
         'plugins_outdated' => 'Opuštěné pluginy',
     ];
 
+    /** Alerty, které plní data z pluginu — u webu mimo WordPress nedávají smysl. */
+    public const PLUGIN_TYPES = ['php_eol', 'api_error', 'updates', 'backup_old', 'plugins_outdated', 'seo_hidden', 'seo_low'];
+
     /** @var array<string, string> typ => ikona v seznamu */
     public const ICONS = [
         'down' => 'alert', 'ssl_expiring' => 'shield', 'ssl_expired' => 'alert', 'php_eol' => 'shield',
@@ -88,6 +91,19 @@ final class AlertRepository
             'resolved_by' => mb_substr($who, 0, 100),
             'resolve_note' => mb_substr($note, 0, 255),
         ], ['id' => $id]);
+    }
+
+    /**
+     * Uzavření otevřených alertů z dat pluginu — web přestal být WordPress
+     * a nikdo jiný by je nezavřel (`AlertEngine::afterSnapshot` už neběží).
+     */
+    public function resolvePluginAlerts(int $siteId, string $who, ?string $now = null): void
+    {
+        $this->db->execute(
+            "UPDATE alerts SET status = 'resolved', resolved_at = :now, resolved_by = :who, resolve_note = 'Web už není WordPress'
+             WHERE site_id = :site_id AND status = 'open' AND type IN ('" . implode("', '", self::PLUGIN_TYPES) . "')",
+            ['now' => $now ?? date('Y-m-d H:i:s'), 'who' => mb_substr($who, 0, 100), 'site_id' => $siteId],
+        );
     }
 
     public function ignore(int $id, string $who, ?string $now = null): void

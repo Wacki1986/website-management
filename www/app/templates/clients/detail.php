@@ -6,10 +6,12 @@
  * @var array               $client
  * @var array|null          $primary   hlavní kontakt
  * @var array<int, array>   $contacts  další kontakty
+ * @var array<int, array<string, mixed>> $projects projekty klienta se `state` a `siteCountLabel`
  * @var array<int, array<string, mixed>> $sites  weby se `state`, `host`, `service` a `report`
  * @var string              $lastReport
+ * @var string              $yearly   domény a hosting, které přefakturujeme, přepočtené na rok
  * @var array<int, array<string, mixed>> $recent poslední události u webů klienta
- * @var array<int, array>   $unassigned weby bez klienta (k přiřazení)
+ * @var array<int, array>   $unassigned projekty bez klienta (k přiřazení)
  * @var array{contact: string, sites: string, since: string} $meta
  * @var string              $csrfToken
  */
@@ -107,10 +109,42 @@ $field = function (string $label, string $value, bool $optional = false, string 
                 </section>
 
             <section class="card card--scroll-x">
+                <?php render_card_head('Projekty', 'Web, doména, hosting a e-maily pohromadě',
+                    '<a class="btn btn--secondary btn--sm" href="' . get_url('projekty/pridat?klient=' . (int) $client['id']) . '">' . get_btn_icon('plus') . 'Nový projekt</a>') ?>
+                <?php if ($projects === []): ?>
+                    <?php render_empty('Zatím žádný projekt', 'Přidejte klientovi web (založí se mu projekt), nebo přiřaďte některý z projektů bez klienta.', 'folder') ?>
+                <?php else: ?>
+                    <div class="table table--client-projects">
+                        <div class="table__head"><div>Projekt</div><div>Stav</div><div>Weby</div><div></div></div>
+                        <?php foreach ($projects as $project): ?>
+                            <a class="table__row table__row--link<?= $project['state']['level'] === 'problem' ? ' table__row--error' : '' ?>" href="<?= get_url('projekty/' . (int) $project['id']) ?>">
+                                <div class="table__cell row" style="flex-wrap:nowrap;gap:11px"><?= get_icon('folder', 'icon--sm icon--subtle') ?><div class="table__primary u-truncate" style="font-size:var(--font-size-label)"><?= $this->e((string) $project['name']) ?></div></div>
+                                <div class="table__cell"><?= get_status($project['state']['tone'], $project['state']['label']) ?></div>
+                                <div class="table__cell text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($project['siteCountLabel']) ?></div>
+                                <div class="table__cell table__cell--right"><span style="color:var(--color-brand);font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Otevřít</span></div>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($unassigned !== []): ?>
+                    <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/projekty') ?>" class="card__footer" style="gap:10px;align-items:flex-start;flex-direction:column">
+                        <?php render_csrf($csrfToken) ?>
+                        <span class="caps">Přiřadit projekt bez klienta</span>
+                        <div class="pick">
+                            <?php foreach ($unassigned as $free): ?>
+                                <label class="pick__item"><input type="checkbox" name="projects[]" value="<?= (int) $free['id'] ?>" class="form__check-input"><?= get_icon('folder', 'icon--sm icon--subtle') ?><span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)"><?= $this->e((string) $free['name']) ?></span><span class="table__secondary u-truncate" style="display:block;margin-top:0"><?= $this->e(get_count((int) $free['site_count'], 'web', 'weby', 'webů')) ?></span></span></label>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="submit" class="btn btn--secondary btn--sm">Přiřadit vybrané</button>
+                    </form>
+                <?php endif; ?>
+            </section>
+
+            <section class="card card--scroll-x">
                 <?php render_card_head('Weby klienta', 'Reporty a servis se nastavují u konkrétního webu',
                     '<a class="btn btn--secondary btn--sm" href="' . get_url('weby/pridat?klient=' . (int) $client['id']) . '">' . get_btn_icon('plus') . 'Přidat web</a>') ?>
                 <?php if ($sites === []): ?>
-                    <?php render_empty('Zatím žádný web', 'Přidejte nový web, nebo klientovi přiřaďte některý z webů bez klienta.', 'globe') ?>
+                    <?php render_empty('Zatím žádný web', 'Přidejte nový web, nebo klientovi přiřaďte projekt, který už weby má.', 'globe') ?>
                 <?php else: ?>
                     <div class="table table--client-sites">
                         <div class="table__head"><div>Web</div><div>Stav</div><div>Servis</div><div>Report</div><div></div></div>
@@ -125,18 +159,6 @@ $field = function (string $label, string $value, bool $optional = false, string 
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
-                <?php if ($unassigned !== []): ?>
-                    <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/weby') ?>" class="card__footer" style="gap:10px;align-items:flex-start;flex-direction:column">
-                        <?php render_csrf($csrfToken) ?>
-                        <span class="caps">Přiřadit web bez klienta</span>
-                        <div class="pick">
-                            <?php foreach ($unassigned as $free): ?>
-                                <label class="pick__item"><input type="checkbox" name="sites[]" value="<?= (int) $free['id'] ?>" class="form__check-input"><?= get_site_avatar((int) $free['id'], (string) $free['name'], (string) ($free['icon'] ?? ''), 'sm') ?><span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)"><?= $this->e((string) $free['name']) ?></span><span class="table__secondary u-truncate" style="display:block;margin-top:0"><?= $this->e(\App\Core\Sites\SiteRepository::host((string) $free['url'])) ?></span></span></label>
-                            <?php endforeach; ?>
-                        </div>
-                        <button type="submit" class="btn btn--secondary btn--sm">Přiřadit vybrané</button>
-                    </form>
-                <?php endif; ?>
             </section>
         </div>
 
@@ -144,6 +166,7 @@ $field = function (string $label, string $value, bool $optional = false, string 
             <div class="card card--small-shadow">
                 <div class="summary-list">
                     <div class="summary-list__row"><span class="summary-list__label">Weby v péči</span><span class="summary-list__value"><?= count($sites) ?></span></div>
+                    <div class="summary-list__row"><span class="summary-list__label">Služby za rok</span><span class="summary-list__value"><?= $this->e($yearly) ?></span></div>
                     <div class="summary-list__row"><span class="summary-list__label">Fakturace</span><span class="summary-list__value"><?= $this->e((string) $client['billing_note'] !== '' ? (string) $client['billing_note'] : '—') ?></span></div>
                     <div class="summary-list__row"><span class="summary-list__label">Spolupráce od</span><span class="summary-list__value"><?= $client['since'] !== null ? $this->e(date('n/Y', (int) strtotime((string) $client['since']))) : '—' ?></span></div>
                     <div class="summary-list__row"><span class="summary-list__label">Poslední report</span><span class="summary-list__value"><?= $this->e($lastReport) ?></span></div>
@@ -171,7 +194,7 @@ $field = function (string $label, string $value, bool $optional = false, string 
 
             <div class="card card--danger">
                 <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)">Odebrat klienta</div>
-                <div class="text-caption" style="margin-top:4px">Weby zůstanou v monitoringu bez přiřazeného klienta.</div>
+                <div class="text-caption" style="margin-top:4px">Projekty a weby zůstanou, jen bez přiřazeného klienta.</div>
                 <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/archivovat') ?>" style="margin-top:12px">
                     <?php render_csrf($csrfToken) ?>
                     <button type="submit" class="btn btn--danger btn--sm"><?= get_btn_icon('trash') ?>Odebrat klienta</button>

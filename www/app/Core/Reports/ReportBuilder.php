@@ -248,6 +248,8 @@ final class ReportBuilder
                 'plugins' => $pluginNames,
                 'installed' => $installed,
                 'noteLabel' => $coreUpdates !== [] ? 'včetně WordPressu' : ($updatesTotal > 0 ? 'doplňky webu' : 'nic nečekalo'),
+                // Web mimo WordPress aktualizace přes plugin nemá — report místo nich ukáže servis.
+                'applicable' => SiteRepository::isWordpress($site),
             ],
             'done' => $done,
             'content' => $this->content($siteId, $today),
@@ -256,6 +258,7 @@ final class ReportBuilder
             'nextService' => $nextService,
             'recommendations' => $recommendations,
             'technical' => [
+                'platform' => SiteRepository::isWordpress($site) ? '' : SiteRepository::platformLabel($site),
                 'wp' => (string) ($site['snap_wp_version'] ?? ''),
                 'php' => (string) ($site['snap_php_version'] ?? ''),
                 'theme' => (string) ($site['snap_theme_name'] ?? ''),
@@ -263,11 +266,11 @@ final class ReportBuilder
                 'plugins_active' => (int) ($site['snap_plugins_active'] ?? 0),
                 'plugins_updates' => (int) ($site['snap_plugins_updates'] ?? 0),
                 'ssl_valid_to' => $sslTo,
-                'hosting' => (string) ($site['hosting_note'] ?? ''),
+                'hosting' => SiteRepository::hostingLabel($site, ''),
             ],
             'summaryLine' => implode(' · ', array_filter([
                 $percent !== null ? 'uptime ' . number_format($percent, $percent >= 99.95 ? 0 : 1, ',', ' ') . ' %' : null,
-                get_count($updatesTotal, 'aktualizace', 'aktualizace', 'aktualizací'),
+                SiteRepository::isWordpress($site) ? get_count($updatesTotal, 'aktualizace', 'aktualizace', 'aktualizací') : null,
                 $outages !== [] ? get_count(count($outages), 'výpadek', 'výpadky', 'výpadků') : null,
                 $services !== [] ? get_count(count($services), 'servis', 'servisy', 'servisů') : null,
             ])),

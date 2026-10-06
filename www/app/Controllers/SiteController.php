@@ -10,12 +10,15 @@ use App\Core\Events\EventLog;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
+use App\Core\Kernel;
 use App\Core\Modules\Modules;
 use App\Core\Modules\SeoScore;
 use App\Core\Monitor\DbSupport;
+use App\Core\Monitor\DomainChecker;
 use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\PluginClient;
+use App\Core\Projects\ProjectServices;
 use App\Core\Reports\ReportSchedule;
 use App\Core\Security\RateLimiter;
 use App\Core\Service\ServiceSchedule;
@@ -38,6 +41,9 @@ use App\Core\Views\Pagination;
 final class SiteController extends Controller
 {
     use SiteHeaderTrait;
+
+    /** Volba ve výběru projektu v Nastavení webu: oddělit web do vlastního nového projektu. */
+    public const NEW_PROJECT = 'novy';
 
     // -----------------------------------------------------------------
     // Seznam a přidání
@@ -152,13 +158,34 @@ final class SiteController extends Controller
 
     public function createForm(): Response
     {
+        return $this->createPage([
+            'name' => '',
+            'url' => '',
+            'project_id' => $this->request()->int('projekt'),
+            'client_id' => $this->request()->int('klient'),
+            'platform' => SiteRepository::PLATFORM_WORDPRESS,
+            'platform_name' => '',
+            'check_interval_min' => 15,
+        ], []);
+    }
+
+    /**
+     * Formulář přidání webu. Klient se vybírá jen pro nový projekt —
+     * existující projekt má svého a web ho převezme.
+     *
+     * @param array<string, mixed> $values
+     * @param array<string, string> $errors
+     */
+    private function createPage(array $values, array $errors, int $status = 200): Response
+    {
         return $this->view('sites/form', [
             'title' => 'Přidat web',
-            'values' => ['name' => '', 'url' => '', 'client_id' => $this->request()->int('klient'), 'check_interval_min' => 15],
-            'errors' => [],
+            'values' => $values,
+            'errors' => $errors,
+            'projects' => $this->kernel->projects()->options(),
             'clients' => $this->kernel->clients()->options(),
             'intervals' => SiteRepository::INTERVALS,
-        ]);
+        ], $status);
     }
 
     public function store(): Response
@@ -167,10 +194,17 @@ final class SiteController extends Controller
         $values = [
             'name' => mb_substr($request->string('name'), 0, 150),
             'url' => SiteRepository::normalizeUrl($request->string('url')),
+            'project_id' => $request->int('project_id'),
             'client_id' => $request->int('client_id'),
+            'platform' => $request->string('platform') === SiteRepository::PLATFORM_OTHER ? SiteRepository::PLATFORM_OTHER : SiteRepository::PLATFORM_WORDPRESS,
+            'platform_name' => mb_substr($request->string('platform_name'), 0, 60),
             'check_interval_min' => $request->int('check_interval_min', 15),
         ];
         $errors = [];
+
+        if ($values['platform'] === SiteRepository::PLATFORM_WORDPRESS) {
+            $values['platform_name'] = '';
+        }
 
         $urlError = $this->urlError($values['url']);
 
@@ -190,22 +224,43 @@ final class SiteController extends Controller
             $values['client_id'] = null;
         }
 
-        if ($errors !== []) {
-            return $this->view('sites/form', [
-                'title' => 'Přidat web',
-                'values' => $values,
-                'errors' => $errors,
-                'clients' => $this->kernel->clients()->options(),
-                'intervals' => SiteRepository::INTERVALS,
-            ], 422);
+        if ($values['project_id'] !== null && $this->kernel->projects()->find($values['project_id']) === null) {
+            $values['project_id'] = null;
         }
 
+        if ($errors !== []) {
+            return $this->createPage($values, $errors, 422);
+        }
+
+        $projectId = $values['project_id'];
+        unset($values['project_id']);
         $id = $this->kernel->sites()->create($values);
+
+        // Bez vybraného projektu dostane web vlastní — každý web v monitoringu
+        // patří do nějakého projektu. Klienta pak určuje projekt.
+        if ($projectId !== null) {
+            $this->kernel->projects()->attachSite($id, $projectId);
+        } else {
+            $newProject = $this->kernel->projects()->createForSite($id, $values['name'], $values['client_id']);
+            $domain = DomainChecker::registrableDomain(SiteRepository::host($values['url']));
+
+            // Nový projekt rovnou s doménou webu — expiraci doplní monitor z registru.
+            if ($domain !== null) {
+                $this->kernel->projectServices()->create($newProject, ProjectServices::KIND_DOMAIN, ['name' => $domain]);
+            }
+        }
+
+        $this->kernel->events()->record($id, EventLog::KIND_SETTINGS, 'ok', 'Web přidán do monitoringu', [], $this->actorName());
+        $this->kernel->audit()->record($id, $values['name'], AuditLog::ACTION_SITE_ADD, true, 'Přidán web ' . $values['url']);
+
+        // Web mimo WordPress plugin nemá — žádný klíč ani moduly, rovnou na přehled.
+        if ($values['platform'] === SiteRepository::PLATFORM_OTHER) {
+            return $this->redirectWithFlash('weby/' . $id, 'Web je přidaný. Hlídá se dostupnost, SSL certifikát a doména — klikněte na „Zkontrolovat teď".');
+        }
+
+        $this->kernel->modules()->onNewSite($id);
         $key = ApiKey::generate();
         $this->kernel->sites()->setApiKey($id, $key);
-        $this->kernel->events()->record($id, EventLog::KIND_SETTINGS, 'ok', 'Web přidán do monitoringu', [], $this->actorName());
-        $this->kernel->modules()->onNewSite($id);
-        $this->kernel->audit()->record($id, $values['name'], AuditLog::ACTION_SITE_ADD, true, 'Přidán web ' . $values['url']);
 
         // Klíč se ukáže celý jen jednou — hned na Nastavení webu.
         $_SESSION['fresh_api_key'][$id] = $key;
@@ -255,12 +310,18 @@ final class SiteController extends Controller
 
         $inactive = $snapshot !== null ? (int) $snapshot['plugins_total'] - (int) $snapshot['plugins_active'] : 0;
 
-        $summary = [
+        // Web mimo WordPress: místo pluginů a aktualizací jen systém, na kterém běží.
+        $platformRows = SiteRepository::isWordpress($site) ? [
             ['label' => 'Pluginy', 'value' => $snapshot !== null ? $snapshot['plugins_total'] . ($inactive > 0 ? ' · ' . $inactive . ' neaktivní' : ' · vše aktivní') : '—', 'tone' => ''],
             ['label' => 'Čekající aktualizace', 'value' => $snapshot !== null ? (string) $snapshot['plugins_updates'] : '—', 'tone' => $snapshot !== null && (int) $snapshot['plugins_updates'] > 0 ? 'warning' : 'ok'],
+        ] : [
+            ['label' => 'Systém', 'value' => SiteRepository::platformLabel($site), 'tone' => ''],
+        ];
+        $summary = [
+            ...$platformRows,
             ['label' => 'SSL certifikát', 'value' => $site['ssl_valid_to'] !== null ? 'do ' . get_czech_date((string) $site['ssl_valid_to']) : 'zatím nezjištěno', 'tone' => ''],
             ['label' => 'Zálohy', 'value' => $snapshot !== null && $snapshot['last_backup_at'] !== null ? 'poslední ' . get_when((string) $snapshot['last_backup_at']) : ((string) $site['backup_note'] !== '' ? (string) $site['backup_note'] : '—'), 'tone' => ''],
-            ['label' => 'Hosting', 'value' => (string) $site['hosting_note'] !== '' ? (string) $site['hosting_note'] : '—', 'tone' => ''],
+            ['label' => 'Hosting', 'value' => SiteRepository::hostingLabel($site), 'tone' => ''],
             ['label' => 'Poslední kontrola', 'value' => $site['last_check_at'] !== null ? get_when((string) $site['last_check_at']) : ($site['last_snapshot_at'] !== null ? get_when((string) $site['last_snapshot_at']) : 'zatím žádná'), 'tone' => ''],
         ];
 
@@ -574,12 +635,13 @@ final class SiteController extends Controller
             'clientEmailHint' => $recipients === [] && (string) ($site['client_email'] ?? '') !== '' ? 'Klient má na kartě adresu ' . (string) $site['client_email'] . ' — přidejte ji sem, reporty se posílají jen na adresy v tomto seznamu.' : '',
             'freshKey' => is_string($fresh) ? $fresh : null,
             'keyMasked' => (string) $site['api_key_hint'] !== '' ? ApiKey::masked((string) $site['api_key_hint']) : '',
-            'clients' => $this->kernel->clients()->options(),
+            'projects' => $this->kernel->projects()->options() + [self::NEW_PROJECT => '+ oddělit do vlastního nového projektu'],
             'intervals' => SiteRepository::INTERVALS,
             'pluginVersion' => $this->kernel->pluginDistribution()->version(),
             'pluginInfoUrl' => $this->kernel->appUrl('plugin/mediagrafik-monitor/plugin-info.json'),
             'defaultLoginUser' => $this->kernel->settings()->get(SiteActions::LOGIN_USER_SETTING),
-            'moduleChoices' => $this->kernel->modules()->siteChoices((int) $id),
+            // Moduly měří přes plugin — web mimo WordPress je nemá.
+            'moduleChoices' => SiteRepository::isWordpress($site) ? $this->kernel->modules()->siteChoices((int) $id) : [],
             'iconNote' => match (true) {
                 (string) $site['icon_source'] === SiteIcons::SOURCE_MANUAL => 'Nahrané logo — v seznamech místo favicony.',
                 (string) $site['icon'] !== '' => 'Favicona stažená z webu' . ($site['icon_checked_at'] !== null ? ' ' . get_when((string) $site['icon_checked_at']) : '') . '. Obnovuje se jednou týdně.',
@@ -609,17 +671,18 @@ final class SiteController extends Controller
 
         $data = [
             'name' => mb_substr($request->string('name'), 0, 150) ?: (string) $site['name'],
-            'client_id' => $request->int('client_id'),
             'check_interval_min' => isset(SiteRepository::INTERVALS[$request->int('check_interval_min', 15)]) ? $request->int('check_interval_min', 15) : 15,
             'admin_url' => mb_substr($request->string('admin_url'), 0, 255),
             'wp_login_user' => mb_substr($request->string('wp_login_user'), 0, 100),
-            'hosting_note' => mb_substr($request->string('hosting_note'), 0, 120),
             'backup_note' => mb_substr($request->string('backup_note'), 0, 120),
         ];
 
-        if ($data['client_id'] !== null && $this->kernel->clients()->find($data['client_id']) === null) {
-            $data['client_id'] = null;
-        }
+        // Formulář bez volby systému (starší odeslání) systém nemění.
+        $platform = in_array($request->string('platform'), [SiteRepository::PLATFORM_WORDPRESS, SiteRepository::PLATFORM_OTHER], true)
+            ? $request->string('platform')
+            : (string) ($site['platform'] ?? SiteRepository::PLATFORM_WORDPRESS);
+        $data['platform'] = $platform;
+        $data['platform_name'] = $platform === SiteRepository::PLATFORM_OTHER ? mb_substr($request->string('platform_name'), 0, 60) : '';
 
         if ($urlChanged) {
             $data += [
@@ -637,6 +700,14 @@ final class SiteController extends Controller
         }
 
         $this->kernel->sites()->update((int) $id, $data);
+        $this->moveToProject($site, $request->string('project_id'), $data['name']);
+        $newKey = $this->switchPlatform($site, $platform);
+
+        if ($newKey) {
+            $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Web přepnut na WordPress');
+
+            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Web je přepnutý na WordPress. Zkopírujte nový API klíč do pluginu MEDIAGRAFIK Monitor na webu.');
+        }
 
         if (!$urlChanged) {
             $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Upraveno nastavení webu');
@@ -649,6 +720,69 @@ final class SiteController extends Controller
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Změněna adresa webu: ' . $change);
 
         return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Adresa webu je změněná na ' . $url . '. Historie zůstala; klikněte na „Zkontrolovat teď", ať se nová adresa hned ověří.');
+    }
+
+    /**
+     * Změna systému webu v Nastavení. Na jiný systém: pryč s klíčem, daty
+     * z pluginu a jejich alerty (už by je nikdo neaktualizoval). Na
+     * WordPress: nový API klíč (ukáže se jednou) a výchozí moduly.
+     *
+     * @param array<string, mixed> $site web před uložením
+     * @return bool true = web dostal nový API klíč
+     */
+    private function switchPlatform(array $site, string $platform): bool
+    {
+        $id = (int) $site['id'];
+
+        if ($platform === (string) ($site['platform'] ?? SiteRepository::PLATFORM_WORDPRESS)) {
+            return false;
+        }
+
+        if ($platform === SiteRepository::PLATFORM_OTHER) {
+            $this->kernel->sites()->clearPluginData($id);
+            $this->kernel->alerts()->resolvePluginAlerts($id, $this->actorName());
+            $this->kernel->events()->record($id, EventLog::KIND_SETTINGS, 'ok', 'Web přepnut na jiný systém — API klíč a data z pluginu smazána', [], $this->actorName());
+
+            return false;
+        }
+
+        $key = ApiKey::generate();
+        $this->kernel->sites()->setApiKey($id, $key);
+        $this->kernel->modules()->onNewSite($id);
+        $this->kernel->events()->record($id, EventLog::KIND_SETTINGS, 'ok', 'Web přepnut na WordPress — vygenerován API klíč', [], $this->actorName());
+        $_SESSION['fresh_api_key'][$id] = $key;
+
+        return true;
+    }
+
+    /**
+     * Přesun webu do jiného projektu (výběr v Nastavení webu). Volba
+     * `NEW_PROJECT` = web dostane vlastní nový projekt s dosavadním
+     * klientem. Prázdná hodnota nebo neznámý projekt nic nemění.
+     *
+     * @param array<string, mixed> $site web před uložením
+     */
+    private function moveToProject(array $site, string $choice, string $name): void
+    {
+        $current = $site['project_id'] !== null ? (int) $site['project_id'] : null;
+
+        if ($choice === self::NEW_PROJECT) {
+            $clientId = $site['client_id'] !== null ? (int) $site['client_id'] : null;
+            $targetId = $this->kernel->projects()->createForSite((int) $site['id'], $name, $clientId);
+            $message = 'Web oddělen do vlastního projektu ' . $name;
+        } else {
+            $target = ctype_digit($choice) ? $this->kernel->projects()->find((int) $choice) : null;
+
+            if ($target === null || (int) $target['id'] === $current) {
+                return;
+            }
+
+            $targetId = (int) $target['id'];
+            $this->kernel->projects()->attachSite((int) $site['id'], $targetId);
+            $message = 'Web přesunut do projektu ' . $target['name'];
+        }
+
+        $this->kernel->events()->record((int) $site['id'], EventLog::KIND_SETTINGS, 'ok', $message, ['from' => $current, 'to' => $targetId], $this->actorName());
     }
 
     /**
@@ -873,6 +1007,32 @@ final class SiteController extends Controller
         ];
     }
 
+    /**
+     * Řádky tabulky webů v detailu klienta a projektu: stav, doména,
+     * servis a report (návrh `detail-klienta.html`, karta „Weby klienta").
+     *
+     * @param array<int, array<string, mixed>> $sites řádky z `SiteRepository::all()`
+     * @return array<int, array<string, mixed>> weby se `state`, `host`, `service` a `report`
+     */
+    public static function careRows(Kernel $kernel, array $sites): array
+    {
+        $ids = array_map(static fn (array $s): int => (int) $s['id'], $sites);
+        $plans = $kernel->service()->plansFor($ids);
+        $reportSettings = $kernel->reports()->settingsFor($ids);
+        $rows = [];
+
+        foreach ($sites as $site) {
+            $rows[] = $site + [
+                'state' => SiteStatus::of($site),
+                'host' => SiteRepository::host((string) $site['url']),
+                'service' => ServiceSchedule::cell($plans[(int) $site['id']] ?? null, date('Y-m-d')),
+                'report' => self::reportCell($reportSettings[(int) $site['id']] ?? null),
+            ];
+        }
+
+        return $rows;
+    }
+
     /** @param array<string, mixed>|null $audit @return array<string, mixed> */
     private function securityView(?array $audit): array
     {
@@ -919,6 +1079,15 @@ final class SiteController extends Controller
         $php = (string) ($site['snap_php_version'] ?? '');
         $dbType = (string) ($site['snap_db_type'] ?? '');
         $db = (string) ($site['snap_db_version'] ?? '');
+
+        // Jiný systém: verze nikdo nehlásí, ve sloupci WP aspoň na čem běží.
+        if (!SiteRepository::isWordpress($site)) {
+            return [
+                ['value' => SiteRepository::platformLabel($site), 'tone' => 'subtle', 'title' => 'Web neběží na WordPressu — hlídá se jen dostupnost, SSL a doména'],
+                ['value' => '', 'tone' => '', 'title' => ''],
+                ['value' => '', 'tone' => '', 'title' => ''],
+            ];
+        }
 
         return [
             ['value' => (string) ($site['snap_wp_version'] ?? ''), 'tone' => $wpUpdate !== null ? 'warning' : '', 'title' => $wpUpdate !== null ? 'Čeká aktualizace na WordPress ' . $wpUpdate : ''],

@@ -35,6 +35,7 @@ final class AuditLog
     public const ACTION_PLUGIN_INSTALL = 'plugin-instalace';
     public const ACTION_CORE_UPDATE = 'wordpress-aktualizace';
     public const ACTION_CLIENT = 'klient';
+    public const ACTION_PROJECT = 'projekt';
     public const ACTION_ALERT = 'alert';
     public const ACTION_SERVICE = 'servis';
     public const ACTION_REPORT = 'report';
@@ -58,6 +59,7 @@ final class AuditLog
         self::ACTION_PLUGIN_INSTALL => ['Instalace pluginu', 'brand'],
         self::ACTION_CORE_UPDATE => ['Aktualizace WordPressu', 'brand'],
         self::ACTION_CLIENT => ['Klient', ''],
+        self::ACTION_PROJECT => ['Projekt', ''],
         self::ACTION_ALERT => ['Alert', 'warning'],
         self::ACTION_SERVICE => ['Servis', 'brand'],
         self::ACTION_REPORT => ['Report', 'brand'],

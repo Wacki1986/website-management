@@ -33,6 +33,9 @@ final class MonitorSettings
         'rule_service_hours' => 24,
         'rule_domain_on' => 0,
         'rule_domain_days' => 90,
+        'rule_renewal_on' => 1,
+        'rule_renewal_days' => 30,
+        'rule_maildns_on' => 1,
         'rule_abandoned_on' => 1,
         'rule_abandoned_months' => 24,
         'rule_seo_hidden_on' => 1,
@@ -53,6 +56,7 @@ final class MonitorSettings
         'rule_backup_hours' => [6, 720],
         'rule_service_hours' => [1, 720],
         'rule_domain_days' => [7, 365],
+        'rule_renewal_days' => [7, 180],
         'rule_abandoned_months' => [6, 120],
         'rule_seo_low_score' => [10, 100],
     ];

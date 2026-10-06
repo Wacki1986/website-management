@@ -22,6 +22,16 @@ final class SiteRepository
 {
     public const INTERVALS = [5 => 'každých 5 min', 15 => 'každých 15 min', 30 => 'každých 30 min', 60 => 'každou hodinu'];
 
+    /** WordPress s pluginem MEDIAGRAFIK Monitor — API klíč, pluginy, aktualizace, zabezpečení. */
+    public const PLATFORM_WORDPRESS = 'wordpress';
+
+    /** Jiný systém (Shoptet, Webnode, statické HTML…) — hlídá se jen dostupnost, SSL a doména. */
+    public const PLATFORM_OTHER = 'other';
+
+    /** Sloupec `project_hosting`: první hosting ze služeb projektu webu („Wedos NoLimit"). */
+    private const PROJECT_HOSTING = "(SELECT CONCAT_WS(' ', ps.provider, NULLIF(ps.plan, '')) FROM project_services ps
+        WHERE ps.project_id = s.project_id AND ps.kind = 'hosting' ORDER BY ps.id LIMIT 1) AS project_hosting";
+
     public function __construct(
         private readonly Connection $db,
         private readonly Secrets $secrets,
@@ -58,18 +68,58 @@ final class SiteRepository
         return $scheme . '://' . $host . $port . $path;
     }
 
+    /** Web s pluginem MEDIAGRAFIK Monitor? Řádek bez sloupce (starší data) je WordPress. @param array<string, mixed> $site */
+    public static function isWordpress(array $site): bool
+    {
+        return ($site['platform'] ?? self::PLATFORM_WORDPRESS) === self::PLATFORM_WORDPRESS;
+    }
+
+    /** Na čem web běží, do seznamů: „WordPress", „Shoptet", „jiný systém". @param array<string, mixed> $site */
+    public static function platformLabel(array $site): string
+    {
+        if (self::isWordpress($site)) {
+            return 'WordPress';
+        }
+
+        return (string) ($site['platform_name'] ?? '') !== '' ? (string) $site['platform_name'] : 'jiný systém';
+    }
+
+    /**
+     * Hosting webu do přehledu a reportu: z projektu (`project_hosting`
+     * z `find()`), u webů z doby před projekty stará poznámka.
+     *
+     * @param array<string, mixed> $site
+     */
+    public static function hostingLabel(array $site, string $empty = '—'): string
+    {
+        foreach ([$site['project_hosting'] ?? null, $site['hosting_note'] ?? null] as $value) {
+            if (trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return $empty;
+    }
+
     /** Doména pro zobrazení: `kavarnadobra.cz`. */
     public static function host(string $url): string
     {
         return (string) (parse_url($url, PHP_URL_HOST) ?: $url);
     }
 
-    /** @return array<string, mixed>|null */
+    /**
+     * Web s klientem, projektem a hostingem projektu (`project_hosting` —
+     * první hosting z jeho služeb; přehled a report ho ukazují místo staré
+     * poznámky `hosting_note`).
+     *
+     * @return array<string, mixed>|null
+     */
     public function find(int $id): ?array
     {
         return $this->db->selectOne(
-            'SELECT s.*, c.name AS client_name, c.email AS client_email
-             FROM sites s LEFT JOIN clients c ON c.id = s.client_id
+            'SELECT s.*, c.name AS client_name, c.email AS client_email, p.name AS project_name,
+                    ' . self::PROJECT_HOSTING . '
+             FROM sites s LEFT JOIN clients c ON c.id = s.client_id LEFT JOIN projects p ON p.id = s.project_id
              WHERE s.id = :id',
             ['id' => $id],
         );
@@ -79,9 +129,11 @@ final class SiteRepository
     public function findWithSnapshot(int $id): ?array
     {
         return $this->db->selectOne(
-            'SELECT s.*, c.name AS client_name, c.email AS client_email, ' . self::snapshotColumns() . '
+            'SELECT s.*, c.name AS client_name, c.email AS client_email, p.name AS project_name,
+                    ' . self::PROJECT_HOSTING . ', ' . self::snapshotColumns() . '
              FROM sites s
              LEFT JOIN clients c ON c.id = s.client_id
+             LEFT JOIN projects p ON p.id = s.project_id
              LEFT JOIN site_snapshots ss ON ss.site_id = s.id
              WHERE s.id = :id',
             ['id' => $id],
@@ -97,7 +149,7 @@ final class SiteRepository
     /**
      * Seznam webů pro výpisy — s klientem a snapshotou, bez odebraných.
      *
-     * @param array{q?: string, client?: ?int} $filter
+     * @param array{q?: string, client?: ?int, project?: ?int} $filter
      * @return array<int, array<string, mixed>>
      */
     public function all(array $filter = []): array
@@ -116,6 +168,11 @@ final class SiteRepository
             $params['client_id'] = (int) $filter['client'];
         }
 
+        if (($filter['project'] ?? null) !== null) {
+            $conditions[] = 's.project_id = :project_id';
+            $params['project_id'] = (int) $filter['project'];
+        }
+
         return $this->db->select(
             'SELECT s.*, c.name AS client_name, ' . self::snapshotColumns() . '
              FROM sites s
@@ -131,6 +188,12 @@ final class SiteRepository
     public function forClient(int $clientId): array
     {
         return $this->all(['client' => $clientId]);
+    }
+
+    /** Weby jednoho projektu. @return array<int, array<string, mixed>> */
+    public function forProject(int $projectId): array
+    {
+        return $this->all(['project' => $projectId]);
     }
 
     /** Weby bez klienta — nabídka při zakládání klienta. @return array<int, array<string, mixed>> */
@@ -163,13 +226,12 @@ final class SiteRepository
     /**
      * Odebrání z monitoringu — jen značka; data zůstávají 12 měsíců v archivu.
      *
-     * Výjimka jsou přístupy z trezoru: ty se mažou hned. Web, o který se
-     * studio nestará, nemá důvod mít u nás uložené heslo k FTP.
+     * Přístupy z trezoru zůstávají u projektu (hosting a e-maily žijí dál).
+     * Když studio končí s celým projektem, smaže se projekt a s ním i trezor.
      */
     public function remove(int $id): void
     {
         $this->update($id, ['removed_at' => date('Y-m-d H:i:s')]);
-        $this->db->delete('site_credentials', ['site_id' => $id]);
     }
 
     public function setApiKey(int $id, string $key): void
@@ -181,6 +243,25 @@ final class SiteRepository
             'api_status' => 'unknown',
             'api_failures' => 0,
         ]);
+    }
+
+    /**
+     * Web přestává být WordPress: bez API klíče ho monitor přestane volat
+     * a data z pluginu (snapshot, pluginy) by jen strašila zastaralými
+     * verzemi. Historie, uptime, servis a reporty zůstávají.
+     */
+    public function clearPluginData(int $id): void
+    {
+        $this->update($id, [
+            'api_key' => null,
+            'api_key_hint' => '',
+            'api_status' => 'unknown',
+            'api_failures' => 0,
+            'last_snapshot_at' => null,
+            'snapshot_error' => null,
+        ]);
+        $this->db->delete('site_snapshots', ['site_id' => $id]);
+        $this->db->delete('site_plugins', ['site_id' => $id]);
     }
 
     /** Čitelný klíč — jen pro volání pluginu, nikdy do šablony. @param array<string, mixed> $site */

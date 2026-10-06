@@ -3,7 +3,7 @@
  * Nový klient / úprava klienta (návrh `novy-klient*.html`, `detail-klienta-uprava.html`).
  *
  * Jeden formulář pro založení i úpravu: liší se jen adresou a tím, že
- * u nového klienta jde rovnou přiřadit weby bez klienta. „Načíst z ARESu"
+ * u nového klienta jde rovnou přiřadit projekty bez klienta. „Načíst z ARESu"
  * je submit s `_action=ares` — funguje bez JavaScriptu.
  *
  * @var \App\Core\View\View  $this
@@ -11,7 +11,7 @@
  * @var array|null           $client     null = nový
  * @var array<string, mixed> $values
  * @var array<string,string> $errors
- * @var array<int, array>    $unassigned weby bez klienta (jen u nového)
+ * @var array<int, array>    $unassigned projekty bez klienta se `site_count` (jen u nového)
  * @var array<int, array{label: string, done: bool}> $tasks
  * @var string               $previewName
  * @var string               $previewContact
@@ -91,25 +91,25 @@ $back = $client === null ? get_url('klienti') : get_url('klienti/' . (int) $clie
                     <div class="form">
                         <div class="row" style="justify-content:space-between;align-items:flex-start">
                             <div>
-                                <div class="card__title">Weby klienta<span class="form__label-optional" style="font-size:var(--font-size-label)"> · nepovinné</span></div>
-                                <div class="card__note">Přiřaďte weby, které už monitorujeme, nebo je přidejte později.</div>
+                                <div class="card__title">Projekty klienta<span class="form__label-optional" style="font-size:var(--font-size-label)"> · nepovinné</span></div>
+                                <div class="card__note">Přiřaďte projekty, které už evidujeme — jejich weby převezmou klienta s nimi.</div>
                             </div>
-                            <span class="text-subtle" style="font-size:var(--font-size-label)"><?= get_count(count($unassigned), 'web', 'weby', 'webů') ?> zatím bez klienta</span>
+                            <span class="text-subtle" style="font-size:var(--font-size-label)"><?= get_count(count($unassigned), 'projekt', 'projekty', 'projektů') ?> zatím bez klienta</span>
                         </div>
                         <?php if ($unassigned !== []): ?>
                             <div class="pick">
                                 <?php foreach ($unassigned as $free): ?>
                                     <label class="pick__item">
-                                        <input type="checkbox" name="sites[]" value="<?= (int) $free['id'] ?>"<?= in_array((int) $free['id'], $values['sites'], true) ? ' checked' : '' ?> class="form__check-input">
-                                        <?= get_site_avatar((int) $free['id'], (string) $free['name'], (string) ($free['icon'] ?? ''), 'sm') ?>
-                                        <span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)"><?= $this->e((string) $free['name']) ?></span><span class="table__secondary u-truncate" style="display:block;margin-top:0"><?= $this->e(\App\Core\Sites\SiteRepository::host((string) $free['url'])) ?></span></span>
-                                        <span class="text-caption u-nowrap">přidán <?= $this->e(get_czech_date((string) $free['created_at'])) ?></span>
+                                        <input type="checkbox" name="projects[]" value="<?= (int) $free['id'] ?>"<?= in_array((int) $free['id'], $values['projects'], true) ? ' checked' : '' ?> class="form__check-input">
+                                        <?= get_icon('folder', 'icon--sm icon--subtle') ?>
+                                        <span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)"><?= $this->e((string) $free['name']) ?></span><span class="table__secondary u-truncate" style="display:block;margin-top:0"><?= $this->e(get_count((int) $free['site_count'], 'web', 'weby', 'webů')) ?></span></span>
+                                        <span class="text-caption u-nowrap">založen <?= $this->e(get_czech_date((string) $free['created_at'])) ?></span>
                                     </label>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
                         <div class="card__footer" style="padding:14px 0 0">
-                            <span class="text-subtle" style="font-size:var(--font-size-label)">Web není v seznamu?</span>
+                            <span class="text-subtle" style="font-size:var(--font-size-label)">Projekt není v seznamu?</span>
                             <span class="text-subtle" style="font-size:var(--font-size-label)">Uložte klienta tlačítkem „Uložit a přidat web".</span>
                         </div>
                     </div>
@@ -134,7 +134,7 @@ $back = $client === null ? get_url('klienti') : get_url('klienti/' . (int) $clie
                 <div class="summary-list" style="padding:16px 0 0">
                     <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">Telefon</span><span class="summary-list__value<?= $values['phone'] === '' ? ' text-faint' : '' ?>"><?= $this->e($values['phone'] !== '' ? $values['phone'] : '—') ?></span></div>
                     <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">E-mail</span><span class="summary-list__value<?= $values['email'] === '' ? ' text-faint' : '' ?>"><?= $this->e($values['email'] !== '' ? $values['email'] : '—') ?></span></div>
-                    <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">Weby</span><span class="summary-list__value"><?= count($values['sites']) ?></span></div>
+                    <div class="summary-list__row" style="padding:8px 0;border-bottom:0;font-size:var(--font-size-label)"><span class="summary-list__label">Projekty</span><span class="summary-list__value"><?= count($values['projects']) ?></span></div>
                 </div>
             </div>
 

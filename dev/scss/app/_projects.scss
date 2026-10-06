@@ -1,0 +1,48 @@
+// app/_projects.scss — projekty (seznam, detail). Návrh tyhle obrazovky
+// nemá; skládají se z tabulek a karet design systému jako Klienti.
+
+// Ikona navíc — stejný zápis jako v abstracts/_icons.scss návrhu.
+:root {
+  --icon-folder: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3.5%207.5a2%202%200%200%201%202-2h3.6l2%202h7.4a2%202%200%200%201%202%202v7.5a2%202%200%200%201-2%202h-13a2%202%200%200%201-2-2z%22%2F%3E%3C%2Fsvg%3E");
+}
+
+// Projekt, klient, počet webů, stav, nejbližší obnova, šipka. Na telefonu jen projekt a šipka.
+.table--projects { --table-columns: minmax(0, 1.5fr) minmax(0, 1.1fr) 60px 160px 200px 34px; }
+
+@media (max-width: 768px) {
+  .table--projects { --table-columns: minmax(0, 1fr) 34px; }
+}
+
+@media (min-width: 769px) {
+  .table--projects { min-width: 900px; }
+}
+
+// Karta Projekty v detailu klienta: projekt, stav, počet webů, „Otevřít".
+.table--client-projects { --table-columns: minmax(0, 1.6fr) 170px 110px 80px; }
+
+@media (max-width: 768px) {
+  .table--client-projects { --table-columns: minmax(0, 1fr) 80px; }
+}
+
+// Domény a hosting v detailu projektu: služba, obnova, cena, fakturace, akce.
+.table--services { --table-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.1fr) 144px; }
+
+// Obnovy a fakturace: navíc sloupec Projekt.
+.table--renewals { --table-columns: minmax(0, 1.3fr) minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.1fr) 150px; }
+
+@media (max-width: 768px) {
+  .table--services,
+  .table--renewals { --table-columns: minmax(0, 1fr) 150px; }
+}
+
+@media (min-width: 769px) {
+  .table--services { min-width: 700px; }
+  .table--renewals { min-width: 980px; }
+}
+
+// Stav pošty pod názvem domény v řádku služby — menší než stav v buňce.
+.service-mail { margin-top: 2px; font-size: var(--font-size-caption); min-width: 0; }
+.service-mail .status { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+// Záznamy DNS (SPF, DMARC) bývají dlouhé — zalomit, ne roztáhnout panel.
+.mail-dns__value { max-width: 65%; overflow-wrap: anywhere; font-weight: var(--font-weight-regular); font-size: var(--font-size-label); }

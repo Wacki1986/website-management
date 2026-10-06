@@ -9,12 +9,12 @@ use App\Core\Clients\Ares;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
-use App\Core\Sites\SiteStatus;
+use App\Core\Projects\ProjectServices;
 
 /**
  * Klienti (návrh `klienti.html`, `detail-klienta*.html`, `novy-klient*.html`).
  *
- * Klient = firma + hlavní kontaktní osoba + weby v péči. Formulář nového
+ * Klient = firma + hlavní kontaktní osoba + projekty (a jejich weby). Formulář nového
  * klienta i úprava jdou přes jednu metodu `readForm()`; tlačítko „Načíst
  * z ARESu" je obyčejný submit s `_action=ares`, takže funguje bez
  * JavaScriptu — formulář se vrátí předvyplněný.
@@ -75,12 +75,12 @@ final class ClientController extends Controller
         $clients = $this->kernel->clients();
         $id = $clients->create(self::clientColumns($values));
         $clients->savePrimaryContact($id, self::contactColumns($values));
-        $this->kernel->sites()->assignToClient($values['sites'], $id);
+        $this->kernel->projects()->assignToClient($values['projects'], $id);
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_CLIENT, true, 'Založen klient ' . $values['name']);
 
-        $siteCount = count($values['sites']);
-        $this->kernel->flash('Klient uložen. ' . ($siteCount > 0
-            ? 'Má přiřazený ' . get_count($siteCount, 'web', 'weby', 'webů') . '. Reporty nastavte v detailu webu.'
+        $projectCount = count($values['projects']);
+        $this->kernel->flash('Klient uložen. ' . ($projectCount > 0
+            ? 'Má přiřazený ' . get_count($projectCount, 'projekt', 'projekty', 'projektů') . '. Reporty nastavte v detailu webu.'
             : 'Přidejte mu web v sekci Weby.'));
 
         return $this->request()->string('_action') === 'save_and_site'
@@ -94,12 +94,8 @@ final class ClientController extends Controller
         $contacts = $this->kernel->clients()->contacts((int) $id);
         $primary = $contacts[0] ?? null;
 
-        $sites = [];
-
-        $clientSites = $this->kernel->sites()->forClient((int) $id);
-        $plans = $this->kernel->service()->plansFor(array_map(static fn (array $s): int => (int) $s['id'], $clientSites));
-        $reportSettings = $this->kernel->reports()->settingsFor(array_map(static fn (array $s): int => (int) $s['id'], $clientSites));
-        $lastReports = $this->kernel->reports()->latestSentFor(array_map(static fn (array $s): int => (int) $s['id'], $clientSites));
+        $sites = SiteController::careRows($this->kernel, $this->kernel->sites()->forClient((int) $id));
+        $lastReports = $this->kernel->reports()->latestSentFor(array_map(static fn (array $s): int => (int) $s['id'], $sites));
         $lastReport = null;
 
         foreach ($lastReports as $r) {
@@ -108,13 +104,28 @@ final class ClientController extends Controller
             }
         }
 
-        foreach ($clientSites as $site) {
-            $sites[] = $site + [
-                'state' => SiteStatus::of($site),
-                'host' => \App\Core\Sites\SiteRepository::host((string) $site['url']),
-                'service' => \App\Core\Service\ServiceSchedule::cell($plans[(int) $site['id']] ?? null, date('Y-m-d')),
-                'report' => SiteController::reportCell($reportSettings[(int) $site['id']] ?? null),
+        $sitesByProject = [];
+
+        foreach ($sites as $site) {
+            $sitesByProject[(int) $site['project_id']][] = $site;
+        }
+
+        $projects = [];
+
+        foreach ($this->kernel->projects()->forClient((int) $id) as $project) {
+            $projects[] = $project + [
+                'state' => ProjectController::worstState($sitesByProject[(int) $project['id']] ?? []),
+                'siteCountLabel' => get_count((int) $project['site_count'], 'web', 'weby', 'webů'),
             ];
+        }
+
+        // Co klientovi ročně přefakturujeme za domény a hosting, po měnách.
+        $yearly = [];
+
+        foreach ($this->kernel->projectServices()->all() as $service) {
+            if ((int) $service['client_id'] === (int) $id && $service['paid_by'] === ProjectServices::PAID_BY_US && (float) $service['sale_price'] > 0) {
+                $yearly[(string) $service['currency']] = ($yearly[(string) $service['currency']] ?? 0.0) + (float) $service['sale_price'] * 12 / max(1, (int) $service['period_months']);
+            }
         }
 
         // „Poslední komunikace" = události u webů klienta (reporty, servis, alerty).
@@ -126,10 +137,12 @@ final class ClientController extends Controller
             'client' => $client,
             'primary' => $primary,
             'contacts' => array_slice($contacts, 1),
+            'projects' => $projects,
             'sites' => $sites,
             'lastReport' => $lastReport !== null ? get_czech_date((string) $lastReport['sent_at']) . ' · ' . (string) $lastReport['period_label'] : '—',
             'recent' => $recent,
-            'unassigned' => $this->kernel->sites()->unassigned(),
+            'unassigned' => $this->kernel->projects()->unassigned(),
+            'yearly' => $yearly !== [] ? implode(' + ', array_map(static fn (string $c, float $sum): string => ProjectServices::money($sum, $c), array_keys($yearly), $yearly)) : '—',
             'meta' => [
                 'contact' => $primary !== null ? trim($primary['first_name'] . ' ' . $primary['last_name'] . ($primary['role'] !== '' ? ' · ' . $primary['role'] : '')) : '',
                 'sites' => get_count(count($sites), 'web v péči', 'weby v péči', 'webů v péči'),
@@ -187,14 +200,14 @@ final class ClientController extends Controller
         return $this->redirectWithFlash('klienti', 'Klient ' . $client['name'] . ' je odebraný, jeho weby zůstávají v monitoringu.');
     }
 
-    /** Přiřazení dosud nepřiřazených webů (karta Weby klienta → Přiřadit web). */
-    public function assignSites(string $id): Response
+    /** Přiřazení projektů bez klienta (karta Projekty klienta → Přiřadit projekt). Weby převezmou klienta s nimi. */
+    public function assignProjects(string $id): Response
     {
         $this->clientOr404((int) $id);
-        $siteIds = array_map('intval', (array) $this->request()->input('sites', []));
-        $this->kernel->sites()->assignToClient($siteIds, (int) $id);
+        $projectIds = array_map('intval', (array) $this->request()->input('projects', []));
+        $this->kernel->projects()->assignToClient($projectIds, (int) $id);
 
-        return $this->redirectWithFlash('klienti/' . $id, $siteIds === [] ? 'Nic nevybráno.' : 'Weby jsou přiřazené.');
+        return $this->redirectWithFlash('klienti/' . $id, $projectIds === [] ? 'Nic nevybráno.' : 'Projekty jsou přiřazené.');
     }
 
     public function addContact(string $id): Response
@@ -240,7 +253,7 @@ final class ClientController extends Controller
         return [
             'name' => '', 'company_id' => '', 'vat_id' => '', 'address' => '', 'billing_note' => '', 'note' => '', 'since' => '',
             'first_name' => '', 'last_name' => '', 'role' => '', 'email' => '', 'phone' => '',
-            'sites' => [],
+            'projects' => [],
         ];
     }
 
@@ -255,7 +268,7 @@ final class ClientController extends Controller
         $values = self::emptyValues();
 
         foreach (array_keys($values) as $key) {
-            if ($key === 'sites') {
+            if ($key === 'projects') {
                 continue;
             }
 
@@ -264,7 +277,7 @@ final class ClientController extends Controller
 
         $values['company_id'] = Ares::normalizeIco($values['company_id']);
         $values['email'] = mb_strtolower($values['email']);
-        $values['sites'] = array_values(array_unique(array_map('intval', (array) $request->input('sites', []))));
+        $values['projects'] = array_values(array_unique(array_map('intval', (array) $request->input('projects', []))));
 
         $errors = [];
 
@@ -355,7 +368,7 @@ final class ClientController extends Controller
             ['label' => 'Firma a fakturační údaje', 'done' => $values['name'] !== ''],
             ['label' => 'Kontaktní osoba', 'done' => $values['last_name'] !== ''],
             ['label' => 'E-mail pro reporty', 'done' => filter_var($values['email'], FILTER_VALIDATE_EMAIL) !== false],
-            ['label' => 'Přiřazený web', 'done' => $values['sites'] !== [] || ($client !== null && $this->kernel->sites()->forClient((int) $client['id']) !== [])],
+            ['label' => 'Přiřazený projekt', 'done' => $values['projects'] !== [] || ($client !== null && $this->kernel->projects()->forClient((int) $client['id']) !== [])],
         ];
 
         return $this->view('clients/form', [
@@ -363,7 +376,7 @@ final class ClientController extends Controller
             'client' => $client,
             'values' => $values,
             'errors' => $errors,
-            'unassigned' => $client === null ? $this->kernel->sites()->unassigned() : [],
+            'unassigned' => $client === null ? $this->kernel->projects()->unassigned() : [],
             'tasks' => $tasks,
             'previewName' => $values['name'] !== '' ? $values['name'] : 'Název firmy',
             'previewContact' => trim($values['first_name'] . ' ' . $values['last_name']) !== '' ? trim($values['first_name'] . ' ' . $values['last_name']) : 'kontaktní osoba',

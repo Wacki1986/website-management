@@ -28,7 +28,8 @@ trait SiteHeaderTrait
     private function header(array $site, string $tab): array
     {
         $state = SiteStatus::of($site);
-        $apiDown = ($site['api_status'] ?? 'unknown') !== 'ok' && (int) ($site['api_failures'] ?? 0) >= 3;
+        $wordpress = SiteRepository::isWordpress($site);
+        $apiDown = $wordpress && ($site['api_status'] ?? 'unknown') !== 'ok' && (int) ($site['api_failures'] ?? 0) >= 3;
         $inactive = (int) ($site['snap_plugins_total'] ?? 0) - (int) ($site['snap_plugins_active'] ?? 0);
         $missing = (int) ($site['snap_security_missing'] ?? 0);
 
@@ -40,12 +41,16 @@ trait SiteHeaderTrait
 
         $base = 'weby/' . (int) $site['id'];
         $service = ServiceSchedule::cell($this->kernel->service()->plan((int) $site['id']), date('Y-m-d'));
-        $tabs = [
-            ['key' => 'prehled', 'label' => 'Přehled', 'url' => get_url($base . '/prehled')],
+        // Web mimo WordPress nemá plugin — záložky z jeho dat by byly prázdné.
+        $pluginTabs = $wordpress ? [
             ['key' => 'pluginy', 'label' => 'Pluginy', 'url' => get_url($base . '/pluginy'), 'badge' => $inactive > 0 ? get_badge($inactive . ' neakt.', 'warning') : ''],
             ['key' => 'obsah', 'label' => 'Obsah', 'url' => get_url($base . '/obsah')],
             ['key' => 'zabezpeceni', 'label' => 'Zabezpečení', 'url' => get_url($base . '/zabezpeceni'), 'badge' => $missing > 0 ? get_badge($missing . ' chybí', 'warning') : ''],
             ...$this->moduleTabs($site, $base),
+        ] : [];
+        $tabs = [
+            ['key' => 'prehled', 'label' => 'Přehled', 'url' => get_url($base . '/prehled')],
+            ...$pluginTabs,
             ['key' => 'servis', 'label' => 'Servis', 'url' => get_url($base . '/servis'), 'badge' => $service['badge']],
             ['key' => 'reporty', 'label' => 'Reporty', 'url' => get_url($base . '/reporty')],
             ['key' => 'pristupy', 'label' => 'Přístupy', 'url' => get_url($base . '/pristupy')],
@@ -58,8 +63,11 @@ trait SiteHeaderTrait
             'tabsHtml' => get_tabs($tabs, $tab),
             'headerStatus' => $headerStatus,
             'host' => SiteRepository::host((string) $site['url']),
-            'adminUrl' => (string) $site['admin_url'] !== '' ? (string) $site['admin_url'] : rtrim((string) $site['url'], '/') . '/wp-admin/',
-            'login' => $this->headerLogin($site),
+            'isWordpress' => $wordpress,
+            'platformLabel' => SiteRepository::platformLabel($site),
+            // Jiný systém: odkaz jen na vyplněnou adresu administrace, nic se nehádá.
+            'adminUrl' => (string) $site['admin_url'] !== '' ? (string) $site['admin_url'] : ($wordpress ? rtrim((string) $site['url'], '/') . '/wp-admin/' : ''),
+            'login' => $wordpress ? $this->headerLogin($site) : null,
             'intervalLabel' => 'kontrola ' . (SiteRepository::INTERVALS[(int) $site['check_interval_min']] ?? 'každých 15 min'),
             'apiWarning' => $apiDown ? [
                 'title' => 'Web neodpovídá monitorovacímu API',

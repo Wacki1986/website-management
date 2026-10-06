@@ -899,3 +899,16 @@ form:has(select[name="transport"] option[value="smtp"]:checked) .mail-smtp { dis
 @media (max-width: 768px) {
   .table--users { --table-columns: minmax(0, 1fr) 150px; }
 }
+
+// Přidání webu: pole a karty jen pro WordPress / jiný systém podle volby
+// „Na čem web běží" (radio v `.segmented`) — bez třídy ze serveru.
+[data-platform-choice]:not(:has(input[name="platform"][value="other"]:checked)) .platform-other,
+[data-platform-choice]:has(input[name="platform"][value="other"]:checked) .platform-wordpress { display: none; }
+
+// Logo aplikace (postranní panel, přihlášení): barevný znak, nápis podle
+// motivu — dvě varianty souboru. Design v tmavém motivu přebarvuje logo
+// filtrem celé na bílo; tím by zmizely barvy znaku, proto `filter: none`.
+.app-logo--dark { display: none; }
+[data-theme="dark"] .app-logo--light { display: none; }
+[data-theme="dark"] .app-logo--dark { display: block; }
+[data-theme="dark"] .sidebar__logo img { filter: none; }

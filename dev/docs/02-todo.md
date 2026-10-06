@@ -3,6 +3,23 @@
 Věci, které se dělat budou, ale teď ne. Nahoře to, co je nejblíž.
 Hotové položky se odsud mažou (záznam zůstává v CHANGELOGu).
 
+## Projekty — dočištění po 0.9.0
+
+Projekty jsou hotové (CHANGELOG 0.9.0). Po nasazení a pár týdnech
+provozu, když se převod osvědčí:
+
+- Samostatnou migrací smazat `site_credentials` (pojistka, data jsou
+  v `credentials`) a sloupec `sites.hosting_note` (hosting je ve službách
+  projektu; `SiteRepository::hostingLabel()` ho zatím čte jako zálohu).
+- Expirace domény se dnes hlídá dvakrát: alert u webu (`AlertEngine::afterDomain`,
+  `sites.domain_*`, pravidlo „Expirace domény") a obnova služby projektu
+  (`Projects\Renewals`). Až budou domény u všech projektů doplněné, alert
+  u webu vypnout a nechat jen obnovy.
+- Vystavení faktury v Caflou z přehledu K vyfakturování (podklad po
+  klientech se součtem už je).
+- Další placené služby jako nový `kind` v `project_services` (licence
+  Google Workspace / Microsoft 365, SSL certifikát).
+
 ## Modul Rychlost (PageSpeed Insights)
 
 Další modul do `Modules::REGISTRY` (vzor: modul SEO, 0.8.0). Google

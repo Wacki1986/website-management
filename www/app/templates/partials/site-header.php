@@ -1,7 +1,7 @@
 <?php
 /**
  * Hlavička detailu webu (návrh `detail-webu-*.html`): drobeček, název,
- * stav, doména, klient, interval kontrol, akce a záložky. Data připravuje
+ * stav, doména, projekt, klient, interval kontrol, akce a záložky. Data připravuje
  * `SiteController::header()`.
  *
  * @var \App\Core\View\View $this
@@ -10,7 +10,9 @@
  * @var string              $tabsHtml      hotové záložky (get_tabs)
  * @var array{tone: string, label: string} $headerStatus
  * @var string              $host
- * @var string              $adminUrl
+ * @var bool                $isWordpress   false = jiný systém (bez pluginu)
+ * @var string              $platformLabel „WordPress", „Shoptet"…
+ * @var string              $adminUrl      '' = jiný systém bez vyplněné administrace
  * @var array{action: string, user: string}|null $login přihlášení jedním klikem (null = jen odkaz na přihlášení)
  * @var string              $intervalLabel
  * @var array{title: string, text: string}|null $apiWarning
@@ -28,11 +30,15 @@
             <div class="page-header__meta">
                 <?= get_status($headerStatus['tone'], $headerStatus['label']) ?>
                 <a href="<?= $this->e((string) $site['url']) ?>" target="_blank" rel="noopener"><?= $this->e($host) ?></a>
+                <?php if (($site['project_name'] ?? null) !== null): ?>
+                    <a href="<?= get_url('projekty/' . (int) $site['project_id']) ?>" title="Projekt"><?= get_icon('folder', 'icon--sm') ?> <?= $this->e((string) $site['project_name']) ?></a>
+                <?php endif; ?>
                 <?php if (($site['client_name'] ?? null) !== null): ?>
                     <a href="<?= get_url('klienti/' . (int) $site['client_id']) ?>"><?= $this->e((string) $site['client_name']) ?></a>
                 <?php else: ?>
                     <span class="text-faint">bez klienta</span>
                 <?php endif; ?>
+                <?php if (!$isWordpress): ?><span><?= $this->e($platformLabel) ?></span><?php endif; ?>
                 <span><?= $this->e($intervalLabel) ?></span>
             </div>
         </div>
@@ -42,8 +48,8 @@
                     <?php render_csrf($csrfToken) ?>
                     <button type="submit" class="btn btn--secondary btn--sm" title="Přihlásit jako <?= $this->e($login['user']) ?> — bez hesla"><?= get_btn_icon('external') ?>wp-admin</button>
                 </form>
-            <?php else: ?>
-                <a class="btn btn--secondary btn--sm" href="<?= $this->e($adminUrl) ?>" target="_blank" rel="noopener"><?= get_btn_icon('external') ?>wp-admin</a>
+            <?php elseif ($adminUrl !== ''): ?>
+                <a class="btn btn--secondary btn--sm" href="<?= $this->e($adminUrl) ?>" target="_blank" rel="noopener"><?= get_btn_icon('external') ?><?= $isWordpress ? 'wp-admin' : 'Administrace' ?></a>
             <?php endif; ?>
             <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>" data-pending data-pending-overlay="Kontroluji web…" data-pending-note="Dostupnost, SSL, data z pluginu a zabezpečení. Obvykle to trvá pár sekund, u pomalého webu až půl minuty.">
                 <?php render_csrf($csrfToken) ?>

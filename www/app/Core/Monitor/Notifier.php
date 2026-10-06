@@ -102,6 +102,66 @@ final class Notifier
     }
 
     /**
+     * Blížící se obnovy domén a hostingu — jednou na každou obnovu
+     * (`ProjectServices::dueForNotice`), u služeb, které platíme my,
+     * s připomínkou fakturace.
+     *
+     * @param array<int, array{label: string, value: string}> $rows řádky „projekt · služba" => „za 12 dní · 1 290 Kč / rok"
+     */
+    public function renewalsDigest(array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $count = get_count(count($rows), 'služba se obnovuje', 'služby se obnovují', 'služeb se obnovuje');
+        $this->push->send('renewals', 'Blíží se obnova', $count, 'projekty/obnovy', onceKey: 'renewals-' . date('Y-m-d'), onceMinutes: 1440);
+
+        $box = [];
+
+        foreach ($rows as $row) {
+            $box[$row['label']] = $row['value'];
+        }
+
+        $message = EmailMessage::make('Blíží se obnova domén a hostingu')
+            ->paragraph(mb_strtoupper(mb_substr($count, 0, 1)) . mb_substr($count, 1) . '. Ověřte, že se prodlouží, a co platíme my, vyfakturujte klientovi.')
+            ->infoBox($box)
+            ->button('Otevřít Obnovy a fakturaci', rtrim($this->appUrl, '/') . '/projekty/obnovy')
+            ->footerReason('Upozornění chodí jednou na každou obnovu podle pravidla „Obnova domén a hostingu" v Nastavení.');
+
+        $this->mail('Blíží se obnova · ' . $count, $message);
+    }
+
+    /**
+     * Změna DNS pošty u domén projektů (nový problém, jiné MX, SPF, DMARC).
+     *
+     * @param array<int, array{label: string, value: string}> $rows „projekt · doména" => co je teď
+     */
+    public function mailDnsChanged(array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $count = get_count(count($rows), 'doména', 'domény', 'domén');
+        $this->push->send('maildns', 'Změna DNS pošty', $count, 'projekty', onceKey: 'maildns-' . date('Y-m-d-H'), onceMinutes: 60);
+
+        $box = [];
+
+        foreach ($rows as $row) {
+            $box[$row['label']] = $row['value'];
+        }
+
+        $message = EmailMessage::make('Změnilo se nastavení pošty v DNS')
+            ->paragraph('U ' . get_count(count($rows), 'domény', 'domén', 'domén') . ' se od včerejška změnily záznamy pošty (MX, SPF, DMARC). Pokud to nebyla plánovaná změna, ověřte nastavení u registrátora.')
+            ->infoBox($box)
+            ->button('Otevřít projekty', rtrim($this->appUrl, '/') . '/projekty')
+            ->footerReason('Upozornění chodí jen při změně, podle pravidla „DNS pošty" v Nastavení.');
+
+        $this->mail('Změna DNS pošty · ' . $count, $message);
+    }
+
+    /**
      * Report čeká na schválení (den před termínem) — push + e-mail s odkazem
      * na náhled, aby ho někdo ze studia zkontroloval a odeslal.
      *

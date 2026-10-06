@@ -2,14 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Core\Sites;
+namespace App\Core\Projects;
 
 use App\Core\Db\Connection;
 use App\Core\Security\Secrets;
 use SensitiveParameter;
 
 /**
- * Trezor přístupů u webu — FTP/SFTP, administrace hostingu, databáze, jiné.
+ * Trezor přístupů projektu — FTP/SFTP, administrace hostingu, databáze,
+ * e-mailové schránky, registrátor domény, jiné.
+ *
+ * Přístupy patří projektu, ne webu: hosting i e-maily žijí dál, i když se
+ * web odebere nebo vymění. `site_id` jen poznamenává, ke kterému webu se
+ * přístup váže (založený ze záložky Přístupy u webu).
  *
  * Dřív ležely přístupy k FTP v `.vscode/sftp.json` v čitelné podobě na
  * OneDrivu, tedy na každém počítači a v cloudu. Tady je heslo i poznámka
@@ -23,19 +28,22 @@ use SensitiveParameter;
  *  - nikdy do e-mailu, reportu ani exportu — nic z toho tuhle třídu nevolá;
  *  - vidí je jen účet se zapnutým dvoufázovým přihlášením (hlídá controller).
  */
-final class SiteCredentials
+final class Credentials
 {
     /**
      * Druhy přístupů: popisek, ikona a která pole druh má.
      *
      * Pole navíc (host u hostingu, databáze u FTP) by formulář jen
      * nafukovala — kdo potřebuje něco mimo, má druh „Jiný přístup"
-     * a poznámku.
+     * a poznámku. U e-mailu je `username` adresa schránky a `label`,
+     * kde schránka běží.
      */
     public const KINDS = [
         'ftp' => ['label' => 'FTP / SFTP', 'icon' => 'download', 'fields' => ['protocol', 'host', 'port', 'username', 'password', 'note']],
-        'hosting' => ['label' => 'Hosting', 'icon' => 'globe', 'fields' => ['url', 'username', 'password', 'note']],
+        'hosting' => ['label' => 'Hosting', 'icon' => 'server', 'fields' => ['url', 'username', 'password', 'note']],
         'database' => ['label' => 'Databáze', 'icon' => 'database', 'fields' => ['url', 'host', 'database_name', 'username', 'password', 'note']],
+        'email' => ['label' => 'E-mail', 'icon' => 'mail', 'fields' => ['label', 'username', 'password', 'url', 'host', 'note']],
+        'registrar' => ['label' => 'Registrátor domény', 'icon' => 'globe', 'fields' => ['url', 'username', 'password', 'note']],
         'other' => ['label' => 'Jiný přístup', 'icon' => 'key', 'fields' => ['label', 'url', 'username', 'password', 'note']],
     ];
 
@@ -59,7 +67,7 @@ final class SiteCredentials
     }
 
     /**
-     * Přístupy webu bez hesel — pro výpis. Poznámka je rozšifrovaná,
+     * Přístupy projektu bez hesel — pro výpis. Poznámka je rozšifrovaná,
      * heslo nahrazuje příznak `has_password`.
      *
      * Pořadí: druhy tak, jak je má `KINDS` (FTP nahoře, na to se sahá
@@ -67,50 +75,65 @@ final class SiteCredentials
      *
      * @return array<int, array<string, mixed>>
      */
-    public function forSite(int $siteId): array
+    public function forProject(int $projectId): array
     {
         $rows = $this->db->select(
-            "SELECT * FROM site_credentials WHERE site_id = :site ORDER BY FIELD(kind, 'ftp', 'hosting', 'database', 'other'), id",
-            ['site' => $siteId],
+            "SELECT * FROM credentials WHERE project_id = :project
+             ORDER BY FIELD(kind, '" . implode("', '", array_keys(self::KINDS)) . "'), id",
+            ['project' => $projectId],
         );
 
         return array_map($this->withoutPassword(...), $rows);
     }
 
+    /** Počty po druzích — souhrn v detailu projektu (bez odemčení trezoru). @return array<string, int> */
+    public function countsByKind(int $projectId): array
+    {
+        $counts = [];
+
+        foreach ($this->db->select('SELECT kind, COUNT(*) AS n FROM credentials WHERE project_id = :project GROUP BY kind', ['project' => $projectId]) as $row) {
+            $counts[(string) $row['kind']] = (int) $row['n'];
+        }
+
+        return $counts;
+    }
+
     /**
-     * Jeden přístup webu bez hesla (formulář úpravy) — null, když k webu nepatří.
+     * Jeden přístup projektu bez hesla (formulář úpravy) — null, když k projektu nepatří.
      *
      * @return array<string, mixed>|null
      */
-    public function find(int $siteId, int $id): ?array
+    public function find(int $projectId, int $id): ?array
     {
-        $row = $this->row($siteId, $id);
+        $row = $this->row($projectId, $id);
 
         return $row !== null ? $this->withoutPassword($row) : null;
     }
 
     /** Heslo v čitelné podobě — jen pro oko a kopírování. Null = není / nejde rozšifrovat. */
-    public function password(int $siteId, int $id): ?string
+    public function password(int $projectId, int $id): ?string
     {
-        $stored = (string) ($this->row($siteId, $id)['password'] ?? '');
+        $stored = (string) ($this->row($projectId, $id)['password'] ?? '');
 
         return $stored !== '' ? $this->secrets->decrypt($stored) : null;
     }
 
-    public function countForSite(int $siteId): int
+    public function countForProject(int $projectId): int
     {
-        return (int) $this->db->scalar('SELECT COUNT(*) FROM site_credentials WHERE site_id = :site', ['site' => $siteId]);
+        return (int) $this->db->scalar('SELECT COUNT(*) FROM credentials WHERE project_id = :project', ['project' => $projectId]);
     }
 
     /**
+     * @param int|null $siteId web, ze kterého se přístup zakládá (null = z projektu)
      * @param array<string, mixed> $data pole z `KINDS[kind]['fields']`; `password`
      *        v čitelné podobě (zašifruje se tady)
      */
-    public function create(int $siteId, string $kind, array $data, ?int $userId): int
+    public function create(int $projectId, ?int $siteId, string $kind, array $data, ?int $userId): int
     {
         $now = date('Y-m-d H:i:s');
 
-        return $this->db->insert('site_credentials', $this->prepare($kind, $data, true) + [
+        return $this->db->insert('credentials', $this->prepare($kind, $data, true) + [
+            'project_id' => $projectId,
             'site_id' => $siteId,
             'kind' => $kind,
             'created_by' => $userId,
@@ -125,23 +148,18 @@ final class SiteCredentials
      *
      * @param array<string, mixed> $data
      */
-    public function update(int $siteId, int $id, string $kind, array $data): void
+    public function update(int $projectId, int $id, string $kind, array $data): void
     {
         $this->db->update(
-            'site_credentials',
+            'credentials',
             $this->prepare($kind, $data, false) + ['updated_at' => date('Y-m-d H:i:s')],
-            ['id' => $id, 'site_id' => $siteId],
+            ['id' => $id, 'project_id' => $projectId],
         );
     }
 
-    public function delete(int $siteId, int $id): void
+    public function delete(int $projectId, int $id): void
     {
-        $this->db->delete('site_credentials', ['id' => $id, 'site_id' => $siteId]);
-    }
-
-    public function deleteForSite(int $siteId): void
-    {
-        $this->db->delete('site_credentials', ['site_id' => $siteId]);
+        $this->db->delete('credentials', ['id' => $id, 'project_id' => $projectId]);
     }
 
     /**
@@ -151,7 +169,7 @@ final class SiteCredentials
      * z ní vezme všechno najednou. Jméno a heslo musí být zakódované —
      * zavináč nebo dvojtečka v hesle by adresu rozbily.
      *
-     * @param array<string, mixed> $credential řádek z `forSite()` / `find()`
+     * @param array<string, mixed> $credential řádek z `forProject()` / `find()`
      */
     public static function fileZillaUrl(array $credential, #[SensitiveParameter] string $password): string
     {
@@ -200,11 +218,11 @@ final class SiteCredentials
     }
 
     /** @return array<string, mixed>|null */
-    private function row(int $siteId, int $id): ?array
+    private function row(int $projectId, int $id): ?array
     {
         return $this->db->selectOne(
-            'SELECT * FROM site_credentials WHERE id = :id AND site_id = :site',
-            ['id' => $id, 'site' => $siteId],
+            'SELECT * FROM credentials WHERE id = :id AND project_id = :project',
+            ['id' => $id, 'project' => $projectId],
         );
     }
 

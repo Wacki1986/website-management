@@ -92,7 +92,9 @@ final class ReportRenderer
 
         $metrics = [
             $metric('Dostupnost webu', $uptime['percentLabel'], $uptime['downtimeLabel'], $uptime['percent'] !== null && $uptime['percent'] >= 99),
-            $metric('Provedené aktualizace', (string) $summary['updates']['total'], $summary['updates']['noteLabel'], false),
+            ($summary['updates']['applicable'] ?? true)
+                ? $metric('Provedené aktualizace', (string) $summary['updates']['total'], $summary['updates']['noteLabel'], false)
+                : $metric('Servisní zásahy', (string) count($summary['services']), 'v tomto období', false),
             $metric('Kontrol webu', $uptime['checksLabel'], $uptime['intervalLabel'], false),
         ];
 
@@ -266,6 +268,7 @@ final class ReportRenderer
         if ($show('technical')) {
             $tech = $summary['technical'];
             $rows = array_filter([
+                'Systém' => (string) ($tech['platform'] ?? ''),
                 'WordPress' => $tech['wp'],
                 'PHP' => $tech['php'],
                 'Šablona' => $tech['theme'],
@@ -350,7 +353,7 @@ final class ReportRenderer
             $t('intro'),
             '',
             'Dostupnost webu: ' . $summary['uptime']['percentLabel'] . ' (' . $summary['uptime']['downtimeLabel'] . ')',
-            'Provedené aktualizace: ' . $summary['updates']['total'],
+            ($summary['updates']['applicable'] ?? true) ? 'Provedené aktualizace: ' . $summary['updates']['total'] : 'Servisní zásahy: ' . count($summary['services']),
             'Kontrol webu: ' . $summary['uptime']['checksLabel'] . ' (' . $summary['uptime']['intervalLabel'] . ')',
         ];
 

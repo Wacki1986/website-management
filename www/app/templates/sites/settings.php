@@ -7,7 +7,9 @@
  * @var array               $site
  * @var string|null         $freshKey       čerstvě vygenerovaný klíč — ukáže se jen jednou
  * @var string              $keyMasked      mg_live_••••4f7a
- * @var array<int, string>  $clients
+ * @var bool                $isWordpress    false = jiný systém: bez API klíče a karty pluginu (z hlavičky)
+ * @var string              $platformLabel  „Shoptet"… (z hlavičky)
+ * @var array<int|string, string> $projects id => „název (klient)" + volba oddělení do nového projektu
  * @var array<int, string>  $intervals
  * @var string|null         $pluginVersion  verze pluginu k distribuci
  * @var string              $pluginInfoUrl
@@ -31,13 +33,14 @@ $base = 'weby/' . (int) $site['id'];
                 <div class="form">
                     <div>
                         <div class="card__title">Připojení</div>
-                        <div class="card__note">Plugin MEDIAGRAFIK Monitor na straně webu ověřuje požadavky tímto klíčem.</div>
+                        <div class="card__note"><?= $isWordpress ? 'Plugin MEDIAGRAFIK Monitor na straně webu ověřuje požadavky tímto klíčem.' : 'Web běží na systému ' . $this->e($platformLabel) . ' — bez pluginu se hlídá dostupnost, SSL certifikát a doména.' ?></div>
                     </div>
 
                     <?php if ($freshKey !== null): ?>
                         <?php render_notice($this, 'warning', 'Nový klíč se ukazuje jen teď', 'Zkopírujte ho do pluginu na webu (Nastavení → MEDIAGRAFIK Monitor). Po obnovení stránky už uvidíte jen poslední čtyři znaky.') ?>
                     <?php endif; ?>
 
+                    <?php if ($isWordpress): ?>
                     <div class="form__field">
                         <span class="form__label form__label--caps">API klíč</span>
                         <div class="row" style="flex-wrap:wrap">
@@ -52,22 +55,34 @@ $base = 'weby/' . (int) $site['id'];
                         </div>
                         <span class="form__hint">Nový klíč zneplatní starý okamžitě — plugin na webu přestane odpovídat, dokud do něj nevložíte nový.</span>
                     </div>
+                    <?php endif; ?>
 
-                    <form method="post" action="<?= get_url($base . '/nastaveni') ?>" class="form">
+                    <form method="post" action="<?= get_url($base . '/nastaveni') ?>" class="form" data-platform-choice>
                         <?php render_csrf($csrfToken) ?>
+                        <div class="form__field">
+                            <span class="form__label form__label--caps">Na čem web běží</span>
+                            <div class="segmented" style="max-width:360px">
+                                <label class="segmented__item"><input type="radio" name="platform" value="wordpress"<?= $isWordpress ? ' checked' : '' ?> class="visually-hidden">WordPress</label>
+                                <label class="segmented__item"><input type="radio" name="platform" value="other"<?= !$isWordpress ? ' checked' : '' ?> class="visually-hidden">Jiný systém</label>
+                            </div>
+                            <div class="form__hint"><?= $isWordpress ? 'Přepnutím na jiný systém se smaže API klíč a data z pluginu (verze, pluginy). Historie, uptime, servis a reporty zůstanou.' : 'Přepnutím na WordPress dostane web API klíč pro plugin MEDIAGRAFIK Monitor.' ?></div>
+                        </div>
                         <?= $form->text('url', 'Adresa webu', (string) $site['url'], type: 'text', required: true, class: 'form__field--caps',
                             attributes: ['class' => 'form__control--mono', 'autocomplete' => 'off'],
                             hint: 'Když web jede na www nebo se stěhuje na jinou doménu. Historie, uptime, servis, reporty i API klíč zůstanou; certifikát a doména se ověří znovu.') ?>
                         <div class="form__row">
                             <?= $form->text('name', 'Název webu', (string) $site['name'], class: 'form__field--caps') ?>
-                            <?= $form->select('client_id', 'Přiřazený klient', $clients, $site['client_id'], placeholder: '— bez klienta —', class: 'form__field--caps') ?>
+                            <?= $form->text('platform_name', 'Systém', (string) $site['platform_name'], class: 'form__field--caps platform-other',
+                                attributes: ['placeholder' => 'Shoptet'], hint: 'Jen pro přehled v seznamu webů.') ?>
+                            <?= $form->select('project_id', 'Projekt', $projects, $site['project_id'], placeholder: $site['project_id'] === null ? '— bez projektu —' : null, class: 'form__field--caps',
+                                hint: 'Klienta webu určuje projekt — mění se v úpravě projektu.') ?>
                             <?= $form->select('check_interval_min', 'Frekvence kontrol', $intervals, (int) $site['check_interval_min'], class: 'form__field--caps') ?>
                             <?= $form->text('admin_url', 'Adresa administrace', (string) $site['admin_url'], type: 'url', class: 'form__field--caps',
-                                attributes: ['placeholder' => rtrim((string) $site['url'], '/') . '/wp-admin/', 'class' => 'form__control--mono'], hint: 'Prázdné = /wp-admin/. Vyplňte, když je přihlášení na jiné adrese.') ?>
-                            <?= $form->text('wp_login_user', 'Přihlašovat jako', (string) $site['wp_login_user'], class: 'form__field--caps',
+                                attributes: ['placeholder' => $isWordpress ? rtrim((string) $site['url'], '/') . '/wp-admin/' : 'https://admin.shoptet.cz', 'class' => 'form__control--mono'],
+                                hint: $isWordpress ? 'Prázdné = /wp-admin/. Vyplňte, když je přihlášení na jiné adrese.' : 'Tlačítko „Administrace" v hlavičce webu. Prázdné = tlačítko se neukáže.') ?>
+                            <?= $form->text('wp_login_user', 'Přihlašovat jako', (string) $site['wp_login_user'], class: 'form__field--caps platform-wordpress',
                                 attributes: ['placeholder' => $defaultLoginUser !== '' ? $defaultLoginUser : 'mediagrafik', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
                                 hint: $defaultLoginUser !== '' ? 'Prázdné = výchozí účet studia „' . $defaultLoginUser . '" z Nastavení → Monitoring.' : 'Účet, do kterého „wp-admin" přihlásí bez hesla. Výchozí pro všechny weby nastavíte v Nastavení → Monitoring.') ?>
-                            <?= $form->text('hosting_note', 'Hosting', (string) $site['hosting_note'], class: 'form__field--caps', attributes: ['placeholder' => 'Wedos · NoLimit']) ?>
                             <?= $form->text('backup_note', 'Zálohy', (string) $site['backup_note'], class: 'form__field--caps', attributes: ['placeholder' => 'denně · 03:00'], hint: 'Jen poznámka do přehledu, dokud plugin zálohy neumí zjistit.') ?>
                         </div>
                         <div class="row"><button class="btn btn--primary" type="submit">Uložit změny</button><a class="btn btn--ghost" href="<?= get_url($base) ?>">Zrušit</a></div>
@@ -101,6 +116,7 @@ $base = 'weby/' . (int) $site['id'];
 
             <?= $this->partial('partials/report-settings-card', get_defined_vars()) ?>
 
+            <?php if ($isWordpress): ?>
             <section class="card card--padded">
                 <div class="form">
                     <div>
@@ -115,6 +131,7 @@ $base = 'weby/' . (int) $site['id'];
                     <div class="text-subtle" style="font-size:var(--font-size-label);line-height:var(--line-height-relaxed)">Ve WordPressu: Pluginy → Nahrát plugin → ZIP → Aktivovat → Nastavení → MEDIAGRAFIK Monitor → vložit API klíč. Aktualizace pluginu pak chodí automaticky z téhle aplikace.</div>
                 </div>
             </section>
+            <?php endif; ?>
         </div>
 
         <aside class="split__aside">
@@ -157,7 +174,7 @@ $base = 'weby/' . (int) $site['id'];
 
             <div class="card card--danger">
                 <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)">Odebrat web z monitoringu</div>
-                <div class="text-caption" style="margin-top:4px">Historie kontrol a reportů zůstane 12 měsíců v archivu. Uložené přístupy se smažou hned.</div>
+                <div class="text-caption" style="margin-top:4px">Historie kontrol a reportů zůstane 12 měsíců v archivu. Přístupy zůstávají u projektu.</div>
                 <div style="margin-top:12px"><a class="btn btn--danger btn--sm" href="<?= get_url($base . '/odebrat') ?>"><?= get_btn_icon('trash') ?>Odebrat web</a></div>
             </div>
         </aside>

@@ -1,5 +1,72 @@
 # Změny
 
+## 0.9.0 — 5. 10. 2026
+
+Projekty: klient → projekt → služby. Projekt („pekarnanovak.cz") drží
+pohromadě všechno, o co se u zákazníka staráme — weby, domény, hosting,
+e-mailové schránky a přístupy. Weby, monitoring, alerty a reporty fungují
+dál beze změny.
+
+- **Projekty** (nová položka menu). Seznam s hledáním (projekt, klient,
+  doména webu), filtry Bez klienta / Bez webu, stavem podle nejhoršího
+  webu a nejbližší obnovou. Detail projektu: weby, domény a hosting,
+  přehled trezoru, poznámka. Prázdný projekt jde smazat (potvrzení
+  v okně) i s jeho službami a trezorem; projekt s weby v monitoringu ne.
+- **Klienta drží projekt.** Změna klienta u projektu se propíše do všech
+  jeho webů. V Nastavení webu je místo klienta výběr **projektu** — web
+  jde přesunout k jinému projektu (e-shop k firemnímu webu téhož
+  zákazníka), nebo oddělit do vlastního nového; zapíše se do historie.
+  **Přidat web** bez vybraného projektu založí nový projekt i s doménou
+  webu. **Klienti** mají kartu Projekty, přiřazují se jim projekty bez
+  klienta (dřív weby), v souhrnu je, kolik ročně přefakturujeme za služby.
+- **Web jiný než WordPress** (Shoptet, Webnode, statický web…). Při
+  přidání i v Nastavení volba „Na čem web běží". Jiný systém nemá API
+  klíč ani moduly; hlídá se dostupnost, SSL a doména, funguje servis,
+  reporty i přístupy. Detail nemá záložky Pluginy, Obsah, Zabezpečení
+  a SEO, místo wp-admin je tlačítko Administrace (jen s vyplněnou
+  adresou). V seznamu webů je ve sloupci WP název systému, v reportu
+  místo aktualizací servisní zásahy. Přepnutí na jiný systém smaže API
+  klíč, data z pluginu a jejich otevřené alerty; přepnutí zpět vygeneruje
+  nový klíč.
+- **Domény a hosting** u projektu (tabulka `project_services`):
+  registrátor / poskytovatel, tarif, datum obnovy, kdo platí (my
+  a přefakturujeme / klient), prodejní a nákupní cena, měna, perioda,
+  do kdy je vyfakturováno. Expiraci a registrátora domén zjišťuje monitor
+  v registru (RDAP) jednou týdně; ručně opravený registrátor nepřepisuje.
+- **Obnovy a fakturace** (záložka v Projektech): všechny služby podle
+  data obnovy, filtry „Obnova do N dní" a „K vyfakturování" — ten
+  seskupí služby po klientech se součtem. Akce v řádku: Vyfakturováno
+  (zapíše fakturu za příští období), Obnoveno (posune datum o periodu),
+  úprava, smazání. Před obnovou přijde jednou e-mail a push — pravidlo
+  „Obnova domén a hostingu" v Nastavení → Alerty a prahy (výchozí 30 dní).
+- **Trezor přístupů patří projektu** (tabulka `credentials`): stejný
+  obsah na záložce Přístupy u každého webu projektu i na stránce
+  Přístupy v projektu. Odebráním webu se přístupy nemažou — hosting
+  a e-maily žijí dál; mažou se se smazáním projektu. Nové druhy
+  **E-mail** (adresa, kde schránka běží, webmail, server) a
+  **Registrátor domény**.
+- **DNS pošty** u domén jednou denně: MX, SPF (chybí / dva záznamy /
+  „+all"), DMARC i s politikou, DKIM (zkoušejí se obvyklé selektory —
+  Google, Microsoft 365, Seznam, Forpsi…; nenalezený není chyba). Stav pošty je u domény v detailu
+  projektu, rozpis záznamů a vysvětlení v úpravě domény s tlačítkem
+  „Zkontrolovat DNS teď". E-mail chodí jen při změně (nový problém,
+  přestěhovaná pošta, přepsaný SPF/DMARC), ne každý den — pravidlo
+  „DNS pošty".
+- **Nové logo a ikony.** V postranním panelu a na přihlášení je logo
+  „Správa webů od MEDIAGRAFIK" (v tmavém motivu se světlým nápisem, barevný
+  znak zůstává); štítek s názvem aplikace vedle loga odpadl. Favicona,
+  ikony pro plochu telefonu (i maskovatelná pro Android) a ikonka
+  notifikací se generují z `assets/favicons/favicon.svg` příkazem
+  `php dev/tools/build-favicons.php` (potřebuje Chrome). E-mailové reporty
+  klientům dál nesou logo studia MEDIAGRAFIK.
+- **Převod při aktualizaci** (migrace): každý web v monitoringu dostal
+  vlastní projekt se stejným názvem a klientem, doména webu (i se
+  zjištěnou expirací) a poznámka o hostingu se převedly na služby
+  projektu, přístupy z trezoru webu do trezoru projektu. Weby jednoho
+  zákazníka, které k sobě patří, je potřeba spojit ručně v Nastavení
+  webu; ceny služeb doplnit ručně. Pole Hosting v Nastavení webu zmizelo
+  — hosting se eviduje u projektu.
+
 ## 0.8.3 — 5. 10. 2026
 
 - **Hledání webů při psaní.** Seznam webů se filtruje už během psaní

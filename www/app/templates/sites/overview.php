@@ -14,6 +14,7 @@
  * @var array<int, array<string, mixed>> $events   posledních 6 událostí
  * @var int                 $eventCount
  * @var string|null         $snapshotAt
+ * @var bool                $isWordpress  false = jiný systém, bez metrik z pluginu (z hlavičky)
  * @var array{days: array<int, array<string, mixed>>, percent: ?float, checks: int, downtime: string, outages: int, avgMs: ?int, axis: array<int, string>} $uptime
  * @var array<int, array<string, mixed>> $openAlerts  otevřené alerty, nejzávažnější první
  * @var string|null         $lastIncident
@@ -31,7 +32,9 @@ $percentTone = $percent === null ? 'text-faint' : ($percent < 99 ? 'metric__valu
     <div class="split">
         <div class="stack">
 
-            <?php if ($metrics === null): ?>
+            <?php if (!$isWordpress): ?>
+                <?php // Jiný systém: verze WordPressu, PHP a databáze nikdo nehlásí. ?>
+            <?php elseif ($metrics === null): ?>
                 <div class="metric-grid">
                     <?php for ($i = 0; $i < 4; $i++): ?>
                         <div class="metric metric--compact"><div class="skeleton skeleton--text" style="width:40%"></div><div class="skeleton skeleton--title" style="margin-top:10px;width:60%"></div></div>
@@ -140,7 +143,7 @@ $percentTone = $percent === null ? 'text-faint' : ($percent < 99 ? 'metric__valu
             <?php elseif ($metrics === null && $uptime['checks'] === 0): ?>
                 <div class="score-card score-card--quiet">
                     <div class="score-card__label"><?= get_dot('muted') ?>Čeká na první data</div>
-                    <div class="score-card__note">Nainstalujte na web plugin MEDIAGRAFIK Monitor, vložte API klíč z Nastavení a klikněte na „Zkontrolovat teď".</div>
+                    <div class="score-card__note"><?= $isWordpress ? 'Nainstalujte na web plugin MEDIAGRAFIK Monitor, vložte API klíč z Nastavení a klikněte na „Zkontrolovat teď".' : 'Klikněte na „Zkontrolovat teď" — ověří se dostupnost a SSL certifikát.' ?></div>
                 </div>
             <?php else: ?>
                 <div class="score-card score-card--ok score-card--quiet">

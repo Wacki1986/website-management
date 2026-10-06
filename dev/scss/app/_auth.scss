@@ -30,22 +30,15 @@
     position: relative;
     align-self: flex-start;
     display: block;
-    padding: 0 8px 14px 0;
+    padding: 0 8px 6px 0;
 
     &:hover { text-decoration: none; }
   }
 
   &__logo {
-    width: 172px;
+    width: 220px;
     height: auto;
     display: block;
-  }
-
-  &__badge {
-    top: auto;
-    bottom: -4px;
-    right: auto;
-    left: 0;
   }
 
   &__head {
@@ -80,6 +73,3 @@
   }
 }
 
-[data-theme="dark"] .auth__logo {
-  filter: brightness(0) invert(1);
-}

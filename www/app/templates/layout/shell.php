@@ -32,6 +32,7 @@ $navItems = [
         'count' => (int) ($siteCount ?? 0), 'alert' => false],
     ['url' => 'alerty', 'label' => 'Alerty', 'icon' => 'alert', 'active' => str_starts_with($currentPath, '/alerty'),
         'count' => (int) ($openAlertCount ?? 0), 'alert' => true],
+    ['url' => 'projekty', 'label' => 'Projekty', 'icon' => 'folder', 'active' => str_starts_with($currentPath, '/projekty')],
     ['url' => 'klienti', 'label' => 'Klienti', 'icon' => 'users', 'active' => str_starts_with($currentPath, '/klienti')],
     ['url' => 'reporty', 'label' => 'Reporty', 'icon' => 'report', 'active' => str_starts_with($currentPath, '/reporty')],
     ['url' => 'knihovna', 'label' => 'Knihovna pluginů', 'icon' => 'plugin', 'active' => str_starts_with($currentPath, '/knihovna')],
@@ -61,8 +62,9 @@ $monitorNote = is_array($monitor)
 <div class="app">
     <aside class="sidebar">
         <a class="sidebar__logo" href="<?= get_url('/') ?>">
-            <img src="<?= get_asset('img/logo-mediagrafik.svg') ?>" alt="MEDIAGRAFIK">
-            <span class="sidebar__logo-badge"><?= $this->e($appName) ?></span>
+            <?php // Dvě varianty loga: nápis je tmavý, v tmavém motivu světlý (app/_extras.scss). ?>
+            <img class="app-logo--light" src="<?= get_asset('img/sprava-logo.svg') ?>" alt="Správa webů od MEDIAGRAFIK">
+            <img class="app-logo--dark" src="<?= get_asset('img/sprava-logo-dark.svg') ?>" alt="Správa webů od MEDIAGRAFIK">
         </a>
 
         <?php // Telefon: tlačítko s ikonou menu; na počítači je nav vidět stále (CSS). ?>

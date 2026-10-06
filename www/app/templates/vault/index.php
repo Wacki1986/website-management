@@ -1,13 +1,16 @@
 <?php
 /**
- * Detail webu — Přístupy (návrh ji nemá): trezor s FTP, hostingem,
- * databází a dalšími přihlašovacími údaji.
+ * Trezor přístupů projektu (návrh ho nemá): FTP, hosting, databáze,
+ * e-maily, registrátor. Stejný obsah na záložce Přístupy u webu (hlavička
+ * webu) i v projektu (hlavička projektu) — `$headerPartial`.
  *
  * Heslo ve stránce není — místo něj tečky; oko a kopírování si ho dotáhnou
  * z `…/heslo` (`vault.js`). Akce v řádku jsou ikony v posledním sloupci.
  *
  * @var \App\Core\View\View $this
- * @var array               $site
+ * @var string              $headerPartial `partials/site-header` / `partials/project-header` (+ jejich proměnné)
+ * @var string              $pageTitle     název webu / projektu do titulku
+ * @var string              $ownerNote     komu přístupy patří a kdy se smažou
  * @var bool                $locked    přihlášený účet nemá dvoufázové přihlášení
  * @var bool                $available je `app_key` (čím šifrovat)
  * @var array<int, array<string, mixed>> $rows řádky z `CredentialController::row()`
@@ -15,16 +18,16 @@
  * @var string              $setupUrl  zapnutí dvoufázového přihlášení
  * @var string              $csrfToken
  */
-$this->extend('layout/shell', ['title' => $site['name'] . ' — Přístupy']);
+$this->extend('layout/shell', ['title' => $pageTitle . ' — Přístupy']);
 ?>
-<?= $this->partial('partials/site-header', get_defined_vars()) ?>
+<?= $this->partial($headerPartial, get_defined_vars()) ?>
 
 <div class="app__content">
     <?php if ($locked): ?>
         <section class="card card--padded">
             <?php render_empty(
                 'Trezor je zamčený',
-                'Přístupy k FTP, hostingu a databázím uvidí jen účet se zapnutým dvoufázovým přihlášením — samotné heslo do správy na ně nestačí.',
+                'Přístupy k FTP, hostingu, databázím a e-mailům uvidí jen účet se zapnutým dvoufázovým přihlášením — samotné heslo do správy na ně nestačí.',
                 'shield',
                 '<a class="btn btn--primary" href="' . $setupUrl . '">' . get_btn_icon('shield') . 'Zapnout dvoufázové přihlášení</a>',
             ) ?>
@@ -36,7 +39,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Přístupy']);
             <?php render_card_head('Přístupy', 'Hesla jsou uložená šifrovaně. Oko je ukáže, tlačítko vedle zkopíruje, aniž by se ukázala.') ?>
 
             <?php if ($rows === []): ?>
-                <?php render_empty('Zatím žádný přístup', 'Uložte si sem FTP, přihlášení do hostingu nebo k databázi — ať je nemusíte hledat po e-mailech a souborech.', 'shield') ?>
+                <?php render_empty('Zatím žádný přístup', 'Uložte si sem FTP, hosting, databázi nebo e-mailové schránky — ať je nemusíte hledat po e-mailech a souborech.', 'shield') ?>
             <?php else: ?>
                 <div class="table table--credentials">
                     <div class="table__head"><div>Přístup</div><div>Server / adresa</div><div>Uživatel</div><div>Heslo</div><div class="table__cell table__cell--right">Akce</div></div>
@@ -97,7 +100,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Přístupy']);
             </div>
         </section>
 
-        <div class="card card--note">Hesla se nikdy neposílají e-mailem, nejsou v reportech ani v exportech. Při odebrání webu z monitoringu se přístupy smažou.</div>
+        <div class="card card--note">Hesla se nikdy neposílají e-mailem, nejsou v reportech ani v exportech. <?= $this->e($ownerNote) ?></div>
     <?php endif; ?>
 </div>
 

@@ -71,14 +71,15 @@ self.addEventListener("push", (event) => {
         data = {};
     }
 
-    const title = data.title || "Správa instancí";
+    const title = data.title || "Správa webů";
     const options = {
         body: data.body || "",
         icon: new URL("assets/favicons/icon-192.png", self.location.href).pathname,
         // Badge je ta drobná ikonka ve stavovém řádku telefonu a Android z ní
         // bere POUZE průhlednost — barvy zahodí a zbytek vybarví jednou
         // barvou. Barevná `icon-192.png` (plný čtverec bez alfy) se tak
-        // kreslila jako čtvereček. Tohle je bílé „D" na průhledném pozadí.
+        // kreslila jako čtvereček. Tohle je bílá silueta znaku na průhledném
+        // pozadí (`dev/tools/build-favicons.php`).
         badge: new URL("assets/favicons/badge-96.png", self.location.href).pathname,
         tag: data.id ? "n-" + data.id : undefined,
         renotify: Boolean(data.id),

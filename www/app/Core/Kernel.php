@@ -7,6 +7,8 @@ namespace App\Core;
 use App\Controllers\AlertController;
 use App\Controllers\AuthController;
 use App\Controllers\ClientController;
+use App\Controllers\ProjectController;
+use App\Controllers\ProjectServiceController;
 use App\Controllers\CredentialController;
 use App\Controllers\DashboardController;
 use App\Controllers\ForgottenPasswordController;
@@ -39,7 +41,13 @@ use App\Core\Monitor\UptimeRepository;
 use App\Core\Audit\AuditLog;
 use App\Core\Clients\Ares;
 use App\Core\Clients\ClientRepository;
+use App\Core\Projects\Credentials;
+use App\Core\Projects\MailDns;
+use App\Core\Projects\ProjectRepository;
+use App\Core\Projects\ProjectServices;
+use App\Core\Projects\Renewals;
 use App\Core\Events\EventLog;
+use App\Core\Monitor\MailDnsCheck;
 use App\Core\Monitor\OutsideProbe;
 use App\Core\Monitor\PluginClient;
 use App\Core\Monitor\SecurityAudit;
@@ -54,7 +62,6 @@ use App\Core\Reports\ReportSender;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceRepository;
 use App\Core\Sites\PluginOffers;
-use App\Core\Sites\SiteCredentials;
 use App\Core\Sites\SiteIcons;
 use App\Core\Sites\SiteRepository;
 use App\Core\Auth\Auth;
@@ -100,7 +107,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.8.3';
+    public const VERSION = '0.9.0';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
@@ -130,7 +137,7 @@ final class Kernel
     private ?RememberMe $rememberMe = null;
     private ?Auth $auth = null;
     private ?TwoFactor $twoFactor = null;
-    private ?SiteCredentials $credentials = null;
+    private ?Credentials $credentials = null;
     private ?AuditLog $audit = null;
     private ?Settings $settings = null;
     private ?MailSettings $mailSettings = null;
@@ -140,6 +147,8 @@ final class Kernel
     private ?PushSubscriptions $pushSubscriptions = null;
     private ?PushNotifier $pushNotifier = null;
     private ?ClientRepository $clients = null;
+    private ?ProjectRepository $projects = null;
+    private ?ProjectServices $projectServices = null;
     private ?SiteRepository $sites = null;
     private ?EventLog $events = null;
     private ?PluginClient $pluginClient = null;
@@ -429,6 +438,22 @@ final class Kernel
         return $this->clients ??= new ClientRepository($this->db());
     }
 
+    public function projects(): ProjectRepository
+    {
+        return $this->projects ??= new ProjectRepository($this->db());
+    }
+
+    public function projectServices(): ProjectServices
+    {
+        return $this->projectServices ??= new ProjectServices($this->db());
+    }
+
+    /** Kontrola DNS pošty (cron i tlačítko u domény). */
+    public function mailDns(): MailDns
+    {
+        return new MailDns($this->projectServices(), new MailDnsCheck(), $this->notifier(), $this->monitorSettings());
+    }
+
     public function ares(): Ares
     {
         return new Ares();
@@ -439,9 +464,9 @@ final class Kernel
         return $this->sites ??= new SiteRepository($this->db(), $this->secrets());
     }
 
-    public function credentials(): SiteCredentials
+    public function credentials(): Credentials
     {
-        return $this->credentials ??= new SiteCredentials($this->db(), $this->secrets());
+        return $this->credentials ??= new Credentials($this->db(), $this->secrets());
     }
 
     public function events(): EventLog
@@ -612,6 +637,21 @@ final class Kernel
             $this->service(),
             $this->modules(),
         );
+
+        // Služby projektů: expirace domén (RDAP) a upozornění na obnovy. Vrací 0
+        // ze stejného důvodu jako ikony níž — součet kroků jsou odeslané reporty.
+        $this->monitor->addStep('renewals', function (int $now, float $deadline): int {
+            (new Renewals($this->projectServices(), new DomainChecker(), $this->notifier(), $this->monitorSettings()))->step($now, $deadline);
+
+            return 0;
+        });
+
+        // DNS pošty u domén projektů jednou denně, upozornění jen na změnu.
+        $this->monitor->addStep('mail-dns', function (int $now, float $deadline): int {
+            $this->mailDns()->step($now, $deadline);
+
+            return 0;
+        });
 
         // Reporty: den před termínem příprava ke schválení, v termínu odeslání.
         $this->monitor->addStep('reports', fn (int $now, float $deadline): int => $this->reportSender()->step($now));
@@ -1189,6 +1229,31 @@ final class Kernel
         $router->add('GET', '/system/monitor-cron', [MonitorCronController::class, 'run'], Router::PUBLIC_ACCESS, 'system.monitor-cron');
 
         // Klienti.
+        $router->add('GET', '/projekty', [ProjectController::class, 'index'], name: 'projects');
+        $router->add('GET', '/projekty/pridat', [ProjectController::class, 'createForm'], name: 'projects.add');
+        $router->add('POST', '/projekty/pridat', [ProjectController::class, 'store'], Router::AUTH_ONLY, 'projects.store');
+        // Před /projekty/{id} — router bere první shodu.
+        $router->add('GET', '/projekty/obnovy', [ProjectServiceController::class, 'overview'], name: 'projects.renewals');
+        $router->add('GET', '/projekty/{id}', [ProjectController::class, 'detail'], name: 'projects.detail');
+        $router->add('GET', '/projekty/{id}/sluzby/pridat/{kind}', [ProjectServiceController::class, 'createForm'], name: 'projects.services.add');
+        $router->add('POST', '/projekty/{id}/sluzby/pridat/{kind}', [ProjectServiceController::class, 'store'], Router::AUTH_ONLY, 'projects.services.store');
+        $router->add('GET', '/projekty/{id}/sluzby/{serviceId}/upravit', [ProjectServiceController::class, 'editForm'], name: 'projects.services.edit');
+        $router->add('POST', '/projekty/{id}/sluzby/{serviceId}/upravit', [ProjectServiceController::class, 'update'], Router::AUTH_ONLY, 'projects.services.update');
+        $router->add('POST', '/projekty/{id}/sluzby/{serviceId}/smazat', [ProjectServiceController::class, 'delete'], Router::AUTH_ONLY, 'projects.services.delete');
+        $router->add('POST', '/projekty/{id}/sluzby/{serviceId}/vyfakturovano', [ProjectServiceController::class, 'invoiced'], Router::AUTH_ONLY, 'projects.services.invoiced');
+        $router->add('POST', '/projekty/{id}/sluzby/{serviceId}/obnoveno', [ProjectServiceController::class, 'renewed'], Router::AUTH_ONLY, 'projects.services.renewed');
+        $router->add('POST', '/projekty/{id}/sluzby/{serviceId}/dns', [ProjectServiceController::class, 'checkMailDns'], Router::AUTH_ONLY, 'projects.services.dns');
+        $router->add('GET', '/projekty/{id}/pristupy', [CredentialController::class, 'projectIndex'], name: 'projects.credentials');
+        $router->add('GET', '/projekty/{id}/pristupy/pridat/{kind}', [CredentialController::class, 'projectCreateForm'], name: 'projects.credentials.add');
+        $router->add('POST', '/projekty/{id}/pristupy/pridat/{kind}', [CredentialController::class, 'projectStore'], Router::AUTH_ONLY, 'projects.credentials.store');
+        $router->add('GET', '/projekty/{id}/pristupy/{credentialId}/upravit', [CredentialController::class, 'projectEditForm'], name: 'projects.credentials.edit');
+        $router->add('POST', '/projekty/{id}/pristupy/{credentialId}/upravit', [CredentialController::class, 'projectUpdate'], Router::AUTH_ONLY, 'projects.credentials.update');
+        $router->add('POST', '/projekty/{id}/pristupy/{credentialId}/smazat', [CredentialController::class, 'projectDelete'], Router::AUTH_ONLY, 'projects.credentials.delete');
+        $router->add('POST', '/projekty/{id}/pristupy/{credentialId}/heslo', [CredentialController::class, 'projectPassword'], Router::AUTH_ONLY, 'projects.credentials.password');
+        $router->add('GET', '/projekty/{id}/upravit', [ProjectController::class, 'editForm'], name: 'projects.edit');
+        $router->add('POST', '/projekty/{id}/upravit', [ProjectController::class, 'update'], Router::AUTH_ONLY, 'projects.update');
+        $router->add('POST', '/projekty/{id}/smazat', [ProjectController::class, 'delete'], Router::AUTH_ONLY, 'projects.delete');
+
         $router->add('GET', '/klienti', [ClientController::class, 'index'], name: 'clients');
         $router->add('GET', '/klienti/pridat', [ClientController::class, 'createForm'], name: 'clients.add');
         $router->add('POST', '/klienti/pridat', [ClientController::class, 'store'], Router::AUTH_ONLY, 'clients.store');
@@ -1196,7 +1261,7 @@ final class Kernel
         $router->add('GET', '/klienti/{id}/upravit', [ClientController::class, 'editForm'], name: 'clients.edit');
         $router->add('POST', '/klienti/{id}/upravit', [ClientController::class, 'update'], Router::AUTH_ONLY, 'clients.update');
         $router->add('POST', '/klienti/{id}/archivovat', [ClientController::class, 'archive'], Router::AUTH_ONLY, 'clients.archive');
-        $router->add('POST', '/klienti/{id}/weby', [ClientController::class, 'assignSites'], Router::AUTH_ONLY, 'clients.sites');
+        $router->add('POST', '/klienti/{id}/projekty', [ClientController::class, 'assignProjects'], Router::AUTH_ONLY, 'clients.projects');
         $router->add('POST', '/klienti/{id}/kontakt', [ClientController::class, 'addContact'], Router::AUTH_ONLY, 'clients.contact.add');
         $router->add('POST', '/klienti/{id}/kontakt/{contactId}/smazat', [ClientController::class, 'removeContact'], Router::AUTH_ONLY, 'clients.contact.remove');
 
