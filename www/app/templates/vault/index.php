@@ -14,7 +14,7 @@
  * @var bool                $locked    přihlášený účet nemá dvoufázové přihlášení
  * @var bool                $available je `app_key` (čím šifrovat)
  * @var array<int, array<string, mixed>> $rows řádky z `CredentialController::row()`
- * @var array<int, array{label: string, url: string}> $addLinks přidání po druzích
+ * @var array<int, array{label: string, icon: string, url: string}> $addLinks přidání po druzích (ikona druhu jako ve výpisu)
  * @var string              $setupUrl  zapnutí dvoufázového přihlášení
  * @var string              $csrfToken
  */
@@ -95,7 +95,7 @@ $this->extend('layout/shell', ['title' => $pageTitle . ' — Přístupy']);
             <div class="card__footer row" style="gap:8px;flex-wrap:wrap;justify-content:flex-start">
                 <span class="text-subtle" style="font-size:var(--font-size-label)">Přidat:</span>
                 <?php foreach ($addLinks as $link): ?>
-                    <a class="btn btn--secondary btn--sm" href="<?= $link['url'] ?>"><?= get_btn_icon('plus') ?><?= $this->e($link['label']) ?></a>
+                    <a class="btn btn--secondary btn--sm" href="<?= $link['url'] ?>"><?= get_btn_icon($link['icon']) ?><?= $this->e($link['label']) ?></a>
                 <?php endforeach; ?>
             </div>
         </section>

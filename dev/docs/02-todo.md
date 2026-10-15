@@ -20,6 +20,14 @@ provozu, když se převod osvědčí:
 - Další placené služby jako nový `kind` v `project_services` (licence
   Google Workspace / Microsoft 365, SSL certifikát).
 
+## Servisní protokol — odeslání e-mailem
+
+Protokol v PDF se zatím jen stahuje (CHANGELOG 0.9.4) a posílá ručně.
+Další krok: tlačítko „Poslat klientovi" — e-mail přes `Mailer` s PDF
+v příloze, adresáti jako u reportu, k tomu možnost přiložit fakturu
+(nahraný PDF soubor, později přímo z Caflou). Do protokolu případně
+doplnit další údaje (cena, číslo objednávky), až bude jasné, co chybí.
+
 ## Modul Rychlost (PageSpeed Insights)
 
 Další modul do `Modules::REGISTRY` (vzor: modul SEO, 0.8.0). Google

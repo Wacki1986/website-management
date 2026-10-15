@@ -94,7 +94,7 @@ final class ReportRenderer
             $metric('Dostupnost webu', $uptime['percentLabel'], $uptime['downtimeLabel'], $uptime['percent'] !== null && $uptime['percent'] >= 99),
             ($summary['updates']['applicable'] ?? true)
                 ? $metric('Provedené aktualizace', (string) $summary['updates']['total'], $summary['updates']['noteLabel'], false)
-                : $metric('Servisní zásahy', (string) count($summary['services']), 'v tomto období', false),
+                : $metric('Výpadky', (string) count($uptime['outages'] ?? []), 'v tomto období', ($uptime['outages'] ?? []) === []),
             $metric('Kontrol webu', $uptime['checksLabel'], $uptime['intervalLabel'], false),
         ];
 
@@ -129,31 +129,9 @@ final class ReportRenderer
                 . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $items . '</table></td></tr>';
         }
 
-        // Servis.
-        if ($show('services') && ($summary['services'] !== [] || $summary['nextService'] !== null)) {
-            $rows = '';
-            $count = count($summary['services']);
-
-            foreach ($summary['services'] as $i => $service) {
-                $rows .= '<tr><td style="padding:14px 16px;' . ($i < $count - 1 ? 'border-bottom:1px solid ' . self::BORDER . ';' : '') . '">'
-                    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
-                    . '<td valign="top" style="font-size:14px;color:' . self::BODY . ';line-height:1.5;">'
-                    . '<div style="font-weight:600;color:' . self::TEXT . ';">' . $e($service['kindLabel']) . ' <span style="font-weight:400;color:' . self::MUTED . ';">· ' . $e(get_czech_date($service['date'])) . '</span></div>'
-                    . self::serviceBody($service, $e) . '</td>'
-                    . ($service['minutes'] !== null ? '<td valign="top" align="right" width="70" style="font-size:12px;color:' . self::MUTED . ';white-space:nowrap;padding-left:12px;">' . $e(ReportBuilder::minutes((int) $service['minutes'])) . '</td>' : '')
-                    . '</tr></table></td></tr>';
-            }
-
-            $blocks['services'] = $row('services') . '<td style="padding:26px ' . $pad . ' 0;">'
-                . '<h3 style="margin:0 0 12px;font-size:17px;font-weight:600;letter-spacing:-.01em;color:' . self::TEXT . ';">' . $ed('heading_services', $e($t('heading_services'))) . '</h3>'
-                . ($rows !== ''
-                    ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ' . self::BORDER . ';border-radius:12px;border-collapse:separate;">' . $rows . '</table>'
-                    : '<div style="font-size:14px;color:' . self::BODY . ';line-height:1.55;">V tomto období nebyl plánovaný žádný servis — web jsme jen průběžně hlídali.</div>')
-                . ($summary['nextService'] !== null
-                    ? '<div style="font-size:13px;color:' . self::MUTED . ';line-height:1.55;margin-top:10px;">Příští ' . $e(mb_strtolower($summary['nextService']['kindLabel'])) . ' máme naplánovaný na ' . $e(ReportBuilder::longDate($summary['nextService']['date'])) . '. Nemusíte nic dělat, ozveme se, jen kdyby bylo potřeba web na chvíli odstavit.</div>'
-                    : '')
-                . '</td></tr>';
-        }
+        // Servis v reportu není — klient ho dostává jako servisní protokol
+        // v PDF (`ServiceProtocol`). Uložené starší reporty ho v souhrnu mají,
+        // ale znovu se už nevykreslí.
 
         // Obsah webu (reporty před verzí 0.4.0 tuhle část souhrnu nemají).
         $content = $summary['content'] ?? null;
@@ -353,7 +331,7 @@ final class ReportRenderer
             $t('intro'),
             '',
             'Dostupnost webu: ' . $summary['uptime']['percentLabel'] . ' (' . $summary['uptime']['downtimeLabel'] . ')',
-            ($summary['updates']['applicable'] ?? true) ? 'Provedené aktualizace: ' . $summary['updates']['total'] : 'Servisní zásahy: ' . count($summary['services']),
+            ($summary['updates']['applicable'] ?? true) ? 'Provedené aktualizace: ' . $summary['updates']['total'] : 'Výpadky: ' . count($summary['uptime']['outages'] ?? []),
             'Kontrol webu: ' . $summary['uptime']['checksLabel'] . ' (' . $summary['uptime']['intervalLabel'] . ')',
         ];
 
@@ -371,27 +349,6 @@ final class ReportRenderer
 
             foreach ($summary['done'] as $item) {
                 $blocks['updates'][] = '- ' . $item['strong'] . ' ' . $item['text'];
-            }
-        }
-
-        if (in_array('services', $sections, true) && $summary['services'] !== []) {
-            $blocks['services'] = ['', $t('heading_services') . ':'];
-
-            foreach ($summary['services'] as $service) {
-                if (($service['tasks'] ?? []) === []) {
-                    $blocks['services'][] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ': ' . $service['description'];
-                    continue;
-                }
-
-                $blocks['services'][] = '- ' . $service['kindLabel'] . ' · ' . get_czech_date($service['date']) . ':';
-
-                foreach ($service['tasks'] as $task) {
-                    $blocks['services'][] = '  ✓ ' . $task;
-                }
-
-                if ($service['note'] !== '') {
-                    $blocks['services'][] = '  ' . $service['note'];
-                }
             }
         }
 
@@ -473,35 +430,4 @@ final class ReportRenderer
         return $host === '' ? $html : str_replace($host, '<b style="font-weight:600;color:' . self::TEXT . ';">' . $host . '</b>', $html);
     }
 
-    /**
-     * Tělo řádku servisu v e-mailu: hotové úkoly pod sebou s fajfkou,
-     * pod nimi poznámka. Uložené reporty z doby před úkoly mají jen
-     * `description` — ta se vypíše jako dřív.
-     *
-     * @param array<string, mixed> $service
-     * @param callable(string): string $e
-     */
-    private static function serviceBody(array $service, callable $e): string
-    {
-        $tasks = (array) ($service['tasks'] ?? []);
-
-        if ($tasks === []) {
-            return '<div style="margin-top:3px;">' . $e((string) $service['description']) . '</div>';
-        }
-
-        $html = '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:6px;">';
-
-        foreach ($tasks as $task) {
-            $html .= '<tr><td valign="top" width="20" style="color:' . self::OK . ';font-weight:600;line-height:1.6;">✓</td>'
-                . '<td style="line-height:1.6;">' . $e((string) $task) . '</td></tr>';
-        }
-
-        $html .= '</table>';
-
-        if ((string) ($service['note'] ?? '') !== '') {
-            $html .= '<div style="margin-top:8px;color:' . self::MUTED . ';">' . nl2br($e((string) $service['note'])) . '</div>';
-        }
-
-        return $html;
-    }
 }

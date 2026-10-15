@@ -1,12 +1,24 @@
 /**
- * Hledání při psaní — formulář s `data-live-search` (seznam webů).
+ * Hledání při psaní — formulář s `data-live-search` (weby, projekty,
+ * klienti, dashboard, reporty, pluginy webu).
  *
- * Po zadání aspoň MIN_LENGTH znaků (nebo po smazání pole) a krátké pauze
- * načte stejnou stránku s parametry formuláře a vymění v ní jen bloky
- * označené `data-live-region="…"` — pole hledání se nepřekresluje, takže
- * kurzor ani rozepsaný text nezmizí. Server se nemění: vrací celou
- * stránku jako při obyčejném odeslání a filtry (stav, klient, seskupení)
- * zůstávají v odkazech, které přijdou v nových blocích.
+ * Dva režimy:
+ *
+ * `data-live-search` (bez hodnoty) — po zadání aspoň MIN_LENGTH znaků
+ * (nebo po smazání pole) a krátké pauze načte stejnou stránku s parametry
+ * formuláře a vymění v ní jen bloky označené `data-live-region="…"` —
+ * pole hledání se nepřekresluje, takže kurzor ani rozepsaný text
+ * nezmizí. Server se nemění: vrací celou stránku jako při obyčejném
+ * odeslání a filtry (stav, klient, seskupení) zůstávají v odkazech,
+ * které přijdou v nových blocích. Hodí se jen tam, kde vyměňované bloky
+ * nemají na sobě navázané skripty (odkazy, potvrzovací okna přes
+ * `data-confirm` — ta poslouchají na celém dokumentu).
+ *
+ * `data-live-search="local"` — stránka už má celý seznam a jen se skrývají
+ * řádky `[data-live-item]`, jejichž `data-live-text` hledaný text
+ * neobsahuje; `[data-live-empty]` se ukáže, když nezbyde žádný. Pro
+ * tabulky se zaškrtávátky a rozběhnutými akcemi (pluginy): výměna bloku
+ * by zahodila výběr i skripty navázané na řádky.
  *
  * Adresa v liště se přepíše (`replaceState`), aby obnovení stránky nebo
  * odkaz z ní ukázaly totéž hledání. Enter hledá hned a bez limitu znaků.
@@ -20,6 +32,11 @@ export function initLiveSearch() {
         const scope = form.closest('section') ?? document;
 
         if (!input) {
+            return;
+        }
+
+        if (form.dataset.liveSearch === 'local') {
+            initLocal(form, input, scope);
             return;
         }
 
@@ -91,5 +108,53 @@ export function initLiveSearch() {
             window.clearTimeout(timer);
             run(true);
         });
+    });
+}
+
+/**
+ * Bez diakritiky a velkých písmen — „wpml" najde „WPML", „sablona"
+ * najde „Šablona", stejně jako hledání v databázi.
+ */
+function normalize(text) {
+    return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('cs');
+}
+
+function initLocal(form, input, scope) {
+    const items = [...scope.querySelectorAll('[data-live-item]')].map((element) => ({
+        element,
+        text: normalize(element.dataset.liveText ?? element.textContent),
+    }));
+    const empty = scope.querySelector('[data-live-empty]');
+
+    const run = () => {
+        const query = normalize(input.value.trim());
+        let shown = 0;
+
+        items.forEach(({ element, text }) => {
+            element.hidden = query !== '' && !text.includes(query);
+            shown += element.hidden ? 0 : 1;
+        });
+
+        if (empty) {
+            empty.hidden = shown > 0;
+        }
+
+        const url = new URL(window.location.href);
+
+        if (input.value.trim() === '') {
+            url.searchParams.delete(input.name);
+        } else {
+            url.searchParams.set(input.name, input.value.trim());
+        }
+
+        history.replaceState(null, '', url);
+    };
+
+    // Seznam je na stránce celý a filtruje se bez serveru — není na co čekat.
+    input.addEventListener('input', run);
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        run();
     });
 }

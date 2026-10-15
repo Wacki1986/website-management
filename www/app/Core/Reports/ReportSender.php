@@ -72,7 +72,7 @@ final class ReportSender
      *
      * Rozpracovaný report (koncept, čeká na schválení) dostane i čerstvý
      * souhrn: jinak by ukazoval data z chvíle, kdy vznikl — bez aktualizací
-     * a servisu zapsaných mezitím a bez sekcí přidaných v novější verzi.
+     * a událostí zapsaných mezitím a bez sekcí přidaných v novější verzi.
      * Odeslaný report se nepřepočítává, musí zůstat, jak ho klient dostal.
      *
      * @param array<string, mixed> $report

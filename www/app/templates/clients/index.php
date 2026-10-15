@@ -1,6 +1,8 @@
 <?php
 /**
- * Seznam klientů (návrh `klienti.html`).
+ * Seznam klientů (návrh `klienti.html`). Hledání běží při psaní
+ * (`live-search.js`): vymění pilulky (jejich odkazy nesou `q`), tabulku
+ * a patičku.
  *
  * @var \App\Core\View\View $this
  * @var string              $title
@@ -19,10 +21,10 @@ $filterUrl = static fn (string $key): string => get_url('klienti') . '?' . http_
 
 <div class="app__content">
     <section class="card card--scroll-x">
-        <form class="card__header card__header--filters" method="get" action="<?= get_url('klienti') ?>">
+        <form class="card__header card__header--filters" method="get" action="<?= get_url('klienti') ?>" data-live-search>
             <label class="search" style="max-width:340px"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat jméno, firmu nebo e-mail…" class="search__input" aria-label="Hledat"></label>
             <?php if ($filter !== ''): ?><input type="hidden" name="filtr" value="<?= $this->e($filter) ?>"><?php endif; ?>
-            <div class="pill-group">
+            <div class="pill-group" data-live-region="filters">
                 <a class="pill<?= $filter === '' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('') ?>">Všichni <span class="pill__note"><?= $counts['all'] ?></span></a>
                 <a class="pill<?= $filter === 'multi' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('multi') ?>">Více webů <span class="pill__note"><?= $counts['multi'] ?></span></a>
                 <a class="pill<?= $filter === 'person' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('person') ?>">Bez DIČ (OSVČ) <span class="pill__note"><?= $counts['person'] ?></span></a>
@@ -31,7 +33,7 @@ $filterUrl = static fn (string $key): string => get_url('klienti') . '?' . http_
             <div class="text-subtle u-ml-auto" style="font-size:var(--font-size-label)">Řadit: <b>Firma</b></div>
         </form>
 
-        <div class="table table--clients">
+        <div class="table table--clients" data-live-region="table">
             <div class="table__head"><div>Firma</div><div>Kontaktní osoba</div><div>Telefon</div><div>E-mail</div><div class="table__cell table__cell--right">Weby</div><div></div></div>
 
             <?php if ($clients === []): ?>
@@ -61,6 +63,6 @@ $filterUrl = static fn (string $key): string => get_url('klienti') . '?' . http_
             <?php endif; ?>
         </div>
 
-        <div class="card__footer card__footer--muted"><span>Zobrazeno <?= count($clients) ?> z <?= $counts['all'] ?> <?= get_plural($counts['all'], 'klienta', 'klientů', 'klientů') ?></span><a class="u-ml-auto" href="<?= get_url('weby') ?>">Přejít na weby</a></div>
+        <div class="card__footer card__footer--muted" data-live-region="footer"><span>Zobrazeno <?= count($clients) ?> z <?= $counts['all'] ?> <?= get_plural($counts['all'], 'klienta', 'klientů', 'klientů') ?></span><a class="u-ml-auto" href="<?= get_url('weby') ?>">Přejít na weby</a></div>
     </section>
 </div>

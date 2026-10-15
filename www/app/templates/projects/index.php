@@ -2,6 +2,8 @@
 /**
  * Seznam projektů. Návrh obrazovku nemá — stejná stavba jako Klienti
  * (`klienti.html`): hledání, pilulky filtrů, řádek = odkaz na detail.
+ * Hledání běží při psaní (`live-search.js`): vymění pilulky (jejich
+ * odkazy nesou `q`), tabulku a patičku.
  *
  * @var \App\Core\View\View $this
  * @var string              $title
@@ -21,10 +23,10 @@ $filterUrl = static fn (string $key): string => get_url('projekty') . '?' . http
 
 <div class="app__content">
     <section class="card card--scroll-x">
-        <form class="card__header card__header--filters" method="get" action="<?= get_url('projekty') ?>">
-            <label class="search" style="max-width:340px"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat projekt, klienta nebo doménu…" class="search__input" aria-label="Hledat"></label>
+        <form class="card__header card__header--filters" method="get" action="<?= get_url('projekty') ?>" data-live-search>
+            <label class="search" style="max-width:340px"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat projekt, klienta, skupinu nebo doménu…" class="search__input" aria-label="Hledat"></label>
             <?php if ($filter !== ''): ?><input type="hidden" name="filtr" value="<?= $this->e($filter) ?>"><?php endif; ?>
-            <div class="pill-group">
+            <div class="pill-group" data-live-region="filters">
                 <a class="pill<?= $filter === '' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('') ?>">Všechny <span class="pill__note"><?= $counts['all'] ?></span></a>
                 <a class="pill<?= $filter === 'bez-klienta' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('bez-klienta') ?>">Bez klienta <span class="pill__note"><?= $counts['bez-klienta'] ?></span></a>
                 <a class="pill<?= $filter === 'bez-webu' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('bez-webu') ?>">Bez webu <span class="pill__note"><?= $counts['bez-webu'] ?></span></a>
@@ -32,8 +34,8 @@ $filterUrl = static fn (string $key): string => get_url('projekty') . '?' . http
             <noscript><button type="submit" class="btn btn--secondary btn--sm">Hledat</button></noscript>
         </form>
 
-        <div class="table table--projects">
-            <div class="table__head"><div>Projekt</div><div>Klient</div><div class="table__cell table__cell--right">Weby</div><div>Stav</div><div>Nejbližší obnova</div><div></div></div>
+        <div class="table table--projects" data-live-region="table">
+            <div class="table__head"><div>Projekt</div><div>Klient</div><div>Skupina</div><div class="table__cell table__cell--right">Weby</div><div>Stav</div><div>Nejbližší obnova</div><div></div></div>
 
             <?php if ($projects === []): ?>
                 <?php render_empty($counts['all'] === 0 ? 'Zatím žádný projekt' : 'Žádný projekt neodpovídá filtru',
@@ -52,6 +54,7 @@ $filterUrl = static fn (string $key): string => get_url('projekty') . '?' . http
                             </div>
                         </div>
                         <div class="table__cell u-truncate text-secondary"><?= $this->e((string) ($project['client_name'] ?? '—')) ?></div>
+                        <div class="table__cell u-truncate text-secondary"><?= $this->e((string) ($project['umbrella'] ?? '—')) ?></div>
                         <div class="table__cell table__cell--right text-secondary" style="font-size:var(--font-size-label)"><?= (int) $project['site_count'] ?></div>
                         <div class="table__cell"><?= get_status($project['state']['tone'], $project['state']['label']) ?></div>
                         <div class="table__cell"><?= $project['renewal'] !== null ? get_status($project['renewal']['tone'], $project['renewal']['label']) : '<span class="text-faint">—</span>' ?></div>
@@ -61,6 +64,6 @@ $filterUrl = static fn (string $key): string => get_url('projekty') . '?' . http
             <?php endif; ?>
         </div>
 
-        <div class="card__footer card__footer--muted"><span>Zobrazeno <?= count($projects) ?> z <?= $counts['all'] ?> <?= get_plural($counts['all'], 'projektu', 'projektů', 'projektů') ?></span><a class="u-ml-auto" href="<?= get_url('klienti') ?>">Přejít na klienty</a></div>
+        <div class="card__footer card__footer--muted" data-live-region="footer"><span>Zobrazeno <?= count($projects) ?> z <?= $counts['all'] ?> <?= get_plural($counts['all'], 'projektu', 'projektů', 'projektů') ?></span><a class="u-ml-auto" href="<?= get_url('klienti') ?>">Přejít na klienty</a></div>
     </section>
 </div>

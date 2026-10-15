@@ -99,7 +99,7 @@ final class ProjectController extends Controller
 
     public function createForm(): Response
     {
-        return $this->formPage(null, ['name' => '', 'client_id' => $this->request()->int('klient'), 'note' => ''], []);
+        return $this->formPage(null, ['name' => '', 'client_id' => $this->request()->int('klient'), 'umbrella' => '', 'note' => ''], []);
     }
 
     public function store(): Response
@@ -137,6 +137,10 @@ final class ProjectController extends Controller
             'meta' => [
                 'sites' => get_count(count($sites), 'web', 'weby', 'webů'),
                 'created' => 'založeno ' . get_czech_date((string) $project['created_at']),
+                // Odkaz vede na hledání ve výpisu — ukáže i projekty ostatních klientů ze stejné skupiny.
+                'umbrellaUrl' => ($project['umbrella'] ?? null) !== null
+                    ? get_url('projekty') . '?' . http_build_query(['q' => $project['umbrella']])
+                    : null,
             ],
         ]);
     }
@@ -148,6 +152,7 @@ final class ProjectController extends Controller
         return $this->formPage($project, [
             'name' => (string) $project['name'],
             'client_id' => $project['client_id'] !== null ? (int) $project['client_id'] : null,
+            'umbrella' => (string) ($project['umbrella'] ?? ''),
             'note' => (string) ($project['note'] ?? ''),
         ], []);
     }
@@ -227,13 +232,14 @@ final class ProjectController extends Controller
     // Formulář (společný pro založení i úpravu)
     // -----------------------------------------------------------------
 
-    /** @return array{0: array{name: string, client_id: ?int, note: string}, 1: array<string, string>} */
+    /** @return array{0: array{name: string, client_id: ?int, umbrella: string, note: string}, 1: array<string, string>} */
     private function readForm(): array
     {
         $request = $this->request();
         $values = [
             'name' => mb_substr($request->string('name'), 0, 150),
             'client_id' => $request->int('client_id'),
+            'umbrella' => mb_substr($request->string('umbrella'), 0, 100),
             'note' => mb_substr($request->string('note'), 0, 5000),
         ];
 
@@ -250,12 +256,13 @@ final class ProjectController extends Controller
         return [$values, $errors];
     }
 
-    /** @param array{name: string, client_id: ?int, note: string} $values @return array<string, mixed> */
+    /** @param array{name: string, client_id: ?int, umbrella: string, note: string} $values @return array<string, mixed> */
     private static function columns(array $values): array
     {
         return [
             'name' => $values['name'],
             'client_id' => $values['client_id'],
+            'umbrella' => $values['umbrella'] !== '' ? $values['umbrella'] : null,
             'note' => $values['note'] !== '' ? $values['note'] : null,
         ];
     }
@@ -273,6 +280,7 @@ final class ProjectController extends Controller
             'values' => $values,
             'errors' => $errors,
             'clients' => $this->kernel->clients()->options(),
+            'umbrellas' => $this->kernel->projects()->umbrellas(),
         ], $status);
     }
 

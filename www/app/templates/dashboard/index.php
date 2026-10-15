@@ -2,7 +2,9 @@
 /**
  * Dashboard (návrh `dashboard.html`, `-allgood`, `-empty`, `-loading`,
  * `-apierror`, `-outage`, `-manyupdates`). Segmenty a filtr klienta jsou
- * odkazy/GET formulář, „Zkontrolovat vše" je POST.
+ * odkazy/GET formulář, „Zkontrolovat vše" je POST. Hledání běží při psaní
+ * (`live-search.js`): vymění pruh segmentů s výběrem klienta (nesou `q`)
+ * a tabulku.
  *
  * @var \App\Core\View\View $this
  * @var string              $title
@@ -128,7 +130,7 @@ $segments = [
                     <div class="card__title">Vyžaduje řešení</div>
                     <div class="text-caption">Weby s problémem nebo vyžadující pozornost · v pořádku běžících <?= (int) $counts['ok'] ?> najdete v sekci Weby</div>
                 </div>
-                <form method="get" action="<?= get_url('/') ?>" class="row" style="gap:10px">
+                <form method="get" action="<?= get_url('/') ?>" class="row" style="gap:10px" data-live-search>
                     <?php if ($level !== ''): ?><input type="hidden" name="stav" value="<?= $this->e($level) ?>"><?php endif; ?>
                     <?php if ($clientId !== null): ?><input type="hidden" name="klient" value="<?= (int) $clientId ?>"><?php endif; ?>
                     <label class="search" style="max-width:280px">
@@ -138,7 +140,7 @@ $segments = [
                 </form>
                 <form method="post" action="<?= get_url('weby/zkontrolovat-vse') ?>" data-pending data-pending-overlay="Kontroluji všechny weby…" data-pending-note="Dostupnost každého webu zvlášť — podle počtu webů to může trvat i minutu."><?php render_csrf($csrfToken) ?><button class="btn btn--primary" type="submit"><?= get_btn_icon('refresh') ?>Zkontrolovat vše</button></form>
             </div>
-            <div class="card__header card__header--filters">
+            <div class="card__header card__header--filters" data-live-region="filters">
                 <div class="segmented">
                     <?php foreach ($segments as $segment): ?>
                         <a class="segmented__item<?= $level === $segment['key'] ? ' segmented__item--active' : '' ?>" href="<?= $url(['stav' => $segment['key']]) ?>">
@@ -160,7 +162,7 @@ $segments = [
                 <a class="u-ml-auto" href="<?= get_url('weby') ?>" style="font-size:var(--font-size-label);font-weight:var(--font-weight-semibold)">Zobrazit všech <?= (int) $counts['all'] ?> webů →</a>
             </div>
 
-            <div class="table table--dashboard">
+            <div class="table table--dashboard" data-live-region="table">
                 <div class="table__head"><div>Web</div><div>Stav</div><div class="table__cell table__cell--right">Uptime 30 d</div><div>WP</div><div>PHP</div><div>DB</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div class="table__cell table__cell--right">Kontrola</div><div></div></div>
                 <?php if ($loading): ?>
                     <?php for ($i = 0; $i < 3; $i++): ?>

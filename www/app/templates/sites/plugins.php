@@ -20,8 +20,10 @@
  *                                              `activeBusy`/`watchBusy` (text průběhu po kliknutí),
  *                                              `status` {tone, label} a `directory` (wordpress.org: released, releasedTone, title, tone),
  *                                              `markExternal` (jde označit jako placená verze, null = ne), `unmarkAction`,
- *                                              `unoffered` (proč se hlášená aktualizace nenabízí, null = nabízí se / žádná)
- * @var string              $q
+ *                                              `unoffered` (proč se hlášená aktualizace nenabízí, null = nabízí se / žádná),
+ *                                              `searchText` a `matches` (řádek odpovídá hledání `q`; ostatní jsou skryté)
+ * @var bool                $noMatch  hledání nenašlo žádný plugin
+ * @var string              $q        hledání — řádky se jen skrývají (`live-search.js` v režimu „local"), na stránce jsou všechny
  * @var array{total: int, active: int, inactive: int, updates: int, securityUpdates: int, latestUpdate: ?array{at: string, name: string}, ignored: int, outdated: int} $metrics
  * @var bool                $hasSnapshot
  * @var array<string, mixed> $install   okno „Přidat z knihovny" (partial `plugin-install-dialog`)
@@ -60,7 +62,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
     </div>
 
     <section class="card">
-        <form class="card__header" method="get" action="<?= get_url('weby/' . (int) $site['id'] . '/pluginy') ?>">
+        <form class="card__header" method="get" action="<?= get_url('weby/' . (int) $site['id'] . '/pluginy') ?>" data-live-search="local">
             <h2 class="card__title">Pluginy</h2>
             <label class="search"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat plugin…" class="search__input" aria-label="Hledat plugin"></label>
             <div class="u-ml-auto row">
@@ -75,7 +77,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
         </form>
 
         <?php if ($rows === []): ?>
-            <?php render_empty($hasSnapshot ? 'Žádný plugin neodpovídá hledání' : 'Zatím žádná data', $hasSnapshot ? 'Zkuste jiný název.' : 'Seznam pluginů dorazí s první kontrolou přes plugin MEDIAGRAFIK Monitor.', 'plugin') ?>
+            <?php render_empty($hasSnapshot ? 'Web nemá žádný plugin' : 'Zatím žádná data', $hasSnapshot ? 'Nový přidáte tlačítkem Přidat z knihovny.' : 'Seznam pluginů dorazí s první kontrolou přes plugin MEDIAGRAFIK Monitor.', 'plugin') ?>
         <?php else: ?>
             <form id="plugin-update" method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/pluginy/aktualizovat') ?>" data-selection data-plugin-update>
                 <?php render_csrf($csrfToken) ?>
@@ -89,7 +91,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                         <div>Plugin</div><div>Stav</div><div>Verze</div><div>Dostupná</div><div>Vydáno</div><div class="table__cell table__cell--right">Akce</div>
                     </div>
                     <?php foreach ($rows as $plugin): ?>
-                        <div class="table__row<?= $plugin['inactive'] ? ' table__row--error' : '' ?>" data-plugin-row="<?= $this->e((string) $plugin['file']) ?>" data-plugin-name="<?= $this->e((string) $plugin['name']) ?>">
+                        <div class="table__row<?= $plugin['inactive'] ? ' table__row--error' : '' ?>" data-plugin-row="<?= $this->e((string) $plugin['file']) ?>" data-plugin-name="<?= $this->e((string) $plugin['name']) ?>" data-live-item data-live-text="<?= $this->e($plugin['searchText']) ?>"<?= $plugin['matches'] ? '' : ' hidden' ?>>
                             <div class="table__cell">
                                 <?php if ($plugin['updatable']): ?>
                                     <label class="checkbox checkbox--input"><input type="checkbox" name="plugins[]" value="<?= $this->e((string) $plugin['file']) ?>" data-selection-item class="visually-hidden" aria-label="Vybrat <?= $this->e((string) $plugin['name']) ?>"<?= $updateBlocked !== null ? ' disabled' : '' ?>><span class="checkbox__mark"></span></label>
@@ -141,6 +143,9 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+                <div data-live-empty<?= $noMatch ? '' : ' hidden' ?>>
+                    <?php render_empty('Žádný plugin neodpovídá hledání', 'Zkuste jiný název.', 'plugin') ?>
                 </div>
             </form>
         <?php endif; ?>

@@ -14,9 +14,6 @@ use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\SecurityAudit;
 use App\Core\Monitor\SnapshotImporter;
 use App\Core\Monitor\UptimeRepository;
-use App\Core\Service\ServiceChecklists;
-use App\Core\Service\ServiceRepository;
-use App\Core\Service\ServiceSchedule;
 use App\Core\Sites\ContentFreshness;
 use App\Core\Sites\SiteRepository;
 use DateTimeImmutable;
@@ -37,7 +34,6 @@ final class ReportBuilder
         private readonly UptimeRepository $uptime,
         private readonly AlertRepository $alerts,
         private readonly EventLog $events,
-        private readonly ServiceRepository $service,
         private readonly SecurityAudit $security,
         private readonly SnapshotImporter $snapshots,
         private readonly ?PluginDirectory $directory = null,
@@ -104,30 +100,6 @@ final class ReportBuilder
         unset($pluginUpdates['']);
         $pluginNames = array_keys($pluginUpdates);
         $updatesTotal = count($coreUpdates) + count($pluginNames);
-
-        // --- Servis -------------------------------------------------------
-        $services = [];
-
-        // `tasks` + `note` jdou do reportu pod sebe; `description` (jedna věta)
-        // zůstává pro uložené reporty z doby před úkoly a pro historii.
-        foreach ($this->service->logsBetween($siteId, $from, $to) as $log) {
-            $kind = ServiceSchedule::KINDS[(string) $log['kind']] ?? ServiceSchedule::KINDS['small'];
-            $checklist = ServiceChecklists::decode($log['checklist'] ?? null);
-            $services[] = [
-                'date' => (string) $log['performed_on'],
-                'kind' => (string) $log['kind'],
-                'kindLabel' => $kind['label'],
-                'description' => ServiceChecklists::text((string) $log['description'], $checklist),
-                'tasks' => ServiceChecklists::doneLabels($checklist),
-                'note' => trim((string) $log['description']),
-                'minutes' => $log['minutes'] !== null ? (int) $log['minutes'] : null,
-            ];
-        }
-
-        $plan = $this->service->plan($siteId);
-        $nextService = $plan !== null && (int) $plan['is_active'] === 1 && $plan['next_date'] !== null
-            ? ['date' => (string) $plan['next_date'], 'kindLabel' => ServiceSchedule::KINDS[(string) $plan['kind']]['label'] ?? 'Servis']
-            : null;
 
         // --- Co jsme udělali (věty) ---------------------------------------
         $done = [];
@@ -248,14 +220,12 @@ final class ReportBuilder
                 'plugins' => $pluginNames,
                 'installed' => $installed,
                 'noteLabel' => $coreUpdates !== [] ? 'včetně WordPressu' : ($updatesTotal > 0 ? 'doplňky webu' : 'nic nečekalo'),
-                // Web mimo WordPress aktualizace přes plugin nemá — report místo nich ukáže servis.
+                // Web mimo WordPress aktualizace přes plugin nemá — report místo nich ukáže výpadky.
                 'applicable' => SiteRepository::isWordpress($site),
             ],
             'done' => $done,
             'content' => $this->content($siteId, $today),
             'seo' => $seo,
-            'services' => $services,
-            'nextService' => $nextService,
             'recommendations' => $recommendations,
             'technical' => [
                 'platform' => SiteRepository::isWordpress($site) ? '' : SiteRepository::platformLabel($site),
@@ -272,7 +242,6 @@ final class ReportBuilder
                 $percent !== null ? 'uptime ' . number_format($percent, $percent >= 99.95 ? 0 : 1, ',', ' ') . ' %' : null,
                 SiteRepository::isWordpress($site) ? get_count($updatesTotal, 'aktualizace', 'aktualizace', 'aktualizací') : null,
                 $outages !== [] ? get_count(count($outages), 'výpadek', 'výpadky', 'výpadků') : null,
-                $services !== [] ? get_count(count($services), 'servis', 'servisy', 'servisů') : null,
             ])),
         ];
     }

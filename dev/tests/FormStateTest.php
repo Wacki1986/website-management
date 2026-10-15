@@ -79,6 +79,25 @@ return [
         // Reporty: výchozí stav je „naplánované", odkaz „Odeslané" ho musí změnit.
         assertContainsString('stav=sent', kernelRequest($kernel, 'GET', '/reporty')->body());
 
+        // Hledání při psaní na ostatních seznamech — stejná pravidla jako u webů.
+        $live = [
+            '/projekty' => ['filters', 'table', 'footer'],
+            '/klienti' => ['filters', 'table', 'footer'],
+            '/' => ['filters', 'table'],
+            '/reporty' => ['segments', 'table', 'footer'],
+        ];
+
+        foreach ($live as $path => $regions) {
+            $html = kernelRequest($kernel, 'GET', $path, [], ['q' => 'kav'])->body();
+            assertContainsString('data-live-search>', $html, $path);
+
+            foreach ($regions as $region) {
+                assertSame(1, substr_count($html, 'data-live-region="' . $region . '"'), $path . ' blok ' . $region);
+                $start = strpos($html, 'data-live-region="' . $region . '"');
+                assertFalse(str_contains(substr($html, $start, 400), 'type="search"'), $path . ': pole hledání nesmí být v bloku ' . $region);
+            }
+        }
+
         Urls::reset();
     },
 
@@ -94,14 +113,14 @@ return [
 
         $response = kernelRequest($kernel, 'POST', '/reporty/' . $reportId . '/sekce', [
             '_token' => $token,
-            'sections' => ['uptime_chart', 'services'],
+            'sections' => ['uptime_chart', 'content'],
         ]);
         assertSame(302, $response->status());
         assertTrue(isset($kernel->reports()->find($reportId)['summary']['content']), 'Uložení konceptu přepočítá souhrn z aktuálních dat');
 
         $preview = kernelRequest($kernel, 'GET', '/reporty/' . $reportId . '/nahled')->body();
         assertContainsString('name="sections[]" value="uptime_chart" checked', $preview);
-        assertContainsString('name="sections[]" value="services" checked', $preview);
+        assertContainsString('name="sections[]" value="content" checked', $preview);
         assertContainsString('name="sections[]" value="updates" aria-label', $preview, 'Vypnutá sekce nemá být zaškrtnutá');
         assertFalse(str_contains($preview, 'data-autosubmit'), 'Sekce se ukládají tlačítkem, ne po každém přepnutí');
         assertContainsString('data-unsaved-button', $preview);

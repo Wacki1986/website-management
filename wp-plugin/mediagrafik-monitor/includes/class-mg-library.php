@@ -120,18 +120,31 @@ final class MG_Library
                 continue;
             }
 
-            $transient->response[$file] = (object) array(
-                'slug' => isset($entry['slug']) ? (string) $entry['slug'] : dirname($file),
-                'plugin' => $file,
-                'new_version' => (string) $entry['version'],
-                'url' => '',
-                'package' => (string) $entry['package'],
-                'requires' => isset($entry['requires']) ? (string) $entry['requires'] : '',
-                'requires_php' => isset($entry['requires_php']) ? (string) $entry['requires_php'] : '',
-            );
+            $transient->response[$file] = $this->offer($file, $entry);
         }
 
         return $transient;
+    }
+
+    /**
+     * Nabídka aktualizace z knihovny v podobě, v jaké ji WordPress drží
+     * v `update_plugins->response` — sdílí ji i `MG_Plugin_Updates`.
+     *
+     * @param string $file  cesta pluginu (`slozka/soubor.php`)
+     * @param array  $entry položka seznamu knihovny
+     * @return object
+     */
+    public function offer($file, $entry)
+    {
+        return (object) array(
+            'slug' => isset($entry['slug']) ? (string) $entry['slug'] : dirname($file),
+            'plugin' => $file,
+            'new_version' => (string) $entry['version'],
+            'url' => '',
+            'package' => (string) $entry['package'],
+            'requires' => isset($entry['requires']) ? (string) $entry['requires'] : '',
+            'requires_php' => isset($entry['requires_php']) ? (string) $entry['requires_php'] : '',
+        );
     }
 
     /** „Zobrazit podrobnosti" ve wp-admin — jinak by se WordPress ptal wordpress.org. */

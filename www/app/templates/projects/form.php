@@ -1,14 +1,15 @@
 <?php
 /**
  * Založení a úprava projektu. Návrh obrazovku nemá — formulář jako
- * u klienta, jen tři pole.
+ * u klienta, jen čtyři pole.
  *
  * @var \App\Core\View\View  $this
  * @var string               $title
  * @var array|null           $project  null = nový projekt
- * @var array{name: string, client_id: ?int, note: string} $values
+ * @var array{name: string, client_id: ?int, umbrella: string, note: string} $values
  * @var array<string,string> $errors
  * @var array<int, string>   $clients  id => název
+ * @var array<int, string>   $umbrellas už použité skupiny (nápověda při psaní)
  * @var string               $csrfToken
  */
 $this->extend('layout/shell', ['title' => $title]);
@@ -43,6 +44,14 @@ $back = $project === null ? get_url('projekty') : get_url('projekty/' . (int) $p
                     <?= $form->select('client_id', 'Klient', $clients, $values['client_id'], placeholder: '— zatím bez klienta —', class: 'form__field--caps',
                         hint: $project !== null ? 'Změna klienta se promítne do všech webů projektu.' : '') ?>
                 </div>
+                <div class="form__row">
+                    <?= $form->text('umbrella', 'Skupina', $values['umbrella'], class: 'form__field--caps',
+                        attributes: ['placeholder' => 'např. PENAM', 'maxlength' => '100', 'list' => 'umbrella-options', 'autocomplete' => 'off'],
+                        hint: 'Spojí projekty různých klientů, které patří k sobě (třeba česká a slovenská pobočka jedné firmy). Podle skupiny se pak hledá ve výpisu projektů.') ?>
+                </div>
+                <datalist id="umbrella-options">
+                    <?php foreach ($umbrellas as $umbrella): ?><option value="<?= $this->e($umbrella) ?>"></option><?php endforeach; ?>
+                </datalist>
                 <?= $form->textarea('note', 'Poznámka', $values['note'], class: 'form__field--caps', attributes: ['rows' => '4', 'placeholder' => 'Co k projektu patří, na co si dát pozor…']) ?>
 
                 <div class="row">

@@ -195,7 +195,7 @@ final class ServiceRepository
         );
     }
 
-    /** Servisy v období — pro klientský report. @return array<int, array<string, mixed>> */
+    /** Servisy v období (od–do včetně). @return array<int, array<string, mixed>> */
     public function logsBetween(int $siteId, string $from, string $to): array
     {
         return $this->db->select(

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 use App\Core\Kernel;
 use App\Core\Service\ServiceChecklists;
+use App\Core\Service\ServiceProtocol;
 use App\Core\View\Urls;
 
 require_once __DIR__ . '/fixtures/logged-in-kernel.php';
@@ -213,20 +214,10 @@ return [
         assertSame(3, count($items));
         assertSame('Oprava formuláře poptávky a e-mailu', $items[2]['label']);
 
-        $summary = $kernel->reportBuilder()->build($kernel->sites()->findWithSnapshot($siteId), '2026-09-01', '2026-09-30', 'Září 2026', '2026-10-01');
-        assertSame(['Aktualizace WordPressu', 'Záloha', 'Oprava formuláře poptávky a e-mailu'], $summary['services'][0]['tasks']);
-        assertSame('Doporučujeme obnovit fotky v galerii.', $summary['services'][0]['note']);
-
-        $options = ['sections' => ['services'], 'studio' => ['name' => 'X', 'email' => '', 'phone' => '']];
-        $html = $kernel->reportRenderer()->body($summary, $options);
-        assertContainsString('>Oprava formuláře poptávky a e-mailu</td>', $html);
-        assertContainsString('Doporučujeme obnovit fotky v galerii.', $html);
-        assertContainsString("  ✓ Záloha\n", $kernel->reportRenderer()->text($summary, $options));
-
-        // Uložený report z doby před úkoly (jen `description`) se vykreslí jako dřív.
-        $old = $summary;
-        $old['services'][0] = ['date' => '2026-09-20', 'kind' => 'small', 'kindLabel' => 'Malý servis', 'description' => 'Aktualizace všeho.', 'minutes' => 30];
-        assertContainsString('Aktualizace všeho.', $kernel->reportRenderer()->body($old, $options));
+        // Klient dostane hotové úkoly a poznámku v servisním protokolu (ne v reportu).
+        $protocol = ServiceProtocol::data($kernel->sites()->findWithSnapshot($siteId), scOnlyLog($kernel), [], ['name' => 'X', 'email' => '', 'phone' => ''], '', '2026-10-01');
+        assertSame([['Aktualizace WordPressu', 'Záloha'], ['Oprava formuláře poptávky a e-mailu', '']], $protocol['taskRows']);
+        assertSame('Doporučujeme obnovit fotky v galerii.', $protocol['note']);
 
         Urls::reset();
     },

@@ -41,6 +41,7 @@ use App\Core\Monitor\UptimeRepository;
 use App\Core\Audit\AuditLog;
 use App\Core\Clients\Ares;
 use App\Core\Clients\ClientRepository;
+use App\Core\Pdf\PdfRenderer;
 use App\Core\Projects\Credentials;
 use App\Core\Projects\MailDns;
 use App\Core\Projects\ProjectRepository;
@@ -107,7 +108,7 @@ use Throwable;
  */
 final class Kernel
 {
-    public const VERSION = '0.9.3';
+    public const VERSION = '0.9.4';
 
     /**
      * Kam smí přihlášený účet, který ještě nemá spárovaný telefon
@@ -551,6 +552,12 @@ final class Kernel
         return new ServiceChecklists($this->settings());
     }
 
+    /** PDF pro klienty (servisní protokol). Metriky písem si ukládá do `storage/pdf`. */
+    public function pdf(): PdfRenderer
+    {
+        return new PdfRenderer($this->rootPath(), $this->storagePath('pdf'));
+    }
+
     public function dashboard(): DashboardData
     {
         return $this->dashboard ??= new DashboardData($this->sites(), $this->uptime(), $this->alerts(), $this->service(), $this->monitorSettings());
@@ -563,7 +570,7 @@ final class Kernel
 
     public function reportBuilder(): ReportBuilder
     {
-        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->service(), $this->securityAudit(), $this->snapshots(), $this->pluginDirectory(), $this->modules(), $this->seo());
+        return $this->reportBuilder ??= new ReportBuilder($this->sites(), $this->uptime(), $this->alerts(), $this->events(), $this->securityAudit(), $this->snapshots(), $this->pluginDirectory(), $this->modules(), $this->seo());
     }
 
     public function reportRenderer(): ReportRenderer
@@ -1172,6 +1179,7 @@ final class Kernel
         $router->add('GET', '/weby/{id}/servis/{logId}/upravit', [ServiceController::class, 'editForm'], name: 'sites.service.log.edit');
         $router->add('POST', '/weby/{id}/servis/{logId}/upravit', [ServiceController::class, 'updateLog'], Router::AUTH_ONLY, 'sites.service.log.update');
         $router->add('POST', '/weby/{id}/servis/{logId}/smazat', [ServiceController::class, 'removeLog'], Router::AUTH_ONLY, 'sites.service.log.remove');
+        $router->add('GET', '/weby/{id}/servis/{logId}/protokol', [ServiceController::class, 'protocol'], name: 'sites.service.log.protocol');
         $router->add('GET', '/weby/{id}/reporty', [ReportController::class, 'site'], name: 'sites.reports');
         $router->add('POST', '/weby/{id}/reporty/nastaveni', [ReportController::class, 'saveSettings'], Router::AUTH_ONLY, 'sites.reports.settings');
         $router->add('POST', '/weby/{id}/reporty/adresat', [ReportController::class, 'addRecipient'], Router::AUTH_ONLY, 'sites.reports.recipient');

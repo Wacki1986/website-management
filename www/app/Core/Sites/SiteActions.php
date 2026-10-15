@@ -130,21 +130,37 @@ final class SiteActions
      * selhání s vysvětlením, ne fajfka. Platí i pro weby s pluginem do
      * 1.5.1, které to samy nerozliší.
      *
+     * U pluginu z knihovny licence nehraje roli — ZIP má správa. Tam
+     * aktualizaci zablokoval vlastní updater pluginu (Monitor do 1.8.x mu
+     * podlehne), nebo se web nedostal ke knihovně.
+     *
      * @param array<int, array<string, mixed>> $items    výsledky po pluginech z `PluginClient::updatePlugins()`
      * @param array<string, array{name: string, new_version: string}> $updatable z `updatable()`
+     * @param array<string, string>            $library  soubor => verze v knihovně (`libraryFor()`)
+     * @param string                           $monitor  verze MEDIAGRAFIK Monitoru na webu
      * @return array<int, array<string, mixed>>
      */
-    public static function reviewUpdateResults(array $items, array $updatable): array
+    public static function reviewUpdateResults(array $items, array $updatable, array $library = [], string $monitor = ''): array
     {
         foreach ($items as $i => $item) {
-            $expected = $updatable[(string) ($item['file'] ?? '')]['new_version'] ?? '';
+            $file = (string) ($item['file'] ?? '');
+            $expected = $updatable[$file]['new_version'] ?? '';
             $to = (string) ($item['to'] ?? $item['from'] ?? '');
 
-            if (($item['status'] ?? '') === 'up_to_date' && $expected !== '' && version_compare($to, $expected, '<')) {
-                $items[$i]['status'] = 'failed';
-                $items[$i]['message'] = 'Web aktualizaci na ' . $expected . ' teď nenabídl a plugin zůstal ve verzi ' . $to
-                    . ' — placený plugin nejspíš nemá platnou licenci nebo aktualizuje jen ve wp-admin. Zkontrolujte licenci a aktualizujte ve wp-admin → Pluginy (případně plugin přestaňte sledovat ikonou oka).';
+            if (($item['status'] ?? '') !== 'up_to_date' || $expected === '' || version_compare($to, $expected, '>=')) {
+                continue;
             }
+
+            $items[$i]['status'] = 'failed';
+            $items[$i]['message'] = match (true) {
+                !isset($library[$file]) => 'Web aktualizaci na ' . $expected . ' teď nenabídl a plugin zůstal ve verzi ' . $to
+                    . ' — placený plugin nejspíš nemá platnou licenci nebo aktualizuje jen ve wp-admin. Zkontrolujte licenci a aktualizujte ve wp-admin → Pluginy (případně plugin přestaňte sledovat ikonou oka).',
+                version_compare($monitor, PluginClient::LIBRARY_FORCED_SINCE, '<') => 'Verzi ' . $expected . ' z knihovny web nevzal a plugin zůstal ve verzi ' . $to
+                    . ' — vlastní aktualizace pluginu (licence) nabídku knihovny přebila. Přednost knihovně dává až MEDIAGRAFIK Monitor '
+                    . PluginClient::LIBRARY_FORCED_SINCE . ' (web má ' . ($monitor !== '' ? $monitor : 'neznámou verzi') . ') — aktualizujte nejdřív jeho.',
+                default => 'Verzi ' . $expected . ' z knihovny web nevzal a plugin zůstal ve verzi ' . $to
+                    . ' — nejspíš se nedostal ke knihovně pluginů ve Správě webů. Zkuste to znovu; když to nepomůže, zkontrolujte adresu správy v nastavení pluginu MEDIAGRAFIK Monitor.',
+            };
         }
 
         return $items;

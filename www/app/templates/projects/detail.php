@@ -12,7 +12,7 @@
  * @var array<int, array<string, mixed>> $services domény a hosting z `ProjectServiceController::row()`
  * @var array<int, array{label: string, icon: string, count: int}> $vault počty v trezoru po druzích
  * @var array{level: string, tone: string, label: string} $state stav nejhoršího webu
- * @var array{sites: string, created: string} $meta
+ * @var array{sites: string, created: string, umbrellaUrl: ?string} $meta  umbrellaUrl = výpis projektů ze stejné skupiny
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $project['name']]);
@@ -32,6 +32,9 @@ $base = 'projekty/' . (int) $project['id'];
                         <a href="<?= get_url('klienti/' . (int) $project['client_id']) ?>"><?= $this->e((string) $project['client_name']) ?></a>
                     <?php else: ?>
                         <span class="text-faint">bez klienta</span>
+                    <?php endif; ?>
+                    <?php if ($meta['umbrellaUrl'] !== null): ?>
+                        <a href="<?= $this->e($meta['umbrellaUrl']) ?>" title="Všechny projekty této skupiny">skupina <?= $this->e((string) $project['umbrella']) ?></a>
                     <?php endif; ?>
                     <span><?= $this->e($meta['sites']) ?></span>
                 </div>

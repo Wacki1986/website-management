@@ -172,4 +172,34 @@ return [
 
         Urls::reset();
     },
+
+    'skupina: uloží se z formuláře, hledání podle ní najde projekty různých klientů a formulář ji napoví' => function (): void {
+        [$kernel, $token] = loggedInKernel();
+        $cz = $kernel->clients()->create(['name' => 'PENAM Česká republika']);
+        $sk = $kernel->clients()->create(['name' => 'PENAM Slovensko']);
+        $other = $kernel->projects()->create(['name' => 'pekarnanovak.cz']);
+
+        kernelRequest($kernel, 'POST', '/projekty/pridat', ['_token' => $token, 'name' => 'penam.cz', 'client_id' => (string) $cz, 'umbrella' => ' chleba ']);
+        kernelRequest($kernel, 'POST', '/projekty/pridat', ['_token' => $token, 'name' => 'penam.sk', 'client_id' => (string) $sk, 'umbrella' => 'chleba']);
+        $czProject = (int) $kernel->db()->scalar("SELECT id FROM projects WHERE name = 'penam.cz'");
+        assertSame('chleba', $kernel->projects()->find($czProject)['umbrella'], 'Mezery kolem se oříznou');
+
+        $found = array_column($kernel->projects()->all(['q' => 'chleba']), 'name');
+        sort($found);
+        assertSame(['penam.cz', 'penam.sk'], $found);
+
+        $list = kernelRequest($kernel, 'GET', '/projekty', query: ['q' => 'chleba'])->body();
+        assertContainsString('penam.sk', $list);
+        assertTrue(!str_contains($list, 'pekarnanovak.cz'), 'Projekt bez skupiny se nevypíše');
+
+        assertContainsString('href="/projekty?q=chleba"', kernelRequest($kernel, 'GET', '/projekty/' . $czProject)->body());
+        assertSame(['chleba'], $kernel->projects()->umbrellas(), 'Nápověda bez duplicit');
+        assertContainsString('<option value="chleba">', kernelRequest($kernel, 'GET', '/projekty/' . $other . '/upravit')->body());
+
+        // Prázdné pole skupinu smaže.
+        kernelRequest($kernel, 'POST', '/projekty/' . $czProject . '/upravit', ['_token' => $token, 'name' => 'penam.cz', 'client_id' => (string) $cz, 'umbrella' => '']);
+        assertSame(null, $kernel->projects()->find($czProject)['umbrella']);
+
+        Urls::reset();
+    },
 ];

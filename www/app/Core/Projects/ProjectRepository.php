@@ -33,7 +33,7 @@ final class ProjectRepository
     /**
      * Seznam s klientem a počtem webů v monitoringu.
      *
-     * @param array{q?: string, client?: ?int} $filter `q` hledá v názvu projektu, klientovi i adresách webů
+     * @param array{q?: string, client?: ?int} $filter `q` hledá v názvu projektu, klientovi, skupině i adresách webů
      * @return array<int, array<string, mixed>>
      */
     public function all(array $filter = []): array
@@ -42,8 +42,8 @@ final class ProjectRepository
         $params = [];
 
         if (($filter['q'] ?? '') !== '') {
-            $conditions[] = '(p.name LIKE :q1 OR c.name LIKE :q2 OR EXISTS (SELECT 1 FROM sites q WHERE q.project_id = p.id AND q.removed_at IS NULL AND (q.url LIKE :q3 OR q.name LIKE :q4)))';
-            $params['q1'] = $params['q2'] = $params['q3'] = $params['q4'] = '%' . $filter['q'] . '%';
+            $conditions[] = '(p.name LIKE :q1 OR c.name LIKE :q2 OR p.umbrella LIKE :q5 OR EXISTS (SELECT 1 FROM sites q WHERE q.project_id = p.id AND q.removed_at IS NULL AND (q.url LIKE :q3 OR q.name LIKE :q4)))';
+            $params['q1'] = $params['q2'] = $params['q3'] = $params['q4'] = $params['q5'] = '%' . $filter['q'] . '%';
         }
 
         if (($filter['client'] ?? null) !== null) {
@@ -94,12 +94,27 @@ final class ProjectRepository
         return $options;
     }
 
+    /**
+     * Už použité skupiny — nápověda při psaní ve formuláři, aby se
+     * stejná firma nepsala jednou „PENAM" a podruhé „Penam ".
+     * Sloupec `umbrella` = „Skupina" v aplikaci (původně „nadklient").
+     *
+     * @return array<int, string>
+     */
+    public function umbrellas(): array
+    {
+        return array_map(
+            static fn (array $row): string => (string) $row['umbrella'],
+            $this->db->select("SELECT DISTINCT umbrella FROM projects WHERE umbrella IS NOT NULL AND umbrella <> '' ORDER BY umbrella"),
+        );
+    }
+
     public function count(): int
     {
         return (int) $this->db->scalar('SELECT COUNT(*) FROM projects');
     }
 
-    /** @param array{name: string, client_id?: ?int, note?: ?string} $data */
+    /** @param array{name: string, client_id?: ?int, umbrella?: ?string, note?: ?string} $data */
     public function create(array $data): int
     {
         $now = date('Y-m-d H:i:s');

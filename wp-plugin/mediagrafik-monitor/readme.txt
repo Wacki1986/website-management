@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -29,6 +29,9 @@ nebo Yoast SEO a základní SEO kontroly (viditelnost pro vyhledávače, mapa we
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.9.0 =
+* Aktualizace pluginů z knihovny Správy webů už nepřebije vlastní updater pluginu. Placený plugin bez licence (Rank Math PRO a spol.) svou nabídku zahodí a s ní i tu z knihovny; teď si web v takovém případě vezme verzi z knihovny přímo. Platnou nabídku autora (s licencí) to nepřebíjí.
 
 = 1.8.0 =
 * Instalace pluginů z knihovny Správy webů, volitelně rovnou s aktivací. Správa posílá jen to, který plugin chce; odkaz na ZIP si web vezme z knihovny sám, takže cizí balíček nainstalovat nejde. Před instalací kontroluje požadovanou verzi WordPressu a PHP a stejně pojmenovanou složku.

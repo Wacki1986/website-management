@@ -390,7 +390,10 @@ final class SiteController extends Controller
         $site = $this->siteOr404((int) $id);
         $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
         $q = $this->request()->string('q');
-        $plugins = $this->kernel->snapshots()->plugins((int) $id, $q);
+        // Do stránky jdou vždy všechny pluginy; hledání je jen skrývá
+        // (live-search.js v režimu „local"), aby šlo při psaní hledat
+        // i šířeji, než s čím se stránka načetla.
+        $plugins = $this->kernel->snapshots()->plugins((int) $id);
         $outside = $this->kernel->pluginDirectory()->outside($plugins);
         $updatable = $this->kernel->pluginOffers()->forSite($plugins, $snapshot);
         $deleteBlocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_DELETE);
@@ -410,7 +413,10 @@ final class SiteController extends Controller
             $ignoredCount += $ignored ? 1 : 0;
             $assessment = $directory->assess($listing[$file] ?? null, null, (string) ($plugin['source'] ?? ''));
             $outdated += in_array($assessment['state'], ['abandoned', 'closed'], true) ? 1 : 0;
+            $searchText = $plugin['name'] . ' ' . $plugin['author'];
             $rows[] = [
+                'searchText' => $searchText,
+                'matches' => $q === '' || mb_stripos($searchText, $q) !== false,
                 'directory' => $assessment,
                 // Ruční označení placené verze (WPML): stažený/opuštěný přes okno, zrušení rovnou.
                 'markExternal' => $assessment['markable'] ? 'Placená verze mimo wordpress.org' : null,
@@ -448,6 +454,7 @@ final class SiteController extends Controller
 
         return $this->view('sites/plugins', $this->header($site, 'pluginy') + [
             'rows' => $rows,
+            'noMatch' => $rows !== [] && !in_array(true, array_column($rows, 'matches'), true),
             'q' => $q,
             'metrics' => [
                 'total' => $total,
@@ -460,7 +467,7 @@ final class SiteController extends Controller
                 'outdated' => $outdated,
             ],
             'hasSnapshot' => $snapshot !== null,
-            'install' => $this->installDialog($site, $snapshot, $q === '' ? $plugins : $this->kernel->snapshots()->plugins((int) $id)),
+            'install' => $this->installDialog($site, $snapshot, $plugins),
             'updateBlocked' => SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_UPDATE),
             'deleteBlocked' => $deleteBlocked,
             'maxUpdates' => PluginClient::MAX_UPDATES,

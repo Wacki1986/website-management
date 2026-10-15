@@ -96,7 +96,19 @@ final class EventLog
      */
     public function between(int $siteId, string $from, string $to, array $kinds = []): array
     {
-        $params = ['site_id' => $siteId, 'from' => $from . ' 00:00:00', 'to' => $to . ' 23:59:59'];
+        return $this->betweenTimes($siteId, $from . ' 00:00:00', $to . ' 23:59:59', $kinds);
+    }
+
+    /**
+     * Totéž s přesným časem od–do (Y-m-d H:i:s) — servisní protokol bere
+     * den servisu a dopoledne po něm.
+     *
+     * @param array<int, string> $kinds
+     * @return array<int, array<string, mixed>>
+     */
+    public function betweenTimes(int $siteId, string $from, string $to, array $kinds = []): array
+    {
+        $params = ['site_id' => $siteId, 'from' => $from, 'to' => $to];
         $kindSql = '';
 
         if ($kinds !== []) {

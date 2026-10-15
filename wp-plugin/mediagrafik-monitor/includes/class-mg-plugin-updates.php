@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
  *
  * Aktualizovat jde jen plugin, pro který WordPress zná novou verzi
  * (transient `update_plugins`) — hub nemůže podstrčit vlastní balíček.
+ * Výjimkou jsou pluginy z knihovny Správy webů: nabídku z knihovny dostanou
+ * i tehdy, když ji vlastní updater pluginu zahodil (`library_offers()`).
  */
 final class MG_Plugin_Updates
 {
@@ -83,6 +85,26 @@ final class MG_Plugin_Updates
         wp_update_plugins();
         $lost = self::restore_offers($offered);
 
+        // Plugin z knihovny dostane nabídku z knihovny, i když ji jeho vlastní
+        // updater (Rank Math PRO bez licence…) přepsal nebo zahodil. Filtr
+        // při čtení běží jako úplně poslední, takže ho už nikdo nepřepíše.
+        $forced = self::library_offers($library, $files, $installed);
+        $force = function ($transient) use ($forced) {
+            if (!is_object($transient)) {
+                $transient = (object) array('response' => array());
+            }
+
+            foreach ($forced as $file => $offer) {
+                $transient->response[$file] = $offer;
+            }
+
+            return $transient;
+        };
+
+        foreach (array_keys($forced) as $file) {
+            unset($lost[$file]);
+        }
+
         $before = array();
 
         foreach ($files as $file) {
@@ -97,6 +119,8 @@ final class MG_Plugin_Updates
 
         @set_time_limit(300);
 
+        add_filter('site_transient_update_plugins', $force, PHP_INT_MAX);
+
         // Upgrader a skin vypisují HTML (průběh pro wp-admin) — do JSON
         // odpovědi nesmí nic proniknout.
         ob_start();
@@ -105,6 +129,7 @@ final class MG_Plugin_Updates
         $results = $upgrader->bulk_upgrade($files);
         $messages = $skin->get_upgrade_messages();
         ob_end_clean();
+        remove_filter('site_transient_update_plugins', $force, PHP_INT_MAX);
 
         WP_Upgrader::release_lock(MG_Site_Actions::LOCK);
 
@@ -190,6 +215,62 @@ final class MG_Plugin_Updates
         }
 
         return $lost;
+    }
+
+    /**
+     * Nabídky z knihovny pro pluginy, ke kterým WordPress teď nemá
+     * použitelnou nabídku (žádnou, nebo bez balíčku). Odkaz na ZIP je
+     * z čerstvého seznamu knihovny staženého z uložené adresy správy
+     * a jinam než do knihovny nevede — hub ho nemůže podstrčit.
+     *
+     * Platnou nabídku autora pluginu (s licencí) nepřebíjí: ta může být
+     * i novější než verze v knihovně.
+     *
+     * @param MG_Library|null $library
+     * @param array           $files     cesty pluginů
+     * @param array           $installed `get_plugins()`
+     * @return array soubor => nabídka (jako v `update_plugins->response`)
+     */
+    private static function library_offers($library, $files, $installed)
+    {
+        if ($library === null) {
+            return array();
+        }
+
+        $current = get_site_transient('update_plugins');
+        $missing = array();
+
+        foreach ($files as $file) {
+            $offer = is_object($current) && isset($current->response[$file]) ? $current->response[$file] : null;
+
+            if (!is_object($offer) || empty($offer->package)) {
+                $missing[] = $file;
+            }
+        }
+
+        if ($missing === array()) {
+            return array();
+        }
+
+        // Verze mohla do knihovny přibýt před chvílí — seznam přímo ze správy.
+        $manifest = $library->fresh_manifest();
+        $offers = array();
+
+        foreach ($missing as $file) {
+            $entry = isset($manifest[$file]) && is_array($manifest[$file]) ? $manifest[$file] : null;
+
+            if ($entry === null || !isset($entry['version'], $entry['package']) || !$library->owns_package((string) $entry['package'])) {
+                continue;
+            }
+
+            if (version_compare((string) $installed[$file]['Version'], (string) $entry['version'], '>=')) {
+                continue;
+            }
+
+            $offers[$file] = $library->offer($file, $entry);
+        }
+
+        return $offers;
     }
 
     /** Proč se plugin s nabídnutou verzí neaktualizoval — věta pro správu. */

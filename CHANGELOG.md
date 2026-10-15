@@ -1,5 +1,54 @@
 # Změny
 
+## 0.9.4 — 7. 10. 2026
+
+- **Skupina projektu.** Nové nepovinné pole u projektu: slovo, které
+  spojí projekty různých klientů, jež patří k sobě (PENAM Česko a PENAM
+  Slovensko → skupina „PENAM"). Není to klient ani kontaktní osoba.
+  Výpis projektů ji má ve vlastním sloupci a hledání podle ní najde
+  všechny projekty skupiny. Formulář při psaní napoví už použité
+  skupiny, v detailu projektu vede skupina na výpis jejích projektů. Migrace
+  `2026_10_15_000000_project_umbrella`.
+- **Hledání při psaní všude.** Jako u webů teď hledá při psaní i seznam
+  projektů, klientů, tabulka „Vyžaduje řešení" na dashboardu a fronta
+  reportů — po dvou znacích a krátké pauze se vymění tabulka, kurzor
+  zůstává v poli. Pluginy webu filtrují rovnou v prohlížeči (bez
+  načítání, bez ohledu na diakritiku), takže zaškrtnutý výběr ani
+  rozběhnutá aktualizace nezmizí; „Vybrat vše" při hledání zaškrtne jen
+  viditelné pluginy.
+- **Servisní protokol v PDF.** V historii servisů má každý zápis ikonu
+  „Stáhnout protokol": PDF s tmavým záhlavím (logo, doména, druh servisu,
+  stav), dlaždicemi s velkými čísly (hotové úkoly, aktualizované pluginy,
+  verze WordPressu), úkoly ve dvou sloupcích, poznámkou a tabulkou
+  **aktualizací z monitoringu** (WordPress, PHP a pluginy „z → na",
+  nové a odebrané pluginy) za den servisu a dopoledne po něm. Bez času,
+  jména technika a ceny — pro klienta, třeba spolu s fakturou. PDF vyrábí přibalená knihovna Dompdf
+  3.1.6 (`www/app/vendor/dompdf`) s písmem Instrument Sans; složka
+  `storage/pdf/` musí být na serveru zapisovatelná.
+- **Servis vypuštěný z klientského reportu.** Report je přehled o stavu
+  webu (aktualizace, obsah, SEO, dostupnost); sekce servisu, její nadpis
+  v šabloně i zmínka v souhrnném řádku zmizely. Web mimo WordPress má
+  v metrikách místo „Servisních zásahů" počet výpadků.
+- **Přístupy do WordPressu jako vlastní druh.** V trezoru přibyl druh
+  „WordPress" (název účtu, adresa přihlášení, uživatel, heslo, poznámka).
+  Ze záložky Přístupy u webu má adresu wp-adminu rovnou předvyplněnou.
+- **Pilulky „Přidat:" s ikonou druhu** místo plusu — stejná ikona jako
+  ve výpisu přístupů.
+- **MEDIAGRAFIK Monitor 1.9.0: pluginy z knihovny se aktualizují i bez
+  licence.** Placený plugin bez licence (Rank Math PRO) svým vlastním
+  updaterem zahodil nabídku z knihovny a aktualizace ze správy končila
+  „Web aktualizaci teď nenabídl", ačkoli ve wp-admin šel ZIP nahrát.
+  Plugin teď u pluginu z knihovny, ke kterému WordPress nemá použitelnou
+  nabídku, podstrčí upgraderu nabídku z knihovny (filtr při čtení, běží
+  jako poslední). Aktualizace dál jde cestou wp-admin — režim údržby
+  i záloha staré verze zůstávají. Platnou nabídku autora s licencí to
+  nepřebíjí. Odkaz na ZIP si web bere z vlastního seznamu knihovny, hub
+  ho podstrčit nemůže.
+- **Srozumitelnější hláška u pluginu z knihovny.** Místo rady
+  „zkontrolujte licenci" správa řekne, že web má Monitor starší než
+  1.9.0 (a ať se aktualizuje nejdřív on), nebo že se web nedostal ke
+  knihovně.
+
 ## 0.9.3 — 6. 10. 2026
 
 - **Datum spuštění webu.** Nové nepovinné pole v Nastavení webu; přehled

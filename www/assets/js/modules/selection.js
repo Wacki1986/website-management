@@ -68,9 +68,12 @@ export function initSelection() {
             });
         });
 
+        // „Vše" znamená vše, co je vidět — po hledání v pluginech by jinak
+        // šly aktualizovat i řádky, které hledání skrylo.
         all?.addEventListener('click', () => {
-            const everything = items.every(isChecked);
-            items.forEach((item) => setChecked(item, !everything));
+            const visible = items.filter((item) => !item.closest('[hidden]'));
+            const everything = visible.every(isChecked);
+            visible.forEach((item) => setChecked(item, !everything));
             refresh();
         });
 

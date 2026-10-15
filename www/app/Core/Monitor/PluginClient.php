@@ -52,6 +52,12 @@ final class PluginClient
     /** Od této verze si plugin na webu bere aktualizace z knihovny pluginů správy. */
     public const LIBRARY_SINCE = '1.4.0';
 
+    /**
+     * Od této verze dá plugin na webu verzi z knihovny přednost i tehdy,
+     * když ji vlastní updater placeného pluginu (bez licence) zahodí.
+     */
+    public const LIBRARY_FORCED_SINCE = '1.9.0';
+
     /** Kolik pluginů plugin přijme v jednom požadavku (`MG_Plugin_Updates`). */
     public const MAX_UPDATES = 10;
 

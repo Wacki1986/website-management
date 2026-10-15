@@ -38,7 +38,7 @@ $base = 'weby/' . (int) $site['id'];
                 <?php render_csrf($csrfToken) ?>
                 <div>
                     <div class="card__title"><?= $isEdit ? 'Upravit záznam servisu' : 'Zapsat provedený servis' ?></div>
-                    <div class="card__note"><?= $isEdit ? $this->e($editedNote) : 'Hotové úkoly a poznámku uvidí klient v reportu — pište lidsky, ne technicky.' ?></div>
+                    <div class="card__note"><?= $isEdit ? $this->e($editedNote) : 'Hotové úkoly a poznámku uvidí klient v servisním protokolu (PDF) — pište lidsky, ne technicky.' ?></div>
                 </div>
 
                 <?php if ($errors !== []): ?>
@@ -97,12 +97,12 @@ $base = 'weby/' . (int) $site['id'];
 
                 <div class="form__row">
                     <?= $form->text('performed_on', 'Datum', $values['performed_on'], type: 'date', required: true, class: 'form__field--caps', measure: 'none') ?>
-                    <?= $form->text('minutes', 'Čas (minuty)', $values['minutes'] !== null ? (string) $values['minutes'] : '', type: 'number', class: 'form__field--caps', attributes: ['min' => '0', 'step' => '5', 'class' => 'form__control--mono'], measure: 'none', hint: 'Do reportu i do statistiky „servisů letos".') ?>
+                    <?= $form->text('minutes', 'Čas (minuty)', $values['minutes'] !== null ? (string) $values['minutes'] : '', type: 'number', class: 'form__field--caps', attributes: ['min' => '0', 'step' => '5', 'class' => 'form__control--mono'], measure: 'none', hint: 'Jen pro vás — do statistiky „servisů letos". Do protokolu pro klienta nejde.') ?>
                 </div>
 
                 <?= $form->textarea('description', 'Poznámka k servisu (nepovinné)', $values['description'], class: 'form__field--caps',
                     attributes: ['rows' => '3', 'placeholder' => 'Např. doporučujeme obnovit fotografie v galerii — jsou z roku 2019.'],
-                    hint: 'Klient v reportu uvidí hotové úkoly pod sebou a pod nimi tuhle poznámku. Technické detaily patří do historie změn, tu plní monitor sám.') ?>
+                    hint: 'V servisním protokolu budou hotové úkoly pod sebou a pod nimi tahle poznámka. Technické detaily patří do historie změn, tu plní monitor sám.') ?>
 
                 <div class="form__field">
                     <span class="form__label form__label--caps">Stav</span>
@@ -110,7 +110,7 @@ $base = 'weby/' . (int) $site['id'];
                         <label class="segmented__item"><input type="radio" name="status" value="done"<?= $values['status'] === 'done' ? ' checked' : '' ?> class="visually-hidden">Hotovo</label>
                         <label class="segmented__item"><input type="radio" name="status" value="skipped"<?= $values['status'] === 'skipped' ? ' checked' : '' ?> class="visually-hidden">Přeskočeno</label>
                     </div>
-                    <div class="form__hint">Přeskočený servis se do reportu nepíše a termín neposouvá — jen vysvětluje mezeru v historii.</div>
+                    <div class="form__hint">Přeskočený servis termín neposouvá — jen vysvětluje mezeru v historii.</div>
                 </div>
 
                 <div class="row">
@@ -122,7 +122,7 @@ $base = 'weby/' . (int) $site['id'];
 
         <aside class="split__aside">
             <div class="card card--note"><?= $isEdit
-                ? 'Úprava termín plánu neposouvá — ten posunul už původní zápis. Změny se projeví v příštím reportu, který ještě neodešel.'
+                ? 'Úprava termín plánu neposouvá — ten posunul už původní zápis. Protokol pro klienta si po uložení stáhněte znovu.'
                 : 'Hotový servis posune další termín plánu na nejbližší v rytmu. Zapsané minuty se sčítají do „Servisů letos" v přehledu.' ?></div>
         </aside>
     </div>

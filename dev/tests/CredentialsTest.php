@@ -168,4 +168,19 @@ return [
 
         Urls::reset();
     },
+
+    'přístup do WordPressu: vlastní druh, u webu předvyplněná adresa wp-adminu' => function (): void {
+        [$kernel, $token] = loggedInKernel();
+        $siteId = $kernel->sites()->create(['name' => 'Penam', 'url' => 'https://penam.cz']);
+        $kernel->projects()->createForSite($siteId, 'penam.cz', null);
+
+        assertContainsString('/pristupy/pridat/wordpress', kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pristupy')->body());
+        assertContainsString('value="https://penam.cz/wp-admin/"', kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pristupy/pridat/wordpress')->body());
+
+        kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pristupy/pridat/wordpress', ['_token' => $token, 'label' => 'Účet klienta', 'url' => 'https://penam.cz/wp-admin/', 'username' => 'penam', 'password' => 'wp-heslo']);
+        assertSame('wordpress', (string) $kernel->db()->scalar('SELECT kind FROM credentials WHERE username = :user', ['user' => 'penam']));
+        assertContainsString('Účet klienta', kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pristupy')->body());
+
+        Urls::reset();
+    },
 ];

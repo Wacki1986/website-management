@@ -9,8 +9,8 @@ use App\Core\Security\Secrets;
 use SensitiveParameter;
 
 /**
- * Trezor přístupů projektu — FTP/SFTP, administrace hostingu, databáze,
- * e-mailové schránky, registrátor domény, jiné.
+ * Trezor přístupů projektu — FTP/SFTP, účty do WordPressu, administrace
+ * hostingu, databáze, e-mailové schránky, registrátor domény, jiné.
  *
  * Přístupy patří projektu, ne webu: hosting i e-maily žijí dál, i když se
  * web odebere nebo vymění. `site_id` jen poznamenává, ke kterému webu se
@@ -36,10 +36,12 @@ final class Credentials
      * Pole navíc (host u hostingu, databáze u FTP) by formulář jen
      * nafukovala — kdo potřebuje něco mimo, má druh „Jiný přístup"
      * a poznámku. U e-mailu je `username` adresa schránky a `label`,
-     * kde schránka běží.
+     * kde schránka běží. U WordPressu je `label` čí účet to je (správce,
+     * klient) — účtů i webů bývá v projektu víc.
      */
     public const KINDS = [
         'ftp' => ['label' => 'FTP / SFTP', 'icon' => 'download', 'fields' => ['protocol', 'host', 'port', 'username', 'password', 'note']],
+        'wordpress' => ['label' => 'WordPress', 'icon' => 'wordpress', 'fields' => ['label', 'url', 'username', 'password', 'note']],
         'hosting' => ['label' => 'Hosting', 'icon' => 'server', 'fields' => ['url', 'username', 'password', 'note']],
         'database' => ['label' => 'Databáze', 'icon' => 'database', 'fields' => ['url', 'host', 'database_name', 'username', 'password', 'note']],
         'email' => ['label' => 'E-mail', 'icon' => 'mail', 'fields' => ['label', 'username', 'password', 'url', 'host', 'note']],

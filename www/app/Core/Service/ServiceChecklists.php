@@ -158,7 +158,7 @@ final class ServiceChecklists
         return array_slice($items, 0, self::MAX_EXTRA);
     }
 
-    /** Hotové úkoly — do reportu pod sebe. @param array<int, array{label: string, done: bool}>|null $items @return array<int, string> */
+    /** Hotové úkoly — do servisního protokolu pod sebe. @param array<int, array{label: string, done: bool}>|null $items @return array<int, string> */
     public static function doneLabels(?array $items): array
     {
         $done = [];

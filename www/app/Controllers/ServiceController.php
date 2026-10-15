@@ -14,6 +14,7 @@ use App\Core\Monitor\DbSupport;
 use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\PluginDirectory;
 use App\Core\Service\ServiceChecklists;
+use App\Core\Service\ServiceProtocol;
 use App\Core\Service\ServiceSchedule;
 
 /**
@@ -60,6 +61,7 @@ final class ServiceController extends Controller
                 'done' => $log['status'] === 'done',
                 'progress' => ServiceChecklists::progress($checklist),
                 'editUrl' => get_url('weby/' . (int) $id . '/servis/' . (int) $log['id'] . '/upravit'),
+                'protocolUrl' => get_url('weby/' . (int) $id . '/servis/' . (int) $log['id'] . '/protokol'),
             ];
         }
 
@@ -83,7 +85,7 @@ final class ServiceController extends Controller
                 'year' => $stats['count'] . ' · celkem ' . self::minutesLabel($stats['minutes']),
             ],
             'logs' => $logs,
-            'logsNote' => 'Posledních 12 měsíců · ' . get_count(count($logs), 'servis', 'servisy', 'servisů') . ' · zapisuje se do reportu',
+            'logsNote' => 'Posledních 12 měsíců · ' . get_count(count($logs), 'servis', 'servisy', 'servisů') . ' · ke každému servisní protokol v PDF',
             'prefill' => $this->request()->string('predvyplnit'),
         ]);
     }
@@ -157,7 +159,7 @@ final class ServiceController extends Controller
         }
 
         // Zastaralé PHP nebo databáze na hostingu: servis je chvíle, kdy to
-        // klientovi říct — poznámka jde do reportu. Smazat ji jde jako text.
+        // klientovi říct — poznámka jde do servisního protokolu. Smazat ji jde jako text.
         $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
 
         if ($snapshot !== null) {
@@ -208,7 +210,7 @@ final class ServiceController extends Controller
             ['kind' => $values['kind'], 'minutes' => $values['minutes'], 'status' => $values['status'], 'performed_on' => $values['performed_on']], $this->actorName());
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SERVICE, true, 'Zapsán servis ' . get_czech_date($values['performed_on']));
 
-        return $this->redirectWithFlash('weby/' . $id . '/servis', 'Servis je zapsaný' . ($values['status'] === 'done' ? ' a objeví se v nejbližším reportu.' : '.'));
+        return $this->redirectWithFlash('weby/' . $id . '/servis', 'Servis je zapsaný' . ($values['status'] === 'done' ? '. Protokol pro klienta stáhnete v historii servisů.' : '.'));
     }
 
     /** Úprava zápisu — dopsat text, doodškrtnout checklist, opravit datum či čas. */
@@ -261,6 +263,32 @@ final class ServiceController extends Controller
         $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SERVICE, true, 'Smazán záznam servisu z ' . get_czech_date((string) $log['performed_on']));
 
         return $this->redirectWithFlash('weby/' . $id . '/servis', 'Záznam je smazaný.');
+    }
+
+    /**
+     * Servisní protokol v PDF ke stažení — klient ho dostává e-mailem
+     * (třeba s fakturou); v klientském reportu servis není.
+     */
+    public function protocol(string $id, string $logId): Response
+    {
+        $site = $this->siteOr404((int) $id);
+        $log = $this->logOr404((int) $id, (int) $logId);
+        $mail = $this->kernel->mailSettings()->current();
+        $pdf = $this->kernel->pdf();
+        [$from, $to] = ServiceProtocol::eventWindow((string) $log['performed_on']);
+        $events = $this->kernel->events()->betweenTimes((int) $id, $from, $to, ServiceProtocol::EVENT_KINDS);
+
+        $html = $this->kernel->view()->render('pdf/service-protocol', ServiceProtocol::data($site, $log, $events, [
+            'name' => (string) ($mail['from_name'] !== '' ? $mail['from_name'] : 'MEDIAGRAFIK'),
+            'email' => (string) $mail['from_address'],
+            'phone' => $this->kernel->settings()->get('report_phone'),
+        ], $pdf->imagePath('logo-mediagrafik-pdf-light.svg'), date('Y-m-d')));
+
+        return new Response($pdf->render($html), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . ServiceProtocol::filename($site, $log) . '"',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     // -----------------------------------------------------------------
@@ -318,7 +346,7 @@ final class ServiceController extends Controller
         }
 
         if (ServiceChecklists::text($values['description'], $values['checklist']) === '') {
-            $errors['description'] = 'Odškrtněte, co je hotové, nebo napište poznámku — klient to uvidí v reportu.';
+            $errors['description'] = 'Odškrtněte, co je hotové, nebo napište poznámku — klient to uvidí v servisním protokolu.';
         }
 
         return [$values, $errors];

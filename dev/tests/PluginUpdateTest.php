@@ -501,4 +501,19 @@ return [
         assertContainsString('licenci', $items[0]['message']);
         assertSame('up_to_date', $items[1]['status'], 'Verze už odpovídá — opravdu aktuální');
     },
+
+    'výsledek: plugin z knihovny — místo licence starý Monitor, nebo nedostupná knihovna' => function (): void {
+        $updatable = ['rank-math-pro/rank-math-pro.php' => ['name' => 'Rank Math SEO PRO', 'new_version' => '3.0.121']];
+        $library = ['rank-math-pro/rank-math-pro.php' => '3.0.121'];
+        $result = [['file' => 'rank-math-pro/rank-math-pro.php', 'name' => 'Rank Math SEO PRO', 'status' => 'up_to_date', 'from' => '3.0.109', 'to' => '3.0.109', 'message' => '']];
+
+        $old = SiteActions::reviewUpdateResults($result, $updatable, $library, '1.8.0')[0];
+        assertSame('failed', $old['status']);
+        assertContainsString('MEDIAGRAFIK Monitor 1.9.0 (web má 1.8.0)', $old['message']);
+        assertFalse(str_contains($old['message'], 'licenci'), 'Licence u pluginu z knihovny neradit');
+
+        $new = SiteActions::reviewUpdateResults($result, $updatable, $library, '1.9.0')[0];
+        assertSame('failed', $new['status']);
+        assertContainsString('nedostal ke knihovně', $new['message']);
+    },
 ];

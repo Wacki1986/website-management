@@ -21,7 +21,6 @@ final class ReportRepository
      */
     public const SECTIONS = [
         'updates' => ['label' => 'Seznam aktualizací', 'note' => 'co jsme na webu udělali', 'default' => true],
-        'services' => ['label' => 'Provedený servis', 'note' => 'co jsme na webu odpracovali', 'default' => true],
         'content' => ['label' => 'Obsah webu', 'note' => 'kdy naposledy přibyl obsah; když stojí, výzva ke spolupráci', 'default' => true],
         // Vykreslí se jen u webu se zapnutým modulem SEO (jinak souhrn nemá data).
         'seo' => ['label' => 'SEO webu', 'note' => 'hodnocení stránek z Rank Math / Yoastu a viditelnost pro vyhledávače', 'default' => true],

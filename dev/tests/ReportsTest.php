@@ -23,7 +23,7 @@ function reportsFixture(): array
     $f = monitorFixture();
     $reports = new ReportRepository($f['db']);
     $service = new ServiceRepository($f['db']);
-    $builder = new ReportBuilder($f['sites'], $f['uptime'], $f['alerts'], $f['events'], $service, $f['security'], $f['importer']);
+    $builder = new ReportBuilder($f['sites'], $f['uptime'], $f['alerts'], $f['events'], $f['security'], $f['importer']);
     $renderer = new ReportRenderer();
     $sender = new ReportSender($reports, $builder, $renderer, $f['sites'], $f['mailer'], $f['mailSettings'], $f['settings'], $f['events'], $f['notifier'], $f['logger'], 'https://sprava.test');
 
@@ -62,7 +62,7 @@ return [
         assertSame('Měsíčně, 1. den v měsíci v 06:00', ReportSchedule::describe('monthly', 1, 6));
     },
 
-    'souhrn z dat: uptime, aktualizace, servis, doporučení, titulek' => function (): void {
+    'souhrn z dat: uptime, aktualizace, doporučení, titulek; servis v reportu není' => function (): void {
         $f = reportsFixture();
         $id = $f['sites']->create(['name' => 'Kavárna Dobrá', 'url' => 'https://kavarnadobra.cz']);
 
@@ -100,8 +100,9 @@ return [
         assertSame('error', $summary['uptime']['days'][21]['tone']);
         assertSame(3, $summary['updates']['total']);
         assertSame(['6.9'], $summary['updates']['core']);
-        assertSame(1, count($summary['services']));
-        assertSame('2026-09-21', $summary['nextService']['date']);
+        // Zapsaný servis do reportu nepatří — klient dostává servisní protokol v PDF.
+        assertFalse(isset($summary['services']) || isset($summary['nextService']), 'Servis v souhrnu reportu není');
+        assertFalse(str_contains($summary['summaryLine'], 'servis'));
         assertSame('Novější verze PHP', $summary['recommendations'][0]['title']);
         assertFalse($summary['allGood']);
         assertSame('Zpráva o vašem webu — srpen 2026', $summary['subject']);

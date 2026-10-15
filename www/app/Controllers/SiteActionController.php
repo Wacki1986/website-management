@@ -49,7 +49,8 @@ final class SiteActionController extends Controller
         $site = $this->siteOr404((int) $id);
         $back = 'weby/' . $id . '/pluginy';
         $json = $this->request()->wantsJson();
-        $blocked = SiteActions::blocked($site, $this->kernel->snapshots()->snapshot((int) $id), PluginClient::ACTION_PLUGIN_UPDATE);
+        $snapshot = $this->kernel->snapshots()->snapshot((int) $id);
+        $blocked = SiteActions::blocked($site, $snapshot, PluginClient::ACTION_PLUGIN_UPDATE);
 
         if ($blocked !== null) {
             return $json ? Response::json(['ok' => false, 'error' => $blocked], 422) : $this->redirectWithFlash($back, $blocked, 'warning');
@@ -58,7 +59,7 @@ final class SiteActionController extends Controller
         $single = $this->request()->string('plugin');
         $requested = $single !== '' ? [$single] : array_map('strval', array_filter((array) $this->request()->input('plugins', []), 'is_scalar'));
         $plugins = $this->kernel->snapshots()->plugins((int) $id);
-        $updatable = $this->kernel->pluginOffers()->forSite($plugins, $this->kernel->snapshots()->snapshot((int) $id));
+        $updatable = $this->kernel->pluginOffers()->forSite($plugins, $snapshot);
         $files = array_values(array_intersect(array_unique($requested), array_keys($updatable)));
 
         if ($files === [] || count($files) > PluginClient::MAX_UPDATES) {
@@ -77,7 +78,8 @@ final class SiteActionController extends Controller
             return $json ? Response::json(['ok' => false, 'error' => (string) $result['error']], 502) : $failure;
         }
 
-        $items = SiteActions::reviewUpdateResults(array_values((array) ($result['data']['plugins'] ?? [])), $updatable);
+        $items = SiteActions::reviewUpdateResults(array_values((array) ($result['data']['plugins'] ?? [])), $updatable,
+            SiteActions::libraryFor($snapshot, $this->kernel->pluginLibrary()->versions()), (string) ($snapshot['plugin_version'] ?? ''));
         $updated = [];
         $failed = [];
 

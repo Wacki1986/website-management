@@ -119,7 +119,7 @@ final class CredentialController extends Controller
         $addLinks = [];
 
         foreach (Credentials::KINDS as $kind => $meta) {
-            $addLinks[] = ['label' => $meta['label'], 'url' => get_url($context['base'] . '/pridat/' . $kind)];
+            $addLinks[] = ['label' => $meta['label'], 'icon' => $meta['icon'], 'url' => get_url($context['base'] . '/pridat/' . $kind)];
         }
 
         return $this->view('vault/index', $context['view'] + [
@@ -136,8 +136,15 @@ final class CredentialController extends Controller
     {
         $this->requireUnlocked();
         $kind = self::kindOr404($kind);
+        $values = self::emptyValues($kind);
 
-        return $this->form($context, $kind, null, self::emptyValues($kind), []);
+        // Ze záložky webu se účet do WordPressu váže k tomu webu — adresa
+        // přihlášení je známá (stejná jako tlačítko wp-admin v hlavičce).
+        if ($kind === 'wordpress') {
+            $values['url'] = (string) ($context['view']['adminUrl'] ?? '');
+        }
+
+        return $this->form($context, $kind, null, $values, []);
     }
 
     /** @param array<string, mixed> $context */
@@ -313,11 +320,16 @@ final class CredentialController extends Controller
             'kindLabel' => Credentials::KINDS[$kind]['label'],
             'fields' => array_fill_keys(Credentials::KINDS[$kind]['fields'], true),
             'labelLabel' => $isEmail ? 'Kde schránka běží' : 'Název',
-            'labelPlaceholder' => $isEmail ? 'Wedos · Google Workspace · Microsoft 365' : 'Google Analytics',
+            'labelPlaceholder' => match ($kind) {
+                'email' => 'Wedos · Google Workspace · Microsoft 365',
+                'wordpress' => 'Správce · účet klienta',
+                default => 'Google Analytics',
+            },
             'labelRequired' => $kind === 'other',
             'usernameLabel' => $isEmail ? 'E-mailová adresa' : 'Uživatel',
             'loginFirst' => $isEmail,
             'urlLabel' => match ($kind) {
+                'wordpress' => 'Přihlášení do administrace',
                 'hosting' => 'Odkaz na administraci',
                 'database' => 'Odkaz na phpMyAdmin',
                 'email' => 'Webmail',

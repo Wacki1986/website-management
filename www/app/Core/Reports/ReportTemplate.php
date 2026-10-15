@@ -37,7 +37,6 @@ final class ReportTemplate
         'intro' => ['label' => 'Úvodní odstavec', 'default' => 'Dobrý den, tady je krátký přehled o webu {web} za období {obdobi}. Stará se o něj studio {studio} — všechno níže jsme udělali za vás, nic nemusíte řešit.', 'rows' => 3, 'max' => 600],
         'note_label' => ['label' => 'Nadpis poznámky od studia', 'default' => 'Poznámka od studia', 'rows' => 1, 'max' => 60],
         'heading_updates' => ['label' => 'Nadpis sekce aktualizací', 'default' => 'Co jsme pro vás udělali', 'rows' => 1, 'max' => 80],
-        'heading_services' => ['label' => 'Nadpis sekce servisu', 'default' => 'Servis v tomto období', 'rows' => 1, 'max' => 80],
         'heading_content' => ['label' => 'Nadpis sekce obsahu', 'default' => 'Obsah webu', 'rows' => 1, 'max' => 80],
         'content_button' => ['label' => 'Tlačítko u pozvánky k obsahu', 'default' => 'Ozvěte se nám', 'rows' => 1, 'max' => 40],
         'heading_seo' => ['label' => 'Nadpis sekce SEO', 'default' => 'Jak je web připravený pro vyhledávače', 'rows' => 1, 'max' => 80],
@@ -52,7 +51,7 @@ final class ReportTemplate
      * Posouvatelné sekce e-mailu v základním pořadí. Hlavička, úvod
      * s metrikami a patička stojí vždy na svém místě.
      */
-    public const SECTION_ORDER = ['note', 'updates', 'services', 'content', 'seo', 'recommendations', 'uptime_chart', 'technical', 'cta'];
+    public const SECTION_ORDER = ['note', 'updates', 'content', 'seo', 'recommendations', 'uptime_chart', 'technical', 'cta'];
 
     /** Popisky sekcí v editoru (poznámka není přepínatelná sekce reportu). */
     public const SECTION_LABELS = ['note' => 'Poznámka od studia'];
@@ -170,7 +169,7 @@ final class ReportTemplate
 
     /**
      * Vzorový report pro editor šablony: všechny sekce vyplněné, ať jde
-     * upravit každý nadpis (skutečný poslední report nemusí mít servis,
+     * upravit každý nadpis (skutečný poslední report nemusí mít SEO,
      * doporučení ani pozvánku k obsahu). Data jsou smyšlená, jen na ukázku.
      *
      * @return array<string, mixed> stejná struktura jako `ReportBuilder::build()`
@@ -227,12 +226,6 @@ final class ReportTemplate
                 ],
                 'note' => 'Hodnocení počítá Rank Math SEO podle textů, nadpisů a popisů stránek. Stránky k vylepšení rádi projdeme — často stačí doplnit popis pro Google a klíčové slovo.',
             ],
-            'services' => [[
-                'date' => date('Y-m-20', strtotime($from)), 'kind' => 'small', 'kindLabel' => 'Malý servis',
-                'description' => '', 'tasks' => ['Aktualizace WordPressu', 'Aktualizace pluginů a šablony', 'Kontrola zálohy'],
-                'note' => 'Doporučujeme obnovit fotografie v galerii.', 'minutes' => 45,
-            ]],
-            'nextService' => ['date' => date('Y-m-20', strtotime('+1 month', strtotime($from))), 'kindLabel' => 'Malý servis'],
             'recommendations' => [['title' => 'Novější verze PHP', 'text' => 'Hosting běží na PHP 8.2, kterému brzy končí podpora — přechod zařídíme s hostingem.']],
             'technical' => [
                 'wp' => '6.9', 'php' => '8.2.28', 'theme' => 'Kavárna', 'plugins_total' => 18, 'plugins_active' => 17,

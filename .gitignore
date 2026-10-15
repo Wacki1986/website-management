@@ -19,6 +19,7 @@
 /www/storage/avatars/*
 /www/storage/site-icons/*
 /www/storage/plugin-library/*
+/www/storage/pdf/*
 !/www/storage/**/.gitkeep
 
 # Jediný generovaný soubor. JS a ikony leží ve www/assets rovnou.

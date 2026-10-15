@@ -15,7 +15,7 @@
  * @var array{date: string, countdown: string, overdue: bool, note: string}|null $next
  * @var string              $planNote
  * @var array{kind: string, frequency: string, year: string} $summary
- * @var array<int, array<string, mixed>> $logs  řádky historie; `text` = popis, nebo odškrtnuté úkoly, `progress` = „3 z 4 úkolů" (nebo ''), `editUrl` = úprava zápisu
+ * @var array<int, array<string, mixed>> $logs  řádky historie; `text` = popis, nebo odškrtnuté úkoly, `progress` = „3 z 4 úkolů" (nebo ''), `editUrl` = úprava zápisu, `protocolUrl` = servisní protokol v PDF
  * @var string              $logsNote
  * @var string              $prefill
  * @var string              $csrfToken
@@ -119,7 +119,7 @@ $base = 'weby/' . (int) $site['id'];
                     <div class="summary-list__row"><span class="summary-list__label">Servisů letos</span><span class="summary-list__value"><?= $this->e($summary['year']) ?></span></div>
                 </div>
             </div>
-            <div class="card card--note">Zapsaný servis se objeví v nejbližším klientském reportu — klient uvidí datum, druh a co jste udělali.</div>
+            <div class="card card--note">Klient se o servisu dozví ze servisního protokolu: stáhněte ho v historii ikonou šipky a pošlete e-mailem, třeba s fakturou. Protokol obsahuje i aktualizace, které monitor zjistil v den servisu — po aktualizaci ve wp-adminu klikněte na „Zkontrolovat teď“. V klientském reportu servis není.</div>
         </aside>
     </div>
 
@@ -128,7 +128,7 @@ $base = 'weby/' . (int) $site['id'];
             '<a class="btn btn--primary btn--sm" href="' . get_url($base . '/servis/zapsat') . '">' . get_btn_icon('plus') . 'Zapsat provedený servis</a>') ?>
 
         <?php if ($logs === []): ?>
-            <?php render_empty('Zatím žádný servis', 'První zapsaný servis se objeví tady i v klientském reportu.', 'clock') ?>
+            <?php render_empty('Zatím žádný servis', 'První zapsaný servis se objeví tady — i se servisním protokolem pro klienta.', 'clock') ?>
         <?php else: ?>
             <div class="table table--service">
                 <div class="table__head"><div>Datum</div><div>Druh</div><div>Co jsme udělali</div><div class="table__cell table__cell--right">Čas</div><div>Stav</div><div class="table__cell table__cell--right">Akce</div></div>
@@ -142,6 +142,7 @@ $base = 'weby/' . (int) $site['id'];
                         <div class="table__cell table__cell--right">
                             <form class="row-actions" method="post" action="<?= get_url($base . '/servis/' . (int) $log['id'] . '/smazat') ?>">
                                 <?php render_csrf($csrfToken) ?>
+                                <a class="btn btn--ghost btn--icon" href="<?= $log['protocolUrl'] ?>" title="Stáhnout protokol (PDF)" aria-label="Stáhnout servisní protokol z <?= $this->e($log['date']) ?>"><?= get_icon('download', 'icon--sm') ?></a>
                                 <a class="btn btn--ghost btn--icon" href="<?= $log['editUrl'] ?>" title="Upravit záznam" aria-label="Upravit záznam z <?= $this->e($log['date']) ?>"><?= get_icon('edit', 'icon--sm') ?></a>
                                 <button type="submit" class="btn btn--ghost btn--icon" title="Smazat záznam" aria-label="Smazat záznam z <?= $this->e($log['date']) ?>"><?= get_icon('trash', 'icon--sm') ?></button>
                             </form>

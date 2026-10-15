@@ -63,7 +63,7 @@ return [
         assertContainsString('<span data-tpl="subject_ok">Web kavarnadobra.cz: celý ', $page);
         assertContainsString('<span data-tpl="cta_button">Zavolejte nám</span>', $page);
         assertContainsString('<span data-tpl="intro">Ahoj, tady je přehled webu', $page);
-        foreach (['heading_updates', 'heading_services', 'heading_content', 'heading_recommendations', 'note_label', 'content_button', 'cta_text', 'signature', 'footer', 'subject'] as $key) {
+        foreach (['heading_updates', 'heading_content', 'heading_recommendations', 'note_label', 'content_button', 'cta_text', 'signature', 'footer', 'subject'] as $key) {
             assertContainsString('data-tpl="' . $key . '"', $page);
         }
         assertContainsString('name="cta_button" value="Zavolejte nám" data-template-input="cta_button"', $page);

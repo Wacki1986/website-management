@@ -8,7 +8,7 @@ MySQL, Apache s `.htaccess`, cPanel cron). Vývojové věci jsou v `README.md`.
 1. Lokálně: `pwsh dev/tools/build.ps1` a `php dev/tests/run.php` — obojí bez chyb.
 2. Na server jde **obsah `www/`** (FTPS/SFTP). `config/env.php` a `storage/`
    se nenahrávají; `.vscode/sftp.json` je má ve výjimkách. Adresář `storage/`
-   (s podsložkami `logs`, `sessions`, `plugin`) musí být pro PHP zapisovatelný.
+   (s podsložkami `logs`, `sessions`, `plugin`, `pdf`) musí být pro PHP zapisovatelný.
 3. Na serveru: databáze (utf8mb4) + uživatel; `config/env.php` ze vzoru
    `config/env.sample.php`:
    - `app_url` = veřejná adresa aplikace (bez lomítka na konci) — používá se
@@ -155,7 +155,10 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   Pro…) bez platné licence nebo s aktualizacemi jen ve wp-admin hlásí
   „aktualizaci nenabídl" — zkontrolovat licenci a aktualizovat ve wp-admin,
   případně plugin přestat sledovat (oko). Plugin 1.5.2+ zkusí nejdřív
-  nabídku, kterou web ukazuje ve wp-admin.
+  nabídku, kterou web ukazuje ve wp-admin. Pluginu, který je v Knihovně
+  pluginů, licence nevadí: Monitor 1.9.0+ si vezme verzi z knihovny
+  i tehdy, když ji vlastní updater pluginu zahodí. Se starším Monitorem
+  hláška radí aktualizovat nejdřív jeho.
 - **Opuštěné a stažené pluginy:** správa se jednou týdně zeptá wordpress.org
   na každý plugin z webů (jeden dotaz platí pro všechny weby, plugin na webu
   se neptá). Záložka Pluginy má sloupec **Vydáno** (kdy plugin naposledy
@@ -264,8 +267,27 @@ jde spouštět opakovaně.
   „Přidat další úkol" pro úkol jen tohoto zápisu (přepsat i odebrat jde
   při úpravě), čas v minutách a nepovinná **Poznámka k servisu**. Uložit
   jde, když je odškrtnutý aspoň jeden úkol nebo vyplněná poznámka.
-- V **reportu** klient uvidí hotové úkoly pod sebou s fajfkou a pod nimi
-  poznámku. Úprava zápisu se projeví v reportu, který ještě neodešel.
+- **Servisní protokol (PDF):** v historii servisů má každý zápis ikonu
+  šipky „Stáhnout protokol" (`servisni-protokol-<web>-<datum>.pdf`). Klient
+  v něm uvidí web, datum, druh servisu, hotové úkoly s fajfkou, poznámku
+  a aktualizace, které monitor zaznamenal v den servisu a do 12:00 dalšího
+  dne (WordPress, PHP, pluginy z → na, nové a odebrané pluginy). Po
+  aktualizacích ve wp-adminu je dobré kliknout u webu na „Zkontrolovat
+  teď" — jinak je monitor zjistí až při další kontrole (po 3–12 h).
+  Čas ani jméno technika v protokolu nejsou. Posílá se e-mailem ručně
+  (třeba s fakturou). V klientském **reportu servis není**.
+- PDF vyrábí knihovna **Dompdf** přibalená v `www/app/vendor/dompdf`
+  (verze v souboru `VERSION`), písmo Instrument Sans je v
+  `www/app/vendor/instrument-sans`. Metriky písma si Dompdf při prvním
+  protokolu uloží do `storage/pdf/` — složka musí být zapisovatelná
+  (smazat ji jde kdykoli, vytvoří se znovu). **Aktualizace knihovny:**
+  stáhnout `dompdf-<verze>.zip` z github.com/dompdf/dompdf/releases,
+  složku `dompdf/` z archivu dát místo `www/app/vendor/dompdf`, smazat
+  obsah `storage/pdf/` a stáhnout zkušební protokol.
+- Logo v protokolu je `assets/img/logo-mediagrafik-pdf-light.svg` (bílý
+  text na tmavé záhlaví) — kopie loga bez metadat a ořezové cesty, kterou
+  Dompdf kreslil jako černý obdélník; `logo-mediagrafik-pdf.svg` je táž
+  kopie s tmavým textem. Při změně loga je potřeba vyrobit nové kopie.
 - **Předvyplněná poznámka:** když web běží na PHP nebo databázi, které
   podpora končí do roka nebo už skončila, nový zápis servisu má v poznámce
   větu pro klienta s doporučením přechodu. Nehodí-li se, smaže se.
@@ -345,6 +367,7 @@ nikdo neotevřel, je „bez hodnocení".
 | --- | --- |
 | Patička „Monitor neběží" | cron v cPanelu, token (Nastavení → Monitoring → „Vygenerovat nový" mění adresu), Basic auth výjimka |
 | Web „Plugin neodpovídá" | klíč v pluginu, bezpečnostní plugin blokující REST, detail webu → „Zkontrolovat teď" ukáže konkrétní chybu |
+| Servisní protokol se nestáhne (chyba 500) | `storage/pdf/` zapisovatelná pro PHP, `storage/logs/app-*.log` |
 | Report „Nedoručeno" | Nastavení → Odchozí pošta (zkušební e-mail), adresa příjemce u webu, `storage/logs/app-*.log` |
 | Upozornění na telefon nechodí | Nastavení → Oznámení (VAPID klíče, zařízení), Basic auth výjimky pro `sw.js` a manifest |
 | Po změně hesla Basic auth přestal cron | cron endpoint musí zůstat ve výjimkách |

@@ -2,7 +2,9 @@
 /**
  * Reporty — fronta a historie (návrh `reporty-naplanovane.html`,
  * `-odeslane`, `-problemy`). Segmenty jsou odkazy; naplánované řádky
- * bez reportu vedou na náhled, který koncept založí.
+ * bez reportu vedou na náhled, který koncept založí. Hledání běží při
+ * psaní (`live-search.js`): vymění segmenty, tabulku a patičku; koš
+ * v řádku dál otevře okno, `confirm-dialog.js` poslouchá na dokumentu.
  *
  * @var \App\Core\View\View $this
  * @var string              $title
@@ -81,12 +83,12 @@ $periodLabel = static function (string $ym): string {
 
     <section class="card card--scroll-x">
         <div class="card__header card__header--filters">
-            <div class="segmented">
+            <div class="segmented" data-live-region="segments">
                 <?php foreach ($segments as $segment): ?>
                     <a class="segmented__item<?= $status === $segment['key'] ? ' segmented__item--active' : '' ?>" href="<?= $url(['stav' => $segment['key'] === 'pending' ? null : $segment['key']]) ?>"><?= $this->e($segment['label']) ?><?php if ($segment['count'] !== null): ?><span class="segmented__count"><?= (int) $segment['count'] ?></span><?php endif; ?></a>
                 <?php endforeach; ?>
             </div>
-            <form method="get" action="<?= get_url('reporty') ?>" class="row" style="flex:1;gap:10px">
+            <form method="get" action="<?= get_url('reporty') ?>" class="row" style="flex:1;gap:10px" data-live-search>
                 <?php if ($status !== 'pending'): ?><input type="hidden" name="stav" value="<?= $this->e($status) ?>"><?php endif; ?>
                 <label class="search" style="max-width:300px">
                     <?= get_icon('search', 'icon--sm') ?>
@@ -102,7 +104,7 @@ $periodLabel = static function (string $ym): string {
             </form>
         </div>
 
-        <div class="table table--report-queue">
+        <div class="table table--report-queue" data-live-region="table">
             <?php if ($groups === []): ?>
                 <?php render_empty(
                     $status === 'pending' ? 'Žádný naplánovaný report' : ($status === 'failed' ? 'Žádný problém s doručením' : 'Nic tu není'),
@@ -131,7 +133,7 @@ $periodLabel = static function (string $ym): string {
             <?php endif; ?>
         </div>
 
-        <div class="card__footer card__footer--muted">
+        <div class="card__footer card__footer--muted" data-live-region="footer">
             <span>Zobrazeno <?= $this->e(get_count($shown, 'report', 'reporty', 'reportů')) ?></span>
         </div>
     </section>

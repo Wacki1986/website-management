@@ -162,6 +162,12 @@ return [
             assertFalse(str_contains($html, 'data-file="elementor/elementor.php"'), 'Elementor na webu je');
             assertFalse(str_contains($html, 'data-file="new-blocks/new-blocks.php"'), 'Nesplnitelný plugin nejde zaškrtnout');
             assertContainsString('WordPress 7.0, web má 6.8.2', $html);
+
+            // Hledání pluginy jen skrývá (live-search.js „local") — při psaní
+            // jde hledat i šířeji, takže na stránce musí být všechny.
+            assertContainsString('data-live-search="local"', $html);
+            assertSame(1, preg_match('/data-plugin-name="Elementor" data-live-item data-live-text="Elementor[^"]*" hidden>/', $html), 'Elementor je na stránce, jen skrytý');
+            assertContainsString('<div data-live-empty>', $html);
         });
     },
 
