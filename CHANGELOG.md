@@ -16,6 +16,8 @@
 - **Přidání kontaktu v detailu klienta** má pole s popisky jako formulář
   Nového klienta (místo řady polí jen s nápovědou uvnitř). Projekty bez
   klienta k přiřazení se řadí do mřížky vedle sebe.
+- **Tmavý motiv: nativní části polí** (ikona kalendáře, rozbalený seznam
+  selectu, posuvníky) se kreslí tmavě a šipka selectu je světlá.
 
 ## 0.9.4 — 7. 10. 2026
 
