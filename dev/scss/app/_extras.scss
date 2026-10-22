@@ -297,6 +297,25 @@ label.toggle { display: inline-block; cursor: pointer; }
 
 .pick__item:has(.form__check-input:focus-visible) { @include focus-ring; }
 
+// Výběr do mřížky vedle sebe, kde je položek hodně (projekty bez klienta).
+.pick--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  width: 100%;
+}
+
+// Přidání dalšího kontaktu pod seznamem (detail klienta): stejná pole
+// s popisky jako u Nového klienta. Čára odděluje formulář od seznamu nad ním;
+// hned pod hlavičkou karty (bez kontaktů) by byla dvojitá.
+.contact-add { border-top: 1px solid var(--color-border-subtle); }
+.card__header + .contact-add { border-top: 0; }
+
+// Tlačítko vedle e-mailu: dorovnané dolů k poli, ne k popisku.
+.contact-add__submit {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
 // Pole přes celou šířku mřížky formuláře (Form::text(span: 12)).
 .form__row .form__field--12 { grid-column: 1 / -1; }
 

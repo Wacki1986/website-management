@@ -16,6 +16,7 @@
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $client['name']]);
+$contactForm = $this->form();
 
 $field = function (string $label, string $value, bool $optional = false, string $span = ''): void {
     ?>
@@ -97,14 +98,19 @@ $field = function (string $label, string $value, bool $optional = false, string 
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
-                    <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/kontakt') ?>" class="card__footer" style="gap:8px">
+                    <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/kontakt') ?>" class="card__body form contact-add">
                         <?php render_csrf($csrfToken) ?>
-                        <input class="form__control form__control--inline" name="first_name" placeholder="Jméno" aria-label="Jméno" style="width:130px">
-                        <input class="form__control form__control--inline" name="last_name" placeholder="Příjmení" aria-label="Příjmení" style="width:140px">
-                        <input class="form__control form__control--inline" name="role" placeholder="role" aria-label="Role" style="width:120px">
-                        <input class="form__control form__control--inline form__control--mono" name="phone" placeholder="+420 …" aria-label="Telefon" style="width:140px">
-                        <input class="form__control form__control--inline" name="email" type="email" placeholder="jmeno@firma.cz" aria-label="E-mail" style="width:200px">
-                        <button type="submit" class="btn btn--secondary btn--sm"><?= get_btn_icon('plus') ?>Přidat kontakt</button>
+                        <span class="caps">Přidat kontakt</span>
+                        <div class="form__row">
+                            <?= $contactForm->text('first_name', 'Jméno', class: 'form__field--caps', attributes: ['placeholder' => 'Markéta']) ?>
+                            <?= $contactForm->text('last_name', 'Příjmení', class: 'form__field--caps', attributes: ['placeholder' => 'Dobrá']) ?>
+                            <?= $contactForm->text('role', 'Role', class: 'form__field--caps', attributes: ['placeholder' => 'účetní, správce IT…'], keyLabel: '· nepovinné') ?>
+                            <?= $contactForm->text('phone', 'Telefon', type: 'tel', class: 'form__field--caps', attributes: ['placeholder' => '+420 …', 'class' => 'form__control--mono'], measure: 'none') ?>
+                            <?= $contactForm->text('email', 'E-mail', type: 'email', class: 'form__field--caps', attributes: ['placeholder' => 'jmeno@firma.cz'], measure: 'none') ?>
+                            <div class="form__field contact-add__submit">
+                                <button type="submit" class="btn btn--secondary"><?= get_btn_icon('plus') ?>Přidat kontakt</button>
+                            </div>
+                        </div>
                     </form>
                 </section>
 
@@ -130,7 +136,7 @@ $field = function (string $label, string $value, bool $optional = false, string 
                     <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/projekty') ?>" class="card__footer" style="gap:10px;align-items:flex-start;flex-direction:column">
                         <?php render_csrf($csrfToken) ?>
                         <span class="caps">Přiřadit projekt bez klienta</span>
-                        <div class="pick">
+                        <div class="pick pick--grid">
                             <?php foreach ($unassigned as $free): ?>
                                 <label class="pick__item"><input type="checkbox" name="projects[]" value="<?= (int) $free['id'] ?>" class="form__check-input"><?= get_icon('folder', 'icon--sm icon--subtle') ?><span style="flex:1;min-width:0"><span class="table__primary u-truncate" style="display:block;font-size:var(--font-size-label)"><?= $this->e((string) $free['name']) ?></span><span class="table__secondary u-truncate" style="display:block;margin-top:0"><?= $this->e(get_count((int) $free['site_count'], 'web', 'weby', 'webů')) ?></span></span></label>
                             <?php endforeach; ?>

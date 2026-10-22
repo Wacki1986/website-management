@@ -13,6 +13,9 @@
   vypršelý SSL certifikát, i když byl platný — všechny problémy kromě
   výpadku propadly do věty o SSL. Teď má každý druh vlastní větu;
   u nebezpečného pluginu karta jmenuje plugin stažený z wordpress.org.
+- **Přidání kontaktu v detailu klienta** má pole s popisky jako formulář
+  Nového klienta (místo řady polí jen s nápovědou uvnitř). Projekty bez
+  klienta k přiřazení se řadí do mřížky vedle sebe.
 
 ## 0.9.4 — 7. 10. 2026
 
