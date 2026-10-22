@@ -355,9 +355,14 @@ final class ProjectServiceController extends Controller
 
         if ($result !== null && ($result['ok'] ?? false)) {
             $policy = ['none' => 'jen sleduje', 'quarantine' => 'do spamu', 'reject' => 'odmítnout'][(string) ($result['dmarc_policy'] ?? '')] ?? '';
+            $spf = MailDnsCheck::spfRecords($result);
+            // Víc SPF záznamů = každý na vlastním řádku, ať je vidět, co sloučit.
+            $spfRows = count($spf) > 1
+                ? array_map(static fn (string $record, int $i): array => ['label' => 'SPF ' . ($i + 1), 'value' => $record], $spf, array_keys($spf))
+                : [['label' => 'SPF', 'value' => $spf[0] ?? '—']];
             $rows = [
                 ['label' => 'MX', 'value' => $result['mx'] !== [] ? implode(', ', $result['mx']) : '—'],
-                ['label' => 'SPF', 'value' => (string) ($result['spf'] ?? '—')],
+                ...$spfRows,
                 ['label' => 'DMARC', 'value' => $result['dmarc'] !== null ? ($policy !== '' ? 'politika ' . $policy . ' · ' : '') . $result['dmarc'] : '—'],
                 ['label' => 'DKIM', 'value' => $result['dkim'] !== null ? 'selektor ' . $result['dkim'] : 'nezjištěno'],
             ];

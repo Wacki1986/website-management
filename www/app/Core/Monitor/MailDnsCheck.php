@@ -40,7 +40,7 @@ final class MailDnsCheck
     }
 
     /**
-     * @return array{ok: bool, error: ?string, mx: array<int, string>, spf: ?string, dmarc: ?string, dmarc_policy: ?string,
+     * @return array{ok: bool, error: ?string, mx: array<int, string>, spf: ?string, spf_records: array<int, string>, dmarc: ?string, dmarc_policy: ?string,
      *               dkim: ?string, issues: array<int, string>}
      */
     public function check(string $domain): array
@@ -54,6 +54,9 @@ final class MailDnsCheck
         }
 
         $spf = array_values(array_filter($this->lookup($domain, 'TXT') ?? [], static fn (string $txt): bool => stripos(ltrim($txt), 'v=spf1') === 0));
+        // DNS vrací záznamy pokaždé v jiném pořadí. Bez seřazení by se u dvou
+        // SPF střídal „první" a změna by se hlásila každý den (zsvelesin.cz).
+        sort($spf);
         $dmarc = null;
 
         foreach ($this->lookup('_dmarc.' . $domain, 'TXT') ?? [] as $txt) {
@@ -98,6 +101,8 @@ final class MailDnsCheck
             'error' => null,
             'mx' => $mx,
             'spf' => $spf[0] ?? null,
+            // Všechny SPF záznamy — u dvou je na kartě vidět, co sloučit.
+            'spf_records' => $spf,
             'dmarc' => $dmarc,
             'dmarc_policy' => $dmarc !== null && preg_match('/\bp=(none|quarantine|reject)\b/i', $dmarc, $m) === 1 ? strtolower($m[1]) : null,
             'dkim' => $dkim,
@@ -143,8 +148,26 @@ final class MailDnsCheck
     {
         $mx = (array) ($result['mx'] ?? []);
         sort($mx);
+        $spf = self::spfRecords($result);
+        sort($spf);
 
-        return md5(json_encode([$mx, $result['spf'] ?? null, $result['dmarc'] ?? null, (array) ($result['issues'] ?? [])]) ?: '');
+        return md5(json_encode([$mx, $spf, $result['dmarc'] ?? null, (array) ($result['issues'] ?? [])]) ?: '');
+    }
+
+    /**
+     * Všechny SPF záznamy výsledku. Starší uložené výsledky mají jen první
+     * (`spf`) — u domény s jedním SPF tak otisk vyjde stejně jako dřív.
+     *
+     * @param array<string, mixed> $result
+     * @return array<int, string>
+     */
+    public static function spfRecords(array $result): array
+    {
+        if (isset($result['spf_records']) && is_array($result['spf_records'])) {
+            return array_values(array_map('strval', $result['spf_records']));
+        }
+
+        return ($result['spf'] ?? null) !== null ? [(string) $result['spf']] : [];
     }
 
     /** @return array<int, string>|null MX cíle podle priority / TXT texty; null = DNS neodpověděl */

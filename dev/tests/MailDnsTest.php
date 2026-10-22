@@ -61,6 +61,17 @@ return [
         $double = fakeDns(['pekarnanovak.cz|TXT' => ['v=spf1 a ~all', 'v=spf1 mx ~all']] + $zone)->check('pekarnanovak.cz');
         assertSame(['multi_spf'], $double['issues']);
         assertSame('error', MailDnsCheck::summary($double)['tone']);
+        assertSame(['v=spf1 a ~all', 'v=spf1 mx ~all'], $double['spf_records']);
+
+        // DNS vrátí tytéž dva SPF obráceně → žádná změna (dřív e-mail každý den).
+        $swapped = fakeDns(['pekarnanovak.cz|TXT' => ['v=spf1 mx ~all', 'v=spf1 a ~all']] + $zone)->check('pekarnanovak.cz');
+        assertSame(MailDnsCheck::fingerprint($double), MailDnsCheck::fingerprint($swapped), 'Pořadí záznamů v DNS není změna');
+
+        // Výsledek uložený dřív (jen `spf`) dá u jednoho SPF stejný otisk jako nový.
+        $single = fakeDns($zone)->check('pekarnanovak.cz');
+        $stored = $single;
+        unset($stored['spf_records']);
+        assertSame(MailDnsCheck::fingerprint($single), MailDnsCheck::fingerprint($stored), 'Starší uložený výsledek nespustí upozornění');
 
         $open = fakeDns(['pekarnanovak.cz|TXT' => ['v=spf1 +all']] + $zone)->check('pekarnanovak.cz');
         assertSame(['spf_all'], $open['issues']);

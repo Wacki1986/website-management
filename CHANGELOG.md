@@ -26,6 +26,11 @@
   nově ukazuje celou verzi PHP, databázi bez podpory červeně (MySQL 5.7),
   vysvětlení v bublinách a rozpis aktualizací; web mimo WordPress
   ve sloupci WP hlásí, na čem běží.
+- **Oprava: „Změnilo se nastavení pošty v DNS" chodilo každý den** u domény
+  se dvěma SPF záznamy (zsvelesin.cz). DNS je vrací pokaždé v jiném
+  pořadí a kontrola si pamatovala jen první, takže se otisk střídal.
+  SPF záznamy se teď řadí a ukládají všechny; karta DNS pošty je při
+  víc záznamech ukáže pod sebou (SPF 1, SPF 2), ať je vidět, co sloučit.
 
 ## 0.9.4 — 7. 10. 2026
 
