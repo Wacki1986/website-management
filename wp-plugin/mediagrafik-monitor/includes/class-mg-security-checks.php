@@ -37,12 +37,18 @@ final class MG_Security_Checks
     /**
      * Známé bezpečnostní pluginy — rozšiřitelné filtrem
      * `mg_monitor_security_plugins` (basename => název).
+     *
+     * Porovnává se jen složka pluginu, ne celá cesta: placené verze
+     * a přejmenování (iThemes → Solid → Kadence Security) mění hlavní
+     * soubor či název, složka zůstává. V hodnotě se ukáže název
+     * z hlavičky pluginu, tedy jak se plugin jmenuje dnes.
      */
     public static function security_plugin()
     {
         $known = apply_filters('mg_monitor_security_plugins', array(
             'wordfence/wordfence.php' => 'Wordfence',
             'better-wp-security/better-wp-security.php' => 'Solid Security',
+            'ithemes-security-pro/ithemes-security-pro.php' => 'Solid Security Pro',
             'sucuri-scanner/sucuri.php' => 'Sucuri',
             'all-in-one-wp-security-and-firewall/wp-security.php' => 'All-In-One Security',
             'wp-cerber/wp-cerber.php' => 'WP Cerber',
@@ -51,16 +57,26 @@ final class MG_Security_Checks
             'wp-simple-firewall/icwp-wpsf.php' => 'Shield Security',
         ));
 
+        $known_dirs = array();
+
+        foreach ($known as $known_file => $known_label) {
+            $known_dirs[dirname($known_file)] = $known_label;
+        }
+
         $plugins = get_plugins();
         $updates = get_site_transient('update_plugins');
         $responses = is_object($updates) && isset($updates->response) ? (array) $updates->response : array();
 
-        foreach ($known as $file => $label) {
-            if (!isset($plugins[$file]) || !is_plugin_active($file)) {
+        foreach ($plugins as $file => $data) {
+            $dir = dirname($file);
+
+            // Jednosouborové pluginy mají složku „.", ty v seznamu nejsou.
+            if ($dir === '.' || !isset($known_dirs[$dir]) || !is_plugin_active($file)) {
                 continue;
             }
 
-            $version = isset($plugins[$file]['Version']) ? $plugins[$file]['Version'] : '';
+            $label = !empty($data['Name']) ? $data['Name'] : $known_dirs[$dir];
+            $version = isset($data['Version']) ? $data['Version'] : '';
 
             if (isset($responses[$file])) {
                 return self::check('security_plugin', 'warning', $label . ' ' . $version,

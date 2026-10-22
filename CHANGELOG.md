@@ -1,5 +1,15 @@
 # Změny
 
+## Připravuje se
+
+- **MEDIAGRAFIK Monitor 1.9.1: pozná Solid / Kadence Security Pro.**
+  Seznam známých bezpečnostních pluginů měl jen bezplatnou verzi
+  (`better-wp-security`); placená leží ve složce `ithemes-security-pro`
+  a web hlásil „Žádný" bezpečnostní plugin. Pluginy se teď porovnávají
+  podle složky (ne celé cesty k hlavnímu souboru) a v hodnotě se ukáže
+  název z hlavičky pluginu — tedy dnešní „Kadence Security Pro", ne
+  starší jméno ze seznamu.
+
 ## 0.9.4 — 7. 10. 2026
 
 - **Skupina projektu.** Nové nepovinné pole u projektu: slovo, které

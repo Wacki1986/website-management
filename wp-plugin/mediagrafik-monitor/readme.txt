@@ -3,7 +3,7 @@ Contributors: mediagrafik
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 
 Napojení webu na Správu webů studia MEDIAGRAFIK.
@@ -29,6 +29,9 @@ nebo Yoast SEO a základní SEO kontroly (viditelnost pro vyhledávače, mapa we
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.9.1 =
+* Bezpečnostní plugin: pozná i placenou verzi Solid Security Pro (dnes Kadence Security Pro, dříve iThemes Security Pro). Pluginy se porovnávají podle složky, takže je nerozhodí přejmenování hlavního souboru, a ve Správě webů se ukáže jejich dnešní název.
 
 = 1.9.0 =
 * Aktualizace pluginů z knihovny Správy webů už nepřebije vlastní updater pluginu. Placený plugin bez licence (Rank Math PRO a spol.) svou nabídku zahodí a s ní i tu z knihovny; teď si web v takovém případě vezme verzi z knihovny přímo. Platnou nabídku autora (s licencí) to nepřebíjí.
