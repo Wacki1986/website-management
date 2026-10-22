@@ -9,6 +9,10 @@
   podle složky (ne celé cesty k hlavnímu souboru) a v hodnotě se ukáže
   název z hlavičky pluginu — tedy dnešní „Kadence Security Pro", ne
   starší jméno ze seznamu.
+- **Oprava: hero karta dashboardu u nebezpečného pluginu** hlásila
+  vypršelý SSL certifikát, i když byl platný — všechny problémy kromě
+  výpadku propadly do věty o SSL. Teď má každý druh vlastní větu;
+  u nebezpečného pluginu karta jmenuje plugin stažený z wordpress.org.
 
 ## 0.9.4 — 7. 10. 2026
 

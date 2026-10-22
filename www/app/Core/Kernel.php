@@ -560,7 +560,7 @@ final class Kernel
 
     public function dashboard(): DashboardData
     {
-        return $this->dashboard ??= new DashboardData($this->sites(), $this->uptime(), $this->alerts(), $this->service(), $this->monitorSettings());
+        return $this->dashboard ??= new DashboardData($this->sites(), $this->uptime(), $this->alerts(), $this->service(), $this->monitorSettings(), $this->pluginDirectory());
     }
 
     public function reports(): ReportRepository

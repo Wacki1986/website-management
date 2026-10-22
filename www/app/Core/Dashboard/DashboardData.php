@@ -7,6 +7,7 @@ namespace App\Core\Dashboard;
 use App\Core\Monitor\AlertRepository;
 use App\Core\Monitor\MonitorSettings;
 use App\Core\Monitor\PhpSupport;
+use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\UptimeRepository;
 use App\Core\Service\ServiceRepository;
 use App\Core\Service\ServiceSchedule;
@@ -36,6 +37,8 @@ final class DashboardData
         private readonly AlertRepository $alerts,
         private readonly ServiceRepository $service,
         private readonly MonitorSettings $settings,
+        // Názvy nebezpečných pluginů pro hero kartu; bez něj jen obecná věta.
+        private readonly ?PluginDirectory $directory = null,
     ) {
     }
 
@@ -223,15 +226,53 @@ final class DashboardData
             ];
         }
 
-        $sslTo = (string) ($site['ssl_valid_to'] ?? '');
+        if ($state['label'] === 'SSL vypršel') {
+            $sslTo = (string) ($site['ssl_valid_to'] ?? '');
+
+            return [
+                'id' => (int) $site['id'],
+                'name' => (string) $site['name'],
+                'icon' => (string) ($site['icon'] ?? ''),
+                'note' => $host . ' · certifikát vypršel ' . date('j. n.', (int) strtotime($sslTo)) . ', prohlížeč hlásí varování',
+                'duration' => get_duration($sslTo, $nowText),
+                'kind' => 'neplatné SSL',
+            ];
+        }
+
+        // Každý další druh problému musí mít vlastní větu. Dřív sem propadl
+        // i „Nebezpečný plugin" a karta hlásila vypršelé SSL u platného certifikátu.
+        $outdated = null;
+
+        foreach ($open as $alert) {
+            if ($alert['type'] === 'plugins_outdated') {
+                $outdated = $alert;
+            }
+        }
+
+        if ($state['label'] === 'Nebezpečný plugin') {
+            $names = $this->directory !== null ? array_map(
+                static fn (array $issue): string => $issue['name'],
+                array_values(array_filter($this->directory->issues((int) $site['id'], $now), static fn (array $issue): bool => $issue['security'])),
+            ) : [];
+
+            return [
+                'id' => (int) $site['id'],
+                'name' => (string) $site['name'],
+                'icon' => (string) ($site['icon'] ?? ''),
+                'note' => $host . ' · ' . ($names !== [] ? (count($names) === 1 ? 'plugin ' : 'pluginy ') . implode(', ', $names) : 'plugin')
+                    . (count($names) > 1 ? ' byly staženy' : ' byl stažen') . ' z wordpress.org kvůli bezpečnostní chybě',
+                'duration' => $outdated !== null ? get_duration((string) $outdated['opened_at'], $nowText) : '',
+                'kind' => 'nebezpečný plugin',
+            ];
+        }
 
         return [
             'id' => (int) $site['id'],
             'name' => (string) $site['name'],
             'icon' => (string) ($site['icon'] ?? ''),
-            'note' => $host . ' · certifikát vypršel ' . date('j. n.', (int) strtotime($sslTo)) . ', prohlížeč hlásí varování',
-            'duration' => get_duration($sslTo, $nowText),
-            'kind' => 'neplatné SSL',
+            'note' => $host . ' · ' . mb_strtolower($state['label']),
+            'duration' => '',
+            'kind' => mb_strtolower($state['label']),
         ];
     }
 

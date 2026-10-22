@@ -92,4 +92,23 @@ return [
         assertContainsString('18minutový výpadek u webu Kavárna Dobrá', $calm['hero']['calmText']);
         assertSame(0, $calm['counts']['problem']);
     },
+
+    'hero: nebezpečný plugin u platného SSL nehlásí vypršelý certifikát' => function (): void {
+        $f = monitorFixture();
+        $dashboard = new DashboardData($f['sites'], $f['uptime'], $f['alerts'], new ServiceRepository($f['db']), $f['monitorSettings']);
+        $now = strtotime('2026-10-20 10:00:00');
+
+        $plugin = $f['sites']->create(['name' => 'Showdown', 'url' => 'https://www.showdown.eu']);
+        $f['sites']->update($plugin, ['status' => 'ok', 'last_check_at' => '2026-10-20 09:55:00', 'ssl_valid_to' => '2026-12-18 12:00:00']);
+        $f['db']->execute("INSERT INTO site_snapshots (site_id, fetched_at, payload, php_version, plugins_total, plugins_active, plugins_insecure) VALUES (:id, '2026-10-20 08:00:00', '{}', '8.3.1', 5, 5, 1)", ['id' => $plugin]);
+        $expired = $f['sites']->create(['name' => 'Ordinace', 'url' => 'https://ordinace.cz']);
+        $f['sites']->update($expired, ['status' => 'ok', 'last_check_at' => '2026-10-20 09:55:00', 'ssl_valid_to' => '2026-10-18 12:00:00']);
+
+        $items = array_column($dashboard->build([], null, $now)['hero']['items'], null, 'name');
+        assertSame('nebezpečný plugin', $items['Showdown']['kind']);
+        assertContainsString('bezpečnostní chybě', $items['Showdown']['note']);
+        assertFalse(str_contains($items['Showdown']['note'], 'certifikát'));
+        assertSame('neplatné SSL', $items['Ordinace']['kind']);
+        assertContainsString('certifikát vypršel 18. 10.', $items['Ordinace']['note']);
+    },
 ];
