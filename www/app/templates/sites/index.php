@@ -8,7 +8,7 @@
  *
  * @var \App\Core\View\View $this
  * @var string              $title
- * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `updates` (+ `updatesTitle` rozpis), `versions` (WP, PHP, Databáze: value, tone, title)…
+ * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `cells` (Uptime, WP, PHP, Databáze, Aktualizace — `SiteCells::of()`), `service`, `report`, `seo`…
  * @var array<string, array<int, array<string, mixed>>> $groups   při seskupení: klient => řádky
  * @var bool                $grouped
  * @var string              $q
@@ -52,11 +52,7 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
         </div>
         <div class="table__cell u-truncate text-secondary"><?= $this->e((string) ($site['client_name'] ?? '—')) ?></div>
         <div class="table__cell"><?= get_status($site['state']['tone'], $site['state']['label']) ?></div>
-        <div class="table__cell table__cell--mono table__cell--right<?= $site['uptimeTone'] === 'faint' ? ' text-faint' : ($site['uptimeTone'] !== '' ? ' text-' . $site['uptimeTone'] : '') ?>"><?= $this->e($site['uptime']) ?></div>
-        <?php foreach ($site['versions'] as $version): ?>
-            <div class="table__cell table__cell--mono u-truncate<?= $version['value'] === '' ? ' text-faint' : ($version['tone'] !== '' ? ' text-' . $version['tone'] : '') ?>"<?= $version['title'] !== '' ? ' title="' . $this->e($version['title']) . '"' : '' ?>><?= $version['value'] !== '' ? $this->e($version['value']) : '—' ?></div>
-        <?php endforeach; ?>
-        <div class="table__cell table__cell--right"><?= $site['updates'] > 0 ? '<span title="' . $this->e($site['updatesTitle']) . '">' . get_badge((string) $site['updates'], $site['updates'] >= 5 ? 'warning' : '') . '</span>' : '<span class="text-faint">–</span>' ?></div>
+        <?= $this->partial('partials/site-cells', ['cells' => $site['cells']]) ?>
         <?php if ($seoColumn): ?>
             <div class="table__cell" title="<?= $this->e($site['seo']['title']) ?>"><?= $site['seo']['tone'] !== '' ? get_status($site['seo']['tone'], $site['seo']['label']) : '<span class="text-faint">' . $this->e($site['seo']['label']) . '</span>' ?></div>
         <?php endif; ?>

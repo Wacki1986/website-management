@@ -800,10 +800,10 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
 
 // Výpis webů: WP, PHP a Databáze ve vlastních sloupcích (návrh má jeden
 // sloupec „WP / PHP“). Přepisuje sady sloupců z `components/_list.scss`.
-.table--sites { --table-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) 126px 74px 58px 50px 112px 94px 132px 92px 34px; }
+.table--sites { --table-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) 126px 74px 58px 60px 112px 94px 132px 92px 34px; }
 
 @media (max-width: 1100px) {
-  .table--sites { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 116px 68px 54px 46px 104px 84px 124px 80px 34px; }
+  .table--sites { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 116px 68px 54px 56px 104px 84px 124px 80px 34px; }
 }
 
 @media (max-width: 768px) {
@@ -811,15 +811,22 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
 }
 
 @media (min-width: 769px) {
-  .table--sites { min-width: 1100px; }
+  .table--sites { min-width: 1110px; }
+}
+
+// Dashboard „Vyžaduje řešení": sloupec Databáze široký jako ve výpisu
+// webů (oba kreslí `partials/site-cells.php`), „MariaDB 10.11" se jinak
+// ořízne. Přepisuje sadu z `components/_hero.scss`, mobil nechává.
+@media (min-width: 769px) {
+  .table--dashboard { --table-columns: minmax(0, 1fr) 126px 86px 62px 58px 112px 92px 130px 88px 34px; min-width: 1188px; }
 }
 
 // Výpis webů se sloupcem SEO (modul SEO zapnutý) — o jednu stopu víc
 // za „Aktualizace". Na mobilu zůstává dvousloupcový řádek.
-.table--sites.table--sites-seo { --table-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) 126px 74px 58px 50px 112px 94px 76px 132px 92px 34px; }
+.table--sites.table--sites-seo { --table-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) 126px 74px 58px 60px 112px 94px 76px 132px 92px 34px; }
 
 @media (max-width: 1100px) {
-  .table--sites.table--sites-seo { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 116px 68px 54px 46px 104px 84px 70px 124px 80px 34px; }
+  .table--sites.table--sites-seo { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 116px 68px 54px 56px 104px 84px 70px 124px 80px 34px; }
 }
 
 @media (max-width: 768px) {
@@ -827,7 +834,7 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
 }
 
 @media (min-width: 769px) {
-  .table--sites.table--sites-seo { min-width: 1180px; }
+  .table--sites.table--sites-seo { min-width: 1190px; }
 }
 
 

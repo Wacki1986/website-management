@@ -6,11 +6,11 @@ namespace App\Core\Dashboard;
 
 use App\Core\Monitor\AlertRepository;
 use App\Core\Monitor\MonitorSettings;
-use App\Core\Monitor\PhpSupport;
 use App\Core\Monitor\PluginDirectory;
 use App\Core\Monitor\UptimeRepository;
 use App\Core\Service\ServiceRepository;
 use App\Core\Service\ServiceSchedule;
+use App\Core\Sites\SiteCells;
 use App\Core\Sites\SiteRepository;
 use App\Core\Sites\SiteStatus;
 
@@ -164,9 +164,6 @@ final class DashboardData
      */
     private function row(array $site, array $state, ?float $percent, ?array $plan, string $today, int $now): array
     {
-        $php = (string) ($site['snap_php_version'] ?? '');
-        $wpUpdate = ($site['snap_wp_update_version'] ?? null) !== null;
-        $updates = (int) ($site['snap_plugins_updates'] ?? 0) + ($wpUpdate ? 1 : 0);
         $service = ServiceSchedule::cell($plan, $today);
 
         return [
@@ -178,14 +175,8 @@ final class DashboardData
             'clientName' => (string) ($site['client_name'] ?? ''),
             'level' => $state['level'],
             'state' => $state,
-            'uptime' => $percent !== null ? number_format($percent, $percent >= 99.95 ? 0 : 1, ',', ' ') . ' %' : '—',
-            'uptimeTone' => $percent === null ? 'faint' : ($percent < 99 ? 'error' : ($percent < 99.9 ? 'warning' : '')),
-            'wp' => (string) ($site['snap_wp_version'] ?? ''),
-            'wpTone' => $wpUpdate ? 'warning' : '',
-            'php' => PhpSupport::minor($php),
-            'phpTone' => PhpSupport::tone($php, $now),
-            'db' => trim((string) ($site['snap_db_type'] ?? '') . ' ' . PhpSupport::minor((string) ($site['snap_db_version'] ?? ''))),
-            'updates' => $updates,
+            // Stejné buňky jako výpis Weby (SiteCells), ať oba ukazují totéž.
+            'cells' => SiteCells::of($site, $percent, $now),
             'service' => $service['label'],
             'serviceTone' => $service['tone'] === 'faint' && $state['level'] !== 'ok' ? 'warning' : $service['tone'],
             'checked' => get_ago($site['last_check_at'] ?? null, $now),

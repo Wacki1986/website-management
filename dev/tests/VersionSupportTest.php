@@ -55,6 +55,7 @@ return [
         assertContainsString('text-warning" title="PHP 8.2 přestane', $html);
         assertContainsString('text-error" title="Databáze MariaDB 10.6 už nedostává', $html);
         assertContainsString('>MariaDB 10.6</div>', $html);
+        assertContainsString('>8.2.28</div>', $html, 'PHP celou verzí, ať se pozná záplata');
 
         // Přehled webu: dlaždice Databáze hlásí konec podpory jako PHP.
         $overview = kernelRequest($kernel, 'GET', '/weby/' . $siteId)->body();

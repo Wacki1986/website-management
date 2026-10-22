@@ -18,6 +18,14 @@
   klienta k přiřazení se řadí do mřížky vedle sebe.
 - **Tmavý motiv: nativní části polí** (ikona kalendáře, rozbalený seznam
   selectu, posuvníky) se kreslí tmavě a šipka selectu je světlá.
+- **Výpis webů ukazuje celou verzi PHP** (7.4.33, ne jen 7.4), aby se
+  po bezpečnostní záplatě dalo porovnat, který web ji už má. Sloupec
+  PHP je o 10 px širší, aby se verze vešla.
+- **Dashboard a výpis Weby mají stejné buňky** Uptime, WP, PHP, Databáze
+  a Aktualizace (`SiteCells` + `partials/site-cells.php`). Dashboard tím
+  nově ukazuje celou verzi PHP, databázi bez podpory červeně (MySQL 5.7),
+  vysvětlení v bublinách a rozpis aktualizací; web mimo WordPress
+  ve sloupci WP hlásí, na čem běží.
 
 ## 0.9.4 — 7. 10. 2026
 

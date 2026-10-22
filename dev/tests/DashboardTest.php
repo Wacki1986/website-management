@@ -69,9 +69,11 @@ return [
         // Tabulka: problém nahoře, pak pozornost; v pořádku chybí.
         assertSame(['Kavárna Dobrá', 'Ordinace'], array_column($data['rows'], 'name'));
         assertSame('PHP 7.4 EOL', $data['rows'][1]['state']['label']);
-        assertSame('error', $data['rows'][1]['phpTone']);
-        assertSame('MariaDB 10.6', $data['rows'][1]['db']);
-        assertSame(6, $data['rows'][1]['updates']);
+        // Buňky jako ve výpisu Weby: celá verze PHP, databáze bez podpory červeně.
+        [, $php, $db] = $data['rows'][1]['cells']['versions'];
+        assertSame(['7.4.33', 'error'], [$php['value'], $php['tone']]);
+        assertSame(['MariaDB 10.6', 'error'], [$db['value'], $db['tone']]);
+        assertSame(6, $data['rows'][1]['cells']['updates']['count']);
         assertSame('za 21 dní', str_replace("\u{a0}", ' ', $data['rows'][1]['service']));
 
         // Segmenty a klient.

@@ -26,6 +26,7 @@ use App\Core\Sites\ApiKey;
 use App\Core\Sites\ContentFreshness;
 use App\Core\Sites\SiteActions;
 use App\Core\Sites\SiteIcons;
+use App\Core\Sites\SiteCells;
 use App\Core\Sites\SiteRepository;
 use App\Core\Sites\SiteStatus;
 use App\Core\Views\Pagination;
@@ -76,17 +77,10 @@ final class SiteController extends Controller
                 $counts[$state['level']]++;
             }
 
-            $percent = $percents[(int) $site['id']] ?? null;
-
             $all[] = $site + [
                 'state' => $state,
-                'uptime' => $percent !== null ? number_format($percent, $percent >= 99.95 ? 0 : 1, ',', ' ') . ' %' : '—',
-                'uptimeTone' => $percent === null ? 'faint' : ($percent < 99 ? 'error' : ($percent < 99.9 ? 'warning' : '')),
                 'host' => SiteRepository::host((string) $site['url']),
-                'versions' => self::versionCells($site),
-                'updates' => (int) ($site['snap_plugins_updates'] ?? 0) + (($site['snap_wp_update_version'] ?? null) !== null ? 1 : 0),
-                // Číslo sčítá pluginy i WordPress — bublina říká, z čeho je.
-                'updatesTitle' => self::updatesTitle((int) ($site['snap_plugins_updates'] ?? 0), $site['snap_wp_update_version'] ?? null),
+                'cells' => SiteCells::of($site, $percents[(int) $site['id']] ?? null),
                 'service' => ServiceSchedule::cell($plans[(int) $site['id']] ?? null, $today),
                 'report' => self::reportCell($reportSettings[(int) $site['id']] ?? null),
                 'seo' => self::seoCell($site, in_array(Modules::SEO, $siteModules[(int) $site['id']] ?? [], true)),
@@ -371,18 +365,6 @@ final class SiteController extends Controller
             'openAlerts' => $openAlerts,
             'lastIncident' => $this->lastIncident((int) $id),
         ]);
-    }
-
-    /** Rozpis čísla aktualizací ve výpisu webů: „2 pluginy + WordPress 6.8.3". */
-    private static function updatesTitle(int $plugins, ?string $wordpress): string
-    {
-        $parts = $plugins > 0 ? [get_count($plugins, 'plugin', 'pluginy', 'pluginů')] : [];
-
-        if ($wordpress !== null) {
-            $parts[] = 'WordPress ' . $wordpress;
-        }
-
-        return 'Čeká na aktualizaci: ' . implode(' + ', $parts);
     }
 
     public function plugins(string $id): Response
@@ -1096,38 +1078,6 @@ final class SiteController extends Controller
         ];
     }
 
-    /** „20 h 9 min" z minut. */
-    /**
-     * Sloupce WP, PHP a Databáze ve výpisu webů: text, barva (`warning` =
-     * čeká aktualizace / podpora končí do roka, `error` = bez podpory)
-     * a vysvětlení do bubliny.
-     *
-     * @param array<string, mixed> $site řádek výpisu se sloupci `snap_*`
-     * @return array<int, array{value: string, tone: string, title: string}>
-     */
-    private static function versionCells(array $site): array
-    {
-        $wpUpdate = $site['snap_wp_update_version'] ?? null;
-        $php = (string) ($site['snap_php_version'] ?? '');
-        $dbType = (string) ($site['snap_db_type'] ?? '');
-        $db = (string) ($site['snap_db_version'] ?? '');
-
-        // Jiný systém: verze nikdo nehlásí, ve sloupci WP aspoň na čem běží.
-        if (!SiteRepository::isWordpress($site)) {
-            return [
-                ['value' => SiteRepository::platformLabel($site), 'tone' => 'subtle', 'title' => 'Web neběží na WordPressu — hlídá se jen dostupnost, SSL a doména'],
-                ['value' => '', 'tone' => '', 'title' => ''],
-                ['value' => '', 'tone' => '', 'title' => ''],
-            ];
-        }
-
-        return [
-            ['value' => (string) ($site['snap_wp_version'] ?? ''), 'tone' => $wpUpdate !== null ? 'warning' : '', 'title' => $wpUpdate !== null ? 'Čeká aktualizace na WordPress ' . $wpUpdate : ''],
-            ['value' => PhpSupport::minor($php), 'tone' => PhpSupport::tone($php), 'title' => PhpSupport::advice($php) ?? ''],
-            ['value' => $db !== '' ? DbSupport::label($dbType, $db) : '', 'tone' => DbSupport::tone($dbType, $db), 'title' => DbSupport::advice($dbType, $db) ?? ''],
-        ];
-    }
-
     /**
      * Okno „Přidat z knihovny" na záložce Pluginy: pluginy z knihovny, které
      * na webu nejsou. Ty, co jde nainstalovat, mají zaškrtávátko, ostatní
@@ -1223,6 +1173,7 @@ final class SiteController extends Controller
         };
     }
 
+    /** „20 h 9 min" z minut. */
     private static function minutesLabel(int $minutes): string
     {
         return $minutes >= 60 ? intdiv($minutes, 60) . ' h' . ($minutes % 60 > 0 ? ' ' . ($minutes % 60) . ' min' : '') : $minutes . ' min';

@@ -163,7 +163,7 @@ $segments = [
             </div>
 
             <div class="table table--dashboard" data-live-region="table">
-                <div class="table__head"><div>Web</div><div>Stav</div><div class="table__cell table__cell--right">Uptime 30 d</div><div>WP</div><div>PHP</div><div>DB</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div class="table__cell table__cell--right">Kontrola</div><div></div></div>
+                <div class="table__head"><div>Web</div><div>Stav</div><div class="table__cell table__cell--right">Uptime 30 d</div><div>WP</div><div>PHP</div><div>Databáze</div><div class="table__cell table__cell--right">Aktualizace</div><div>Servis</div><div class="table__cell table__cell--right">Kontrola</div><div></div></div>
                 <?php if ($loading): ?>
                     <?php for ($i = 0; $i < 3; $i++): ?>
                         <div class="table__row" aria-hidden="true">
@@ -190,11 +190,7 @@ $segments = [
                         <a class="table__row table__row--link<?= $row['level'] === 'problem' ? ' table__row--error' : '' ?>" href="<?= get_url('weby/' . $row['id']) ?>">
                             <div class="table__cell row" style="flex-wrap:nowrap;gap:13px"><?= get_site_avatar($row['id'], $row['name'], $row['icon']) ?><div style="min-width:0"><div class="table__primary u-truncate"><?= $this->e($row['name']) ?></div><div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($row['host']) ?></div></div></div>
                             <div class="table__cell"><?= get_status($row['state']['tone'], $row['state']['label']) ?></div>
-                            <div class="table__cell table__cell--mono table__cell--right<?= $row['uptimeTone'] === 'faint' ? ' text-faint' : ($row['uptimeTone'] !== '' ? ' text-' . $row['uptimeTone'] : ' text-secondary') ?>"><?= $this->e($row['uptime']) ?></div>
-                            <div class="table__cell table__cell--mono<?= $row['wpTone'] !== '' ? ' text-' . $row['wpTone'] : ' text-secondary' ?>"><?= $this->e($row['wp'] !== '' ? $row['wp'] : '—') ?></div>
-                            <div class="table__cell table__cell--mono<?= $row['phpTone'] !== '' ? ' text-' . $row['phpTone'] : ' text-secondary' ?>"><?= $this->e($row['php'] !== '' ? $row['php'] : '—') ?></div>
-                            <div class="table__cell table__cell--mono u-truncate"><?= $this->e($row['db'] !== '' ? $row['db'] : '—') ?></div>
-                            <div class="table__cell table__cell--right"><?= $row['updates'] > 0 ? get_badge((string) $row['updates'], $row['updates'] >= 5 ? 'warning' : '') : '<span class="text-faint">–</span>' ?></div>
+                            <?= $this->partial('partials/site-cells', ['cells' => $row['cells']]) ?>
                             <div class="table__cell row" style="flex-wrap:nowrap;gap:8px"><span class="u-truncate<?= $row['serviceTone'] !== '' ? ' text-' . $row['serviceTone'] : '' ?>" style="font-size:var(--font-size-label)"><?= $this->e($row['service']) ?></span></div>
                             <div class="table__cell table__cell--right text-subtle" style="font-size:var(--font-size-label)"><?= $this->e($row['checked']) ?></div>
                             <div class="table__cell table__cell--right"><?= get_icon('chevron-right', 'icon--sm icon--subtle') ?></div>
