@@ -1,7 +1,8 @@
 // Správa webů — vstupní bod stylů.
 //
-// Prvních 25 partialů je design systém z handoff balíčku (`dev/design/scss`),
-// přenesený 1:1 a bez úprav — po nové předávce designu se přepíšou celé.
+// Partialy před `app/` jsou design systém z handoff balíčku (`dev/design/scss`,
+// `components/services` z `dev/design/handoff-sluzby`), přenesený 1:1 a bez
+// úprav — po nové předávce designu se přepíšou celé.
 // Doplňky aplikace (přihlášení, toasty, formulářové drobnosti) jsou v `app/`
 // a do balíčku designu se nikdy nepíšou.
 //
@@ -30,6 +31,7 @@
 @use "components/pick";
 @use "components/hero";
 @use "components/email";
+@use "components/services";
 @use "utilities/helpers";
 
 // Doplňky aplikace — mimo design balíček.

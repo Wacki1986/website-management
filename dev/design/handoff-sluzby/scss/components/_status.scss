@@ -1,0 +1,142 @@
+// Semafor: tečka + text. Nikdy ne samotná barva.
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-label);
+
+  &__dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--border-radius-pill);
+  }
+
+  &--ok {
+    color: var(--color-text-subtle);
+    .status__dot {
+      background: var(--color-status-ok);
+      box-shadow: 0 0 0 3px var(--color-status-ok-halo);
+    }
+  }
+
+  &--warning {
+    color: var(--color-status-warning-text);
+    font-weight: var(--font-weight-semibold);
+    .status__dot {
+      background: var(--color-status-warning);
+      box-shadow: 0 0 0 3px var(--color-status-warning-halo);
+    }
+  }
+
+  &--error {
+    color: var(--color-status-error-text);
+    font-weight: var(--font-weight-semibold);
+    .status__dot {
+      background: var(--color-status-error);
+      box-shadow: 0 0 0 3px var(--color-status-error-halo);
+    }
+  }
+
+  &--muted {
+    color: var(--color-text-faint);
+    .status__dot { background: var(--color-text-faint); }
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--border-radius-pill);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+
+  &--warning {
+    background: var(--color-status-warning-soft);
+    color: var(--color-status-warning-text);
+  }
+
+  &--error {
+    background: var(--color-status-error-soft);
+    color: var(--color-status-error-text);
+  }
+
+  &--ok {
+    background: var(--color-status-ok-soft);
+    color: var(--color-status-ok-text);
+  }
+}
+
+.alert {
+  border-radius: var(--border-radius-card);
+  padding: var(--spacing-xlarge) var(--spacing-xxlarge);
+  border: 1px solid var(--color-status-error-border);
+  background: var(--color-status-error-surface);
+
+  &--warning {
+    border-color: var(--color-status-warning-halo);
+    background: var(--color-status-warning-soft);
+  }
+
+  &__label {
+    @include caps-label;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+    color: var(--color-status-error-text);
+    font-weight: var(--font-weight-bold);
+  }
+
+  &__title {
+    font-size: var(--font-size-heading-small);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-heading);
+    margin-top: 10px;
+  }
+
+  &__body {
+    font-size: var(--font-size-body);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+    margin-top: var(--spacing-xxsmall);
+  }
+}
+
+// doplněno: alert na inverzním podkladu, tečka a řádková varianta
+.alert__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--border-radius-pill);
+  background: var(--color-status-error);
+  box-shadow: 0 0 0 4px var(--color-status-error-halo);
+}
+
+.alert__actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-large);
+}
+
+.alert--inverse {
+  border: 0;
+  background: var(--gradient-surface-inverse);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-hero);
+}
+
+.alert--inverse .alert__label { color: var(--color-status-error-on-inverse); }
+.alert--inverse .alert__body { color: var(--color-text-inverse-subtle); }
+
+// Řádková varianta pro pás nad obsahem.
+.alert--row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-large);
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: var(--border-radius-xlarge);
+}

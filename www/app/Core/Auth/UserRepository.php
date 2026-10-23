@@ -205,4 +205,21 @@ final class UserRepository
 
         return mb_strtoupper($initials);
     }
+
+    /**
+     * Krátký podpis do řádku („Jan Vašák" → „Jan V.") — kdo odškrtl úkol.
+     * Jednoslovné jméno zůstane celé, bez jména přihlašovací jméno.
+     *
+     * @param array<string, mixed> $user
+     */
+    public static function shortName(array $user): string
+    {
+        $words = preg_split('/\s+/', trim((string) ($user['name'] ?? '')), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return match (count($words)) {
+            0 => (string) ($user['username'] ?? ''),
+            1 => $words[0],
+            default => $words[0] . ' ' . mb_strtoupper(mb_substr((string) end($words), 0, 1)) . '.',
+        };
+    }
 }

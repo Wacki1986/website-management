@@ -51,6 +51,19 @@ Kliky, zobrazení a průměrná pozice z Google Search Console. Vyžaduje
 OAuth (propojení Google účtu studia) a weby přidané v Search Console.
 Nejvíc práce ze všech modulů — až po modulu Rychlost.
 
+Záložka Služby u webu už eviduje, kde Search Console běží
+(`SiteServices::isEnabled($id, 'gsc')`) — modul by data ukazoval jen tam.
+
+## Služby u webu — navazující kroky
+
+Záložka Služby je hotová s pevným číselníkem (`Sites\SiteServices`).
+Mimo rozsah první verze (viz `dev/design/handoff-sluzby/SPEC.md`):
+
+- Ověření, že služba na webu opravdu běží (detekce GTM / GA / Matomo /
+  SMTP pluginu přes MEDIAGRAFIK Monitor) — nesoulad se zaškrtnutím hlásit.
+- Úprava číselníku služeb a úkolů v Nastavení aplikace.
+- Historie změn (kdo službu zapnul / vypnul).
+
 ## Bezpečnostní aktualizace pluginů
 
 Záložka Pluginy ukazuje „0 bezpečnostní" vždycky — WordPress u aktualizace

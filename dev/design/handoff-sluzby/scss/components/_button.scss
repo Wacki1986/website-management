@@ -1,0 +1,78 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--border-radius-large);
+  border: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter var(--transition-fast) var(--easing-standard);
+
+  &:hover { filter: brightness(1.06); }
+  &:active { filter: brightness(0.95); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+  &--primary {
+    background: var(--gradient-brand-button);
+    color: var(--color-brand-contrast);
+    box-shadow: var(--shadow-brand-button);
+  }
+
+  &--secondary {
+    background: var(--color-surface-card-solid);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-strong);
+    box-shadow: var(--shadow-subtle);
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid transparent;
+  }
+
+  &--danger {
+    background: var(--color-status-error);
+    color: #fff;
+  }
+
+  &--sm {
+    padding: 7px 12px;
+    font-size: var(--font-size-label);
+  }
+
+  &--lg {
+    padding: 12px 20px;
+    font-size: var(--font-size-body-large);
+  }
+
+  &--block { width: 100%; }
+
+  &__icon {
+    flex: none;
+    width: var(--icon-size-medium);
+    height: var(--icon-size-medium);
+    background-color: currentColor;
+  }
+
+  &--sm &__icon {
+    width: var(--icon-size-small);
+    height: var(--icon-size-small);
+  }
+}
+
+// doplněno: varianty na tmavém (inverzním) podkladu
+.btn--inverse {
+  background: #fff;
+  color: #1b1e38;
+}
+
+.btn--ghost-inverse {
+  background: transparent;
+  color: var(--color-text-inverse-subtle);
+  border: 1px solid var(--color-border-inverse);
+}

@@ -1,0 +1,237 @@
+// Design tokens — jediný zdroj pravdy pro barvy, typografii, odstupy a stíny.
+// SCSS proměnné slouží pro build-time výpočty, custom properties pro runtime (dark mode).
+
+// --- značka ---
+$color-brand: #3858e9;
+$color-brand-hover: #2f4bd0;
+$color-brand-dark: #6b86ff;
+
+// --- semafor ---
+$color-ok: #0f9d6b;
+$color-warning: #e2900a;
+$color-error: #dc2626;
+
+// --- breakpointy ---
+$bp-mobile: 768px;
+$bp-tablet: 1100px;
+
+:root {
+  // značka
+  --color-brand: #{$color-brand};
+  --color-brand-hover: #{$color-brand-hover};
+  --color-brand-solid: #{$color-brand};
+  --color-brand-soft: rgba(56, 88, 233, 0.1);
+  --color-brand-border: rgba(56, 88, 233, 0.22);
+  --color-brand-contrast: #ffffff;
+  --color-on-brand-text: #ffffff;
+
+  // plochy
+  --color-background-page: #eef0f8;
+  --color-surface-card: rgba(255, 255, 255, 0.92);
+  --color-surface-card-solid: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.62);
+  --color-surface-glass-strong: rgba(255, 255, 255, 0.85);
+  --color-surface-sunken: #fafbfe;
+  --color-surface-muted: #eff1f8;
+  --color-surface-hover: #f6f8fe;
+  --color-surface-inverse: #1b1e38;
+
+  // linky
+  --color-border-subtle: rgba(20, 22, 43, 0.045);
+  --color-border-default: rgba(20, 22, 43, 0.07);
+  --color-border-strong: rgba(20, 22, 43, 0.12);
+  --color-border-inverse: rgba(255, 255, 255, 0.1);
+
+  // text
+  --color-text-primary: #14162b;
+  --color-text-secondary: #41455f;
+  --color-text-subtle: #5f6379;
+  --color-text-faint: #6e7288;
+  --color-text-inverse: #ffffff;
+  --color-text-inverse-subtle: #c9cce3;
+  --color-text-inverse-faint: #a9aecb;
+
+  // semafor
+  --color-status-ok: #{$color-ok};
+  --color-status-ok-text: #0a6248;
+  --color-status-ok-soft: rgba(15, 157, 107, 0.12);
+  --color-status-ok-halo: rgba(15, 157, 107, 0.18);
+
+  --color-status-warning: #{$color-warning};
+  --color-status-warning-text: #9e5300;
+  --color-status-warning-soft: #fef4da;
+  --color-status-warning-halo: rgba(226, 144, 10, 0.2);
+
+  --color-status-error: #{$color-error};
+  --color-status-error-text: #b91c1c;
+  --color-status-error-strong: #7f1d1d;
+  --color-status-error-soft: #fee2e2;
+  --color-status-error-surface: rgba(254, 242, 242, 0.85);
+  --color-status-error-halo: rgba(220, 38, 38, 0.16);
+  --color-status-error-border: rgba(220, 38, 38, 0.28);
+
+  --color-alert-badge: #e11d48;
+
+  // na tmavém podkladu (platí v obou motivech)
+  --color-on-inverse-background: #ffffff;
+  --color-on-inverse-text: #14162b;
+  --color-on-inverse-ghost-text: #f3f4fa;
+  --color-on-inverse-ghost-background: rgba(255, 255, 255, 0.08);
+  --color-on-inverse-ghost-border: rgba(255, 255, 255, 0.22);
+
+  // přechody
+  --gradient-page: linear-gradient(160deg, #f2f4fb 0%, #edeff8 45%, #f4f2f8 100%);
+  --gradient-brand-button: linear-gradient(145deg, #4b68ec, #3858e9);
+  --gradient-surface-inverse: linear-gradient(150deg, #1b1e38 0%, #242a53 55%, #2b3a86 100%);
+  --gradient-skeleton: linear-gradient(90deg, rgba(20, 22, 43, 0.05) 0%, rgba(20, 22, 43, 0.1) 50%, rgba(20, 22, 43, 0.05) 100%);
+
+  // typografie
+  --font-family-base: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --font-size-metric: 36px;
+  --font-size-metric-small: 32px;
+  --font-size-heading: 24px;
+  --font-size-heading-small: 20px;
+  --font-size-title: 17px;
+  --font-size-body-large: 15px;
+  --font-size-body: 14px;
+  --font-size-label: 13px;
+  --font-size-subtle: 12px;
+  --font-size-caption: 11px;
+  --font-size-micro: 10px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.5;
+  --line-height-relaxed: 1.55;
+
+  --letter-spacing-metric: -0.035em;
+  --letter-spacing-heading: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-caps: 0.06em;
+
+  // odstupy a layout
+  --spacing-hairline: 2px;
+  --spacing-xxsmall: 4px;
+  --spacing-xsmall: 6px;
+  --spacing-small: 9px;
+  --spacing-medium: 12px;
+  --spacing-large: 14px;
+  --spacing-xlarge: 18px;
+  --spacing-xxlarge: 22px;
+  --spacing-huge: 28px;
+  --spacing-section: 32px;
+
+  --layout-sidebar-width: 236px;
+  --layout-sidebar-width-compact: 72px;
+  --layout-content-padding: 32px;
+  --layout-content-padding-mobile: 16px;
+  --layout-card-padding: 20px;
+  --layout-row-padding-block: 14px;
+  --layout-max-content-width: 1600px;
+
+  // rádiusy
+  --border-radius-small: 7px;
+  --border-radius-medium: 10px;
+  --border-radius-large: 12px;
+  --border-radius-xlarge: 14px;
+  --border-radius-card: 20px;
+  --border-radius-pill: 999px;
+  --border-radius-avatar: 11px;
+
+  // stíny
+  --shadow-subtle: 0 2px 8px rgba(23, 26, 45, 0.09);
+  --shadow-card: 0 2px 6px rgba(23, 26, 45, 0.08), 0 18px 44px rgba(23, 26, 45, 0.16);
+  --shadow-card-small: 0 10px 26px rgba(23, 26, 45, 0.12);
+  --shadow-hero: 0 16px 40px rgba(20, 22, 43, 0.3);
+  --shadow-popover: 0 18px 44px rgba(23, 26, 45, 0.28);
+  --shadow-brand-button: 0 8px 20px rgba(56, 88, 233, 0.32);
+  --shadow-brand-soft: 0 6px 18px rgba(56, 88, 233, 0.28);
+  --shadow-alert-badge: 0 3px 10px rgba(225, 29, 72, 0.35);
+  --shadow-avatar: 0 4px 12px rgba(23, 26, 45, 0.16);
+
+  --blur-glass: blur(18px);
+  --blur-glass-strong: blur(20px) saturate(1.3);
+
+  // pohyb
+  --transition-fast: 120ms;
+  --transition-medium: 200ms;
+  --transition-slow: 320ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --easing-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+
+  // ikony
+  --icon-size-small: 14px;
+  --icon-size-medium: 16px;
+  --icon-size-large: 20px;
+}
+
+[data-theme="dark"] {
+  --color-brand: #{$color-brand-dark};
+  --color-brand-hover: #4a63e0;
+  --color-brand-solid: #3f57d6;
+  --color-brand-soft: rgba(107, 134, 255, 0.16);
+  --color-brand-border: rgba(107, 134, 255, 0.32);
+
+  --color-background-page: #0e1020;
+  --color-surface-card: rgba(30, 33, 58, 0.86);
+  --color-surface-card-solid: #1b1e35;
+  --color-surface-glass: rgba(24, 27, 48, 0.68);
+  --color-surface-glass-strong: rgba(30, 33, 58, 0.9);
+  --color-surface-sunken: rgba(15, 17, 33, 0.6);
+  --color-surface-muted: rgba(255, 255, 255, 0.07);
+  --color-surface-hover: rgba(255, 255, 255, 0.05);
+  --color-surface-inverse: #05060f;
+
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border-default: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-border-inverse: rgba(255, 255, 255, 0.12);
+
+  --color-text-primary: #f3f4fa;
+  --color-text-secondary: #c8cbdd;
+  --color-text-subtle: #a2a7bf;
+  --color-text-faint: #8b90a8;
+
+  --color-status-ok: #34d399;
+  --color-status-ok-text: #6ee7b7;
+  --color-status-ok-soft: rgba(52, 211, 153, 0.16);
+  --color-status-ok-halo: rgba(52, 211, 153, 0.2);
+
+  --color-status-warning: #fbbf24;
+  --color-status-warning-text: #fcd34d;
+  --color-status-warning-soft: rgba(251, 191, 36, 0.18);
+  --color-status-warning-halo: rgba(251, 191, 36, 0.22);
+
+  --color-status-error: #f87171;
+  --color-status-error-text: #fca5a5;
+  --color-status-error-strong: #fecaca;
+  --color-status-error-soft: rgba(248, 113, 113, 0.18);
+  --color-status-error-surface: rgba(127, 29, 29, 0.28);
+  --color-status-error-halo: rgba(248, 113, 113, 0.22);
+  --color-status-error-border: rgba(248, 113, 113, 0.4);
+
+  --color-alert-badge: #f43f5e;
+
+  --gradient-page: linear-gradient(160deg, #0f1122 0%, #141733 48%, #16193a 100%);
+  --gradient-brand-button: linear-gradient(145deg, #4059dd, #2e42b8);
+  --gradient-surface-inverse: linear-gradient(150deg, #1e2246 0%, #272d63 55%, #33429b 100%);
+  --gradient-skeleton: linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.06) 100%);
+
+  --shadow-subtle: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.28), 0 10px 24px rgba(0, 0, 0, 0.32);
+  --shadow-card-small: 0 6px 16px rgba(0, 0, 0, 0.28);
+  --shadow-hero: 0 10px 26px rgba(0, 0, 0, 0.4);
+  --shadow-popover: 0 12px 30px rgba(0, 0, 0, 0.5);
+  --shadow-brand-button: 0 3px 10px rgba(20, 26, 66, 0.5);
+  --shadow-brand-soft: 0 2px 8px rgba(20, 26, 66, 0.45);
+  --shadow-alert-badge: 0 2px 8px rgba(120, 20, 40, 0.5);
+  --shadow-avatar: 0 3px 8px rgba(0, 0, 0, 0.4);
+}

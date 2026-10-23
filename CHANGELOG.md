@@ -2,6 +2,16 @@
 
 ## Připravuje se
 
+- **Nová záložka Služby v detailu webu** (návrh `dev/design/handoff-sluzby`,
+  mezi Reporty a Přístupy). Karta *Nasazené služby*: zaškrtávátka pro
+  GTM, Search Console, vlastní SMTP, Google Analytics, Matomo, Analytics
+  WP, Colabim a Rank Tracker. Karta *Procesy po spuštění*: rozbalovací
+  checklisty SEO základ, Právní minimum, Optimalizace (optimalizační
+  plugin, optimalizace obrázků) a Technika s celkovým průběhem
+  a datem spuštění webu. Klik uloží hned bez načtení stránky; hotový úkol
+  se podepíše („Jan N. · 23. 10. 2026"). Číselník je pevně v kódu
+  (`Sites\SiteServices`), nový web má vše nezaškrtnuté. Migrace
+  `site_services`, `site_launch_tasks`.
 - **MEDIAGRAFIK Monitor 1.9.1: pozná Solid / Kadence Security Pro.**
   Seznam známých bezpečnostních pluginů měl jen bezplatnou verzi
   (`better-wp-security`); placená leží ve složce `ithemes-security-pro`

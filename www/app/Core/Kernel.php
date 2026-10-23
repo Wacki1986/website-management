@@ -23,6 +23,7 @@ use App\Controllers\ServiceController;
 use App\Controllers\SettingsController;
 use App\Controllers\SiteActionController;
 use App\Controllers\SiteController;
+use App\Controllers\SiteServicesController;
 use App\Core\Modules\Modules;
 use App\Core\Modules\SeoRepository;
 use App\Core\Monitor\AlertEngine;
@@ -65,6 +66,7 @@ use App\Core\Service\ServiceRepository;
 use App\Core\Sites\PluginOffers;
 use App\Core\Sites\SiteIcons;
 use App\Core\Sites\SiteRepository;
+use App\Core\Sites\SiteServices;
 use App\Core\Auth\Auth;
 use App\Core\Auth\Avatars;
 use App\Core\Auth\LoginRateLimiter;
@@ -151,6 +153,7 @@ final class Kernel
     private ?ProjectRepository $projects = null;
     private ?ProjectServices $projectServices = null;
     private ?SiteRepository $sites = null;
+    private ?SiteServices $siteServices = null;
     private ?EventLog $events = null;
     private ?PluginClient $pluginClient = null;
     private ?SnapshotImporter $snapshots = null;
@@ -463,6 +466,12 @@ final class Kernel
     public function sites(): SiteRepository
     {
         return $this->sites ??= new SiteRepository($this->db(), $this->secrets());
+    }
+
+    /** Záložka Služby: nasazené služby a kroky po spuštění webu. */
+    public function siteServices(): SiteServices
+    {
+        return $this->siteServices ??= new SiteServices($this->db());
     }
 
     public function credentials(): Credentials
@@ -1202,6 +1211,9 @@ final class Kernel
         $router->add('POST', '/reporty/{id}/odeslat', [ReportController::class, 'send'], Router::AUTH_ONLY, 'reports.send');
         $router->add('POST', '/reporty/{id}/smazat', [ReportController::class, 'delete'], Router::AUTH_ONLY, 'reports.delete');
         $router->add('GET', '/r/{file}', [TrackingController::class, 'pixel'], Router::PUBLIC_ACCESS, 'reports.pixel');
+        // Služby u webu — klik na řádek uloží hned (site-services.js).
+        $router->add('GET', '/weby/{id}/sluzby', [SiteServicesController::class, 'show'], name: 'sites.services');
+        $router->add('POST', '/weby/{id}/sluzby', [SiteServicesController::class, 'toggle'], Router::AUTH_ONLY, 'sites.services.toggle');
         // Trezor přístupů u webu — jen pro účet s dvoufázovým přihlášením
         // (hlídá CredentialController). Heslo jde na stránku jen přes POST
         // na `…/heslo` (oko, kopírování), nikdy ve výpisu.

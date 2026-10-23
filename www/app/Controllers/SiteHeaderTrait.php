@@ -14,7 +14,7 @@ use App\Core\Sites\SiteStatus;
 /**
  * Hlavička detailu webu (`partials/site-header`) sdílená controllery
  * záložek: SiteController, ServiceController, ReportController,
- * CredentialController.
+ * SiteServicesController, CredentialController.
  */
 trait SiteHeaderTrait
 {
@@ -53,6 +53,7 @@ trait SiteHeaderTrait
             ...$pluginTabs,
             ['key' => 'servis', 'label' => 'Servis', 'url' => get_url($base . '/servis'), 'badge' => $service['badge']],
             ['key' => 'reporty', 'label' => 'Reporty', 'url' => get_url($base . '/reporty')],
+            ['key' => 'sluzby', 'label' => 'Služby', 'url' => get_url($base . '/sluzby')],
             ['key' => 'pristupy', 'label' => 'Přístupy', 'url' => get_url($base . '/pristupy')],
             ['key' => 'nastaveni', 'label' => 'Nastavení', 'url' => get_url($base . '/nastaveni')],
         ];

@@ -1,0 +1,94 @@
+// Doplňky pro Nastavení aplikace.
+
+// Číselné pole s krokovacími tlačítky.
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
+
+.stepper__btn {
+  flex: none;
+  width: 34px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--border-radius-medium);
+  background: var(--color-surface-card-solid);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.stepper__value {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 13px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--border-radius-medium);
+  background: var(--color-surface-card-solid);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-body-large);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+}
+
+.stepper--sm .stepper__btn { width: 32px; height: 34px; }
+
+.stepper--sm .stepper__value {
+  flex: none;
+  min-width: 96px;
+  padding: 7px 12px;
+  font-size: var(--font-size-label);
+  white-space: nowrap;
+}
+
+.stepper--off { opacity: 0.45; }
+
+.form__label--caps {
+  font-size: var(--font-size-caption);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+// Řádek prahu: popis – hodnota – přepínač.
+.threshold-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px 60px;
+  gap: 10px var(--spacing-large);
+  align-items: center;
+  padding: var(--spacing-large) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.threshold-row:last-child { border-bottom: 0; }
+
+.threshold-row__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 768px) {
+  .threshold-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.table--users { --table-columns: minmax(150px, 1.2fr) minmax(190px, 1.4fr) 120px 130px 130px 34px; }
+
+@media (max-width: 768px) {
+  .table--users { --table-columns: minmax(0, 1fr) 34px; }
+}
+
+.badge--brand {
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
+
+.pill--ok {
+  background: var(--color-status-ok-soft);
+  border-color: var(--color-status-ok-halo);
+  color: var(--color-status-ok-text);
+  font-weight: var(--font-weight-semibold);
+}

@@ -1,0 +1,159 @@
+// Záložka Služby v Detailu webu: nasazené služby a procesy po spuštění.
+
+// Mřížka skupin služeb (3 sloupce, na mobilu pod sebou).
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.service-grid__group {
+  min-width: 0;
+  padding: var(--spacing-xlarge) var(--spacing-xxlarge) var(--spacing-small);
+}
+
+.service-grid__group + .service-grid__group {
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.service-grid__label {
+  margin-bottom: var(--spacing-xxsmall);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+// Jedna služba: zaškrtávátko + název. Celý řádek je klikací (role="checkbox").
+.service {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-medium);
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.service--on { color: var(--color-text-primary); }
+
+// Průběh: pruh + počet. Šířka výplně přes --progress na .progress.
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress__bar {
+  width: 120px;
+  height: 6px;
+  border-radius: var(--border-radius-pill);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.progress__value {
+  width: var(--progress, 0%);
+  height: 100%;
+  border-radius: var(--border-radius-pill);
+  background: var(--color-brand);
+  transition: width var(--transition-fast) var(--easing-standard);
+}
+
+.progress__count {
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+// Rozbalovací checklisty po spuštění (<details> / <summary>).
+.launch-list__group {
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.launch-list__group:last-child { border-bottom: 0; }
+
+.launch-list__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-medium);
+  min-height: 44px;
+  padding: var(--spacing-large) var(--spacing-xxlarge);
+  list-style: none;
+  cursor: pointer;
+}
+
+.launch-list__summary::-webkit-details-marker { display: none; }
+
+.launch-list__summary:hover { background: var(--color-surface-hover); }
+
+.launch-list__chevron {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background-color: var(--color-text-subtle);
+  -webkit-mask: var(--icon-chevron-down) center / contain no-repeat;
+  mask: var(--icon-chevron-down) center / contain no-repeat;
+  transform: rotate(-90deg);
+  transition: transform var(--transition-fast) var(--easing-standard);
+}
+
+.launch-list__group[open] .launch-list__chevron { transform: none; }
+
+.launch-list__title {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.launch-list__body {
+  padding: 0 var(--spacing-xxlarge) 10px 48px;
+}
+
+.launch-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-medium);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-small) 0;
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.launch-list__item--done { color: var(--color-text-primary); }
+
+.launch-list__label {
+  flex: 1;
+  min-width: 160px;
+}
+
+.launch-list__meta {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-subtle);
+}
+
+@media (max-width: 768px) {
+  .service-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .service-grid__group + .service-grid__group {
+    border-left: 0;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  .launch-list__body { padding-left: var(--spacing-xxlarge); }
+}

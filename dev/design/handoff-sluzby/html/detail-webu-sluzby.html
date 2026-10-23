@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Správa webů — Detail webu / Služby</title>
+<link rel="stylesheet" href="../dist/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="sidebar__logo" href="#">
+      <img src="logo-mediagrafik.svg" alt="MEDIAGRAFIK">
+      <span class="sidebar__logo-badge">Správa webů</span>
+    </a>
+
+    <nav class="sidebar__nav">
+      <a class="sidebar__item" href="#"><span class="icon" style="-webkit-mask:var(--icon-dashboard) center/contain no-repeat;mask:var(--icon-dashboard) center/contain no-repeat"></span><span>Dashboard</span></a>
+      <a class="sidebar__item sidebar__item--active" href="#"><span class="icon" style="-webkit-mask:var(--icon-globe) center/contain no-repeat;mask:var(--icon-globe) center/contain no-repeat"></span><span>Weby</span><span class="sidebar__count">13</span></a>
+      <a class="sidebar__item" href="#"><span class="icon" style="-webkit-mask:var(--icon-alert) center/contain no-repeat;mask:var(--icon-alert) center/contain no-repeat"></span><span>Alerty</span><span class="sidebar__count sidebar__count--alert">7</span></a>
+      <a class="sidebar__item" href="#"><span class="icon" style="-webkit-mask:var(--icon-users) center/contain no-repeat;mask:var(--icon-users) center/contain no-repeat"></span><span>Klienti</span></a>
+      <a class="sidebar__item" href="#"><span class="icon" style="-webkit-mask:var(--icon-report) center/contain no-repeat;mask:var(--icon-report) center/contain no-repeat"></span><span>Reporty</span></a>
+      <a class="sidebar__item" href="#"><span class="icon" style="-webkit-mask:var(--icon-settings) center/contain no-repeat;mask:var(--icon-settings) center/contain no-repeat"></span><span>Nastavení</span></a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__monitor">
+        <div class="sidebar__monitor-title"><span class="dot dot--ok"></span>Monitor běží</div>
+        <div class="text-subtle">Další kontrola 08:30 · 13 webů / 15 min</div>
+      </div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-avatar"></div>
+        <div>
+          <div style="font-weight:var(--font-weight-semibold);font-size:var(--font-size-label)">Petra K.</div>
+          <div class="text-caption">studio</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="app__main">
+
+    <header class="page-header">
+      <div class="page-header__breadcrumb">
+        <a href="#">Weby</a><span>/</span><span>Kavárna Dobrá</span>
+      </div>
+
+      <div class="page-header__top">
+        <div>
+          <div class="page-header__title">Kavárna Dobrá</div>
+          <div class="page-header__meta">
+            <span class="status status--error"><span class="status__dot"></span>Nedostupný · HTTP 503</span>
+            <a href="https://kavarnadobra.cz">kavarnadobra.cz</a>
+            <span>Kavárna Dobrá s.r.o.</span>
+            <span>kontrola každých 15 min</span>
+          </div>
+        </div>
+        <div class="page-header__actions">
+          <button class="btn btn--secondary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-external) center/contain no-repeat;mask:var(--icon-external) center/contain no-repeat"></span>wp-admin</button>
+          <button class="btn btn--primary btn--sm" type="button"><span class="btn__icon" style="-webkit-mask:var(--icon-refresh) center/contain no-repeat;mask:var(--icon-refresh) center/contain no-repeat"></span>Zkontrolovat teď</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <a class="tabs__item" href="#">Přehled</a>
+        <a class="tabs__item" href="#">Pluginy <span class="badge badge--warning">4 neakt.</span></a>
+        <a class="tabs__item" href="#">Obsah</a>
+        <a class="tabs__item" href="#">Zabezpečení <span class="badge badge--warning">3 chybí</span></a>
+        <a class="tabs__item" href="#">SEO <span class="badge badge--warning">55 slab.</span></a>
+        <a class="tabs__item" href="#">Servis <span class="badge">za 12 dní</span></a>
+        <a class="tabs__item" href="#">Reporty</a>
+        <a class="tabs__item tabs__item--active" href="#">Služby</a>
+        <a class="tabs__item" href="#">Nastavení</a>
+      </nav>
+    </header>
+
+    <div class="app__content stack">
+
+      <section class="card">
+        <div class="card__header">
+          <div>
+            <h2 class="card__title">Nasazené služby</h2>
+            <div class="card__note">Zaškrtněte, co na webu běží. Podle toho se zobrazují data v ostatních záložkách.</div>
+          </div>
+          <span class="badge">5 z 8 nasazeno</span>
+        </div>
+        <div class="service-grid">
+          <div class="service-grid__group">
+            <div class="service-grid__label">Obecná nastavení</div>
+            <button class="service service--on" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span>Google Tag Manager</button>
+            <button class="service service--on" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span>Google Search Console</button>
+            <button class="service service--on" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span>Vlastní SMTP</button>
+          </div>
+          <div class="service-grid__group">
+            <div class="service-grid__label">Statistiky</div>
+            <button class="service service--on" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span>Google Analytics</button>
+            <button class="service" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span>Matomo</button>
+            <button class="service" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span>Analytics WP</button>
+          </div>
+          <div class="service-grid__group">
+            <div class="service-grid__label">SEO</div>
+            <button class="service service--on" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span>Colabim</button>
+            <button class="service" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span>Rank Tracker</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__header">
+          <div>
+            <h2 class="card__title">Procesy po spuštění</h2>
+            <div class="card__note">Zbývá 6 kroků · web spuštěn 13. 10. 2026</div>
+          </div>
+          <div class="progress" style="--progress:45%">
+            <div class="progress__bar"><div class="progress__value"></div></div>
+            <span class="progress__count">5 / 11</span>
+          </div>
+        </div>
+        <div class="launch-list">
+        <details class="launch-list__group">
+          <summary class="launch-list__summary">
+            <span class="launch-list__chevron"></span>
+            <span class="launch-list__title">SEO základ</span>
+            <span class="badge">3 / 6</span>
+          </summary>
+          <div class="launch-list__body">
+              <button class="launch-list__item launch-list__item--done" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span><span class="launch-list__label">Rank Math nasazen a nastaven</span><span class="launch-list__meta">Jan N. · 14. 10. 2026</span></button>
+              <button class="launch-list__item launch-list__item--done" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span><span class="launch-list__label">Sitemap odeslána do Search Console</span><span class="launch-list__meta">Jan N. · 14. 10. 2026</span></button>
+              <button class="launch-list__item launch-list__item--done" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span><span class="launch-list__label">Přesměrování ze staré verze webu</span><span class="launch-list__meta">Jan N. · 15. 10. 2026</span></button>
+              <button class="launch-list__item" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span><span class="launch-list__label">Titulky a meta popisky stránek</span></button>
+              <button class="launch-list__item" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span><span class="launch-list__label">Kontrola zapnutí indexace webu</span></button>
+              <button class="launch-list__item" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span><span class="launch-list__label">Kontrola funkčnosti formulářů</span></button>
+          </div>
+        </details>
+        <details class="launch-list__group" open>
+          <summary class="launch-list__summary">
+            <span class="launch-list__chevron"></span>
+            <span class="launch-list__title">Právní minimum</span>
+            <span class="badge">1 / 3</span>
+          </summary>
+          <div class="launch-list__body">
+              <button class="launch-list__item launch-list__item--done" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span><span class="launch-list__label">Cookie lišta nasazena</span><span class="launch-list__meta">Petra K. · 16. 10. 2026</span></button>
+              <button class="launch-list__item" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span><span class="launch-list__label">Stránka Zásady ochrany osobních údajů</span></button>
+              <button class="launch-list__item" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span><span class="launch-list__label">Odkaz na zásady v patičce a u formulářů</span></button>
+          </div>
+        </details>
+        <details class="launch-list__group">
+          <summary class="launch-list__summary">
+            <span class="launch-list__chevron"></span>
+            <span class="launch-list__title">Optimalizace</span>
+            <span class="badge">0 / 1</span>
+          </summary>
+          <div class="launch-list__body">
+              <button class="launch-list__item" type="button" role="checkbox" aria-checked="false"><span class="checkbox"><span class="checkbox__mark"></span></span><span class="launch-list__label">WP Rocket</span></button>
+          </div>
+        </details>
+        <details class="launch-list__group">
+          <summary class="launch-list__summary">
+            <span class="launch-list__chevron"></span>
+            <span class="launch-list__title">Technika</span>
+            <span class="badge badge--ok">Hotovo</span>
+          </summary>
+          <div class="launch-list__body">
+              <button class="launch-list__item launch-list__item--done" type="button" role="checkbox" aria-checked="true"><span class="checkbox checkbox--checked"><span class="checkbox__mark"></span></span><span class="launch-list__label">Website Auditor – kontroly</span><span class="launch-list__meta">Petra K. · 13. 10. 2026</span></button>
+          </div>
+        </details>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>
