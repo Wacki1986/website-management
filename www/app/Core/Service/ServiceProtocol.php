@@ -14,7 +14,8 @@ use App\Core\Sites\SiteRepository;
  *
  * Protokol ukazuje, co klienta zajímá: web, datum, druh servisu, hotové
  * úkoly z checklistu, poznámku a aktualizace, které monitor ten den na
- * webu zaznamenal (WordPress, pluginy, PHP). Kdo servis dělal a kolik
+ * webu zaznamenal (WordPress, pluginy, PHP), stáří webu a příští servis
+ * podle plánu. Kdo servis dělal a kolik
  * času zabral, do něj záměrně nejde.
  *
  * Tahle třída jen skládá hotové texty pro šablonu `pdf/service-protocol`;
@@ -43,12 +44,13 @@ final class ServiceProtocol
      * @param array<string, mixed> $site   web (s `client_name`, `platform`)
      * @param array<string, mixed> $log    zápis servisu (`service_logs`)
      * @param array<int, array<string, mixed>> $events události z `eventWindow()` (druhy `EVENT_KINDS`)
-     * @param array{name: string, email: string, phone: string} $studio kontakt do patičky
+     * @param array{name: string} $studio jméno studia (popisek loga; patičku protokol nemá)
      * @param string $logoPath absolutní cesta k logu pro tmavé záhlaví (Dompdf čte soubor, ne URL)
      * @param string $today    datum vystavení (Y-m-d)
+     * @param array<string, mixed>|null $plan plán servisu webu (`service_plans`) — kvůli příštímu termínu
      * @return array<string, mixed>
      */
-    public static function data(array $site, array $log, array $events, array $studio, string $logoPath, string $today): array
+    public static function data(array $site, array $log, array $events, array $studio, string $logoPath, string $today, ?array $plan = null): array
     {
         $kind = ServiceSchedule::KINDS[(string) $log['kind']] ?? ServiceSchedule::KINDS['small'];
         $done = (string) $log['status'] !== 'skipped';
@@ -66,19 +68,20 @@ final class ServiceProtocol
             'kindLabel' => $kind['label'],
             'siteHost' => $host,
             'subline' => implode(' · ', array_filter([$siteName, (string) ($site['client_name'] ?? '')], static fn (string $part): bool => $part !== '')),
+            'launched' => self::launched($site['launched_on'] ?? null, (string) $log['performed_on']),
             'date' => get_czech_date((string) $log['performed_on']),
             'status' => $done ? ['tone' => 'ok', 'label' => 'Provedeno'] : ['tone' => 'warning', 'label' => 'Přeskočeno'],
             'tiles' => self::tiles($tasks, $updates, SiteRepository::isWordpress($site)),
             // Úkoly ve dvou sloupcích; lichý poslední řádek dostane prázdnou buňku.
             'taskRows' => array_map(static fn (array $pair): array => array_pad($pair, 2, ''), array_chunk($tasks, 2)),
             'updateRows' => $updateRows,
-            'updateCount' => (string) count($updateRows),
+            'updateCount' => $updateRows !== [] ? (string) count($updateRows) : '',
             'otherChanges' => self::otherChanges($updates),
             'updatesNote' => 'Podle monitoringu webu ' . get_czech_date((string) $log['performed_on']) . ' a následující dopoledne.',
+            'nextService' => self::nextService($plan, (string) $log['performed_on']),
             'note' => trim((string) $log['description']),
             'logoPath' => $logoPath,
             'studioName' => $studio['name'],
-            'studioContact' => implode(' · ', array_filter([$studio['email'], $studio['phone']], static fn (string $part): bool => $part !== '')),
         ];
     }
 
@@ -195,13 +198,82 @@ final class ServiceProtocol
         return $rows;
     }
 
-    /** @param array<string, mixed> $updates z `updates()` @return array<int, string> */
+    /**
+     * Nové a odebrané pluginy — v PDF samostatné zvýrazněné řádky pod
+     * tabulkou, aby nezapadly mezi aktualizacemi.
+     *
+     * @param array<string, mixed> $updates z `updates()`
+     * @return array<int, array{tone: string, symbol: string, label: string, count: string, plugins: array<int, string>}>
+     */
     private static function otherChanges(array $updates): array
     {
-        return array_values(array_filter([
-            $updates['installed'] !== [] ? 'Nově nainstalováno: ' . implode(', ', $updates['installed']) : '',
-            $updates['removed'] !== [] ? 'Odebráno: ' . implode(', ', $updates['removed']) : '',
-        ]));
+        $groups = [
+            ['tone' => 'ok', 'symbol' => '+', 'label' => 'Nově nainstalováno', 'plugins' => $updates['installed']],
+            ['tone' => 'warning', 'symbol' => '−', 'label' => 'Odebráno', 'plugins' => $updates['removed']],
+        ];
+        $changes = [];
+
+        foreach ($groups as $group) {
+            if ($group['plugins'] !== []) {
+                $changes[] = $group + ['count' => get_count(count($group['plugins']), 'plugin', 'pluginy', 'pluginů')];
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Stáří webu do rámečku v záhlaví: „5 let" + „spuštěn 15. 3. 2021".
+     * Počítá se ke dni servisu (ne ke dni stažení, ať starý protokol pořád
+     * říká totéž). Bez data spuštění, nebo když web v den servisu ještě
+     * nejel, rámeček není.
+     *
+     * @return array{age: string, since: string}|null
+     */
+    private static function launched(?string $launchedOn, string $performedOn): ?array
+    {
+        if ($launchedOn === null || $launchedOn === '' || $launchedOn > $performedOn) {
+            return null;
+        }
+
+        $age = (new \DateTimeImmutable($launchedOn))->diff(new \DateTimeImmutable($performedOn));
+
+        return [
+            'age' => match (true) {
+                $age->y > 0 => get_count($age->y, 'rok', 'roky', 'let'),
+                $age->m > 0 => get_count($age->m, 'měsíc', 'měsíce', 'měsíců'),
+                default => 'pár dní',
+            },
+            'since' => 'spuštěn ' . get_czech_date($launchedOn),
+        ];
+    }
+
+    /**
+     * Příští servis podle plánu. Jen zapnutý plán s termínem po tomhle
+     * servisu — přeskočený servis termín neposouvá a „příští" by pak
+     * ukazovalo na ten, o kterém protokol je. Popis druhu
+     * (`KINDS[...]['note']`) se nepíše — klientovi by sliboval rozsah,
+     * který servis ve skutečnosti mít nemusí.
+     *
+     * @param array<string, mixed>|null $plan
+     * @return array{kind: string, date: string, rhythm: string}|null
+     */
+    private static function nextService(?array $plan, string $performedOn): ?array
+    {
+        if ($plan === null || (int) $plan['is_active'] !== 1 || ($plan['next_date'] ?? null) === null || (string) $plan['next_date'] <= $performedOn) {
+            return null;
+        }
+
+        $kind = ServiceSchedule::KINDS[(string) $plan['kind']] ?? ServiceSchedule::KINDS['small'];
+        $frequency = (string) $plan['frequency'];
+
+        return [
+            'kind' => $kind['label'],
+            'date' => get_czech_date((string) $plan['next_date']),
+            'rhythm' => $frequency !== 'once' && isset(ServiceSchedule::FREQUENCIES[$frequency])
+                ? 'opakuje se ' . mb_strtolower(ServiceSchedule::FREQUENCIES[$frequency]['label'])
+                : 'jednorázový servis',
+        ];
     }
 
     /**

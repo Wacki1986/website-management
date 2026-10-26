@@ -35,7 +35,7 @@ return [
         assertSame('Střední servis', $data['kindLabel']);
         assertSame('7. 10. 2026', $data['date']);
         assertSame('8. 10. 2026', $data['issued']);
-        assertSame('studio@mediagrafik.cz', $data['studioContact'], 'Prázdný telefon se do patičky nepíše');
+        assertFalse(isset($data['studioContact']), 'Protokol nemá patičku s kontaktem');
         assertSame('penam.cz · PENAM, a.s.', $data['subline']);
         assertSame('2', $data['tiles'][0]['value']);
         assertSame('beze změny', $data['tiles'][2]['value'], 'Bez aktualizace WordPressu');
@@ -76,7 +76,9 @@ return [
         $data = ServiceProtocol::data(['name' => 'X', 'url' => 'https://x.cz'], ['id' => 1, 'kind' => 'small', 'status' => 'done', 'performed_on' => '2026-09-24', 'description' => '', 'checklist' => null], $events, ['name' => 'X', 'email' => '', 'phone' => ''], '', '2026-10-01');
         assertSame(['WordPress', 'PHP', 'Elementor'], array_column($data['updateRows'], 'name'));
         assertSame('3', $data['updateCount']);
-        assertSame(['Nově nainstalováno: FileBird', 'Odebráno: Media Folder'], $data['otherChanges']);
+        assertSame(['Nově nainstalováno', 'Odebráno'], array_column($data['otherChanges'], 'label'));
+        assertSame([['FileBird'], ['Media Folder']], array_column($data['otherChanges'], 'plugins'));
+        assertSame("1\u{00A0}plugin", $data['otherChanges'][0]['count']);
         assertSame('1', $data['tiles'][1]['value']);
         assertSame("+ 1\u{00A0}nový plugin", $data['tiles'][1]['note']);
         assertSame('6.8.3', $data['tiles'][2]['value']);
@@ -84,6 +86,30 @@ return [
         // Aktualizace z wp-adminu zjistí monitor až při další kontrole — okno sahá do dopoledne dalšího dne.
         assertSame(['2026-09-24 00:00:00', '2026-09-25 12:00:00'], ServiceProtocol::eventWindow('2026-09-24'));
         assertSame(['2026-12-31 00:00:00', '2027-01-01 12:00:00'], ServiceProtocol::eventWindow('2026-12-31'));
+    },
+
+    'protokol: stáří webu ke dni servisu a příští servis z plánu' => function (): void {
+        $site = ['name' => 'X', 'url' => 'https://x.cz', 'launched_on' => '2021-03-15'];
+        $log = ['id' => 1, 'kind' => 'small', 'status' => 'done', 'performed_on' => '2026-10-07', 'description' => 'Hotovo.', 'checklist' => null];
+        $studio = ['name' => 'X', 'email' => '', 'phone' => ''];
+        $plan = ['is_active' => 1, 'kind' => 'medium', 'frequency' => 'quarterly', 'next_date' => '2027-01-07'];
+        $data = ServiceProtocol::data($site, $log, [], $studio, '', '2026-10-08', $plan);
+
+        assertSame(['age' => "5\u{00A0}let", 'since' => 'spuštěn 15. 3. 2021'], $data['launched']);
+        assertSame(['kind' => 'Střední servis', 'date' => '7. 1. 2027', 'rhythm' => 'opakuje se čtvrtletně'], $data['nextService'], 'Popis druhu servisu klientovi nic neslibuje');
+        assertSame('', $data['updateCount'], 'Bez aktualizací se počet nepíše');
+
+        // V prvním roce měsíce, v prvním měsíci „pár dní"; bez data nebo před spuštěním nic.
+        assertSame("7\u{00A0}měsíců", ServiceProtocol::data(['launched_on' => '2026-03-01'] + $site, $log, [], $studio, '', '2026-10-08')['launched']['age']);
+        assertSame('pár dní', ServiceProtocol::data(['launched_on' => '2026-10-01'] + $site, $log, [], $studio, '', '2026-10-08')['launched']['age']);
+        assertSame(null, ServiceProtocol::data(['launched_on' => null] + $site, $log, [], $studio, '', '2026-10-08')['launched']);
+        assertSame(null, ServiceProtocol::data(['launched_on' => '2026-11-01'] + $site, $log, [], $studio, '', '2026-10-08')['launched']);
+
+        // Bez plánu, vypnutý plán i termín, který tímhle servisem teprve nastal: příští servis se nepíše.
+        assertSame(null, ServiceProtocol::data($site, $log, [], $studio, '', '2026-10-08')['nextService']);
+        assertSame(null, ServiceProtocol::data($site, $log, [], $studio, '', '2026-10-08', ['is_active' => 0] + $plan)['nextService']);
+        assertSame(null, ServiceProtocol::data($site, $log, [], $studio, '', '2026-10-08', ['next_date' => '2026-10-07'] + $plan)['nextService']);
+        assertSame('jednorázový servis', ServiceProtocol::data($site, $log, [], $studio, '', '2026-10-08', ['frequency' => 'once'] + $plan)['nextService']['rhythm']);
     },
 
     'stažení protokolu: PDF ke stažení z historie, aktualizace z okna, cizí zápis 404' => function (): void {

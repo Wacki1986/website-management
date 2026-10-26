@@ -2,6 +2,16 @@
 
 ## Připravuje se
 
+- **Servisní protokol v PDF: stáří webu, nové a odebrané pluginy,
+  příští servis.** Vpravo v záhlaví je rámeček *Stáří webu* („5 let ·
+  spuštěn 15. 3. 2021") podle data spuštění z Nastavení webu, počítaný
+  ke dni servisu. Nově nainstalované a odebrané pluginy mají pod
+  tabulkou aktualizací vlastní barevný pruh, aby nezapadly. Na konci je
+  blok *Příští servis* — druh, termín a rytmus podle zapnutého plánu
+  (bez popisu druhu, který klientovi sliboval rozsah). Protokol má
+  menší a klidnější písmo; kolečka s fajfkou a štítky, které Dompdf
+  kreslil nepřesně, nahradily obyčejné znaky. Zápatí s kontaktem
+  a číslem strany je pryč.
 - **Oprava: stránka Reporty padala v půlce tabulky**, když měl některý
   web zapnuté pravidelné reporty — řádku naplánovaného reportu chyběla
   ikona webu. Chyba v šabloně navíc nechávala na stránce rozpracovanou

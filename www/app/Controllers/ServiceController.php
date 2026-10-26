@@ -282,9 +282,7 @@ final class ServiceController extends Controller
 
         $html = $this->kernel->view()->render('pdf/service-protocol', ServiceProtocol::data($site, $log, $events, [
             'name' => (string) ($mail['from_name'] !== '' ? $mail['from_name'] : 'MEDIAGRAFIK'),
-            'email' => (string) $mail['from_address'],
-            'phone' => $this->kernel->settings()->get('report_phone'),
-        ], $pdf->imagePath('logo-mediagrafik-pdf-light.svg'), date('Y-m-d')));
+        ], $pdf->imagePath('logo-mediagrafik-pdf-light.svg'), date('Y-m-d'), $this->kernel->service()->plan((int) $id)));
 
         return new Response($pdf->render($html), 200, [
             'Content-Type' => 'application/pdf',
