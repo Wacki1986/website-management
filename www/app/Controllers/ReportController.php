@@ -503,6 +503,7 @@ final class ReportController extends Controller
             'id' => 0,
             'siteId' => (int) $settings['site_id'],
             'siteName' => (string) $settings['site_name'],
+            'siteIcon' => (string) ($settings['site_icon'] ?? ''),
             'clientName' => (string) ($settings['client_name'] ?? ''),
             'host' => SiteRepository::host((string) $settings['url']),
             'period' => $period['label'],

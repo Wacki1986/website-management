@@ -135,10 +135,22 @@ final class View
         $vars = array_merge($this->shared, $data);
 
         ob_start();
-        (function () use ($file, $vars): void {
-            extract($vars, EXTR_SKIP);
-            require $file;
-        })();
+        $level = ob_get_level();
+
+        try {
+            (function () use ($file, $vars): void {
+                extract($vars, EXTR_SKIP);
+                require $file;
+            })();
+        } catch (\Throwable $e) {
+            // Rozpracovaný výstup šablony zahodit — jinak by zůstal v bufferu
+            // a chybová stránka by se přilepila pod půlku stránky (i s menu).
+            while (ob_get_level() >= $level) {
+                ob_end_clean();
+            }
+
+            throw $e;
+        }
 
         return (string) ob_get_clean();
     }

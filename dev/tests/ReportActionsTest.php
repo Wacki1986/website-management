@@ -48,4 +48,23 @@ return [
 
         Urls::reset();
     },
+    // Řádek naplánovaného reportu (ještě nevznikl) neměl ikonu webu — stránka
+    // spadla v půlce tabulky a pod ni se přilepila chybová stránka i s menu.
+    'fronta reportů: naplánovaný report webu s ikonou i bez ní stránku neshodí' => function (): void {
+        [$kernel] = loggedInKernel('Správce');
+        $withIcon = $kernel->sites()->create(['name' => 'Kavárna', 'url' => 'https://kavarnadobra.cz', 'icon' => 'kavarna.png']);
+        $plain = $kernel->sites()->create(['name' => 'Penam', 'url' => 'https://penam.cz']);
+
+        foreach ([$withIcon, $plain] as $siteId) {
+            $kernel->reports()->saveSettings($siteId, ['is_active' => true, 'frequency' => 'monthly', 'send_day' => 1, 'send_hour' => 6, 'requires_approval' => false], date('Y-m-d H:i:s'));
+        }
+
+        $response = kernelRequest($kernel, 'GET', '/reporty', [], ['stav' => 'all']);
+        assertSame(200, $response->status());
+        assertContainsString('Naplánováno', $response->body());
+        assertContainsString('/weby/' . $withIcon . '/ikona', $response->body(), 'Naplánovaný řádek ukáže ikonu webu');
+        assertSame(1, substr_count($response->body(), '<aside class="sidebar"'), 'Menu je na stránce jednou');
+
+        Urls::reset();
+    },
 ];

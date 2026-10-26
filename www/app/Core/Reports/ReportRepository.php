@@ -130,7 +130,7 @@ final class ReportRepository
     public function activeSettings(): array
     {
         return array_map([self::class, 'decodeSettings'], $this->db->select(
-            'SELECT rs.*, s.name AS site_name, s.url, c.name AS client_name FROM report_settings rs
+            'SELECT rs.*, s.name AS site_name, s.url, s.icon AS site_icon, c.name AS client_name FROM report_settings rs
              JOIN sites s ON s.id = rs.site_id LEFT JOIN clients c ON c.id = s.client_id
              WHERE rs.is_active = 1 AND s.removed_at IS NULL ORDER BY rs.next_send_at IS NULL, rs.next_send_at, s.name',
         ));
