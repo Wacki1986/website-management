@@ -26,11 +26,23 @@ final class ProjectController extends Controller
     /** Pořadí závažnosti pro stav projektu — vyhrává nejhorší web. */
     private const LEVEL_RANK = ['problem' => 3, 'attention' => 2, 'unknown' => 1, 'ok' => 0];
 
+    /**
+     * Pilulky nad seznamem projektů (`?filtr=`). „Naše doména / hosting" =
+     * služba, kterou klientovi prodáváme (`ProjectServices::isResold()`),
+     * ne jen evidovaná kvůli přístupům.
+     */
+    private const LIST_FILTERS = [
+        'domena' => 'Naše doména',
+        'hosting' => 'Náš hosting',
+        'bez-klienta' => 'Bez klienta',
+        'bez-webu' => 'Bez webu',
+    ];
+
     public function index(): Response
     {
         $request = $this->request();
         $q = $request->string('q');
-        $filter = in_array($request->string('filtr'), ['bez-klienta', 'bez-webu'], true) ? $request->string('filtr') : '';
+        $filter = array_key_exists($request->string('filtr'), self::LIST_FILTERS) ? $request->string('filtr') : '';
 
         $sitesByProject = [];
 
@@ -44,24 +56,37 @@ final class ProjectController extends Controller
         $today = date('Y-m-d');
         $days = $this->kernel->monitorSettings()->int('rule_renewal_days');
         $nextRenewal = [];
+        $servicesByProject = [];
 
         foreach ($this->kernel->projectServices()->all() as $service) {
+            $servicesByProject[(int) $service['project_id']][] = $service;
+
             if ($service['renews_on'] !== null && !isset($nextRenewal[(int) $service['project_id']])) {
                 $nextRenewal[(int) $service['project_id']] = ProjectServices::renewalState($service, $today, $days);
             }
         }
 
+        $tags = array_map(ProjectServices::tags(...), $servicesByProject);
+        $hasTag = static fn (array $project, string $kind): bool => in_array($kind, array_column($tags[(int) $project['id']] ?? [], 'kind'), true);
+        $matches = static fn (array $project, string $key): bool => match ($key) {
+            'domena' => $hasTag($project, ProjectServices::KIND_DOMAIN),
+            'hosting' => $hasTag($project, ProjectServices::KIND_HOSTING),
+            'bez-klienta' => $project['client_id'] === null,
+            'bez-webu' => (int) $project['site_count'] === 0,
+            default => true,
+        };
+
         $all = $this->kernel->projects()->all();
-        $counts = [
-            'all' => count($all),
-            'bez-klienta' => count(array_filter($all, static fn (array $p): bool => $p['client_id'] === null)),
-            'bez-webu' => count(array_filter($all, static fn (array $p): bool => (int) $p['site_count'] === 0)),
-        ];
+        $counts = ['all' => count($all)];
+
+        foreach (array_keys(self::LIST_FILTERS) as $key) {
+            $counts[$key] = count(array_filter($all, static fn (array $p): bool => $matches($p, $key)));
+        }
 
         $rows = [];
 
         foreach ($this->kernel->projects()->all(['q' => $q]) as $project) {
-            if (($filter === 'bez-klienta' && $project['client_id'] !== null) || ($filter === 'bez-webu' && (int) $project['site_count'] > 0)) {
+            if ($filter !== '' && !$matches($project, $filter)) {
                 continue;
             }
 
@@ -73,7 +98,14 @@ final class ProjectController extends Controller
                 'hosts' => $hosts === [] ? '—' : $hosts[0] . (count($hosts) > 1 ? ' +' . (count($hosts) - 1) : ''),
                 'firstSite' => $sites[0] ?? null,
                 'renewal' => $nextRenewal[(int) $project['id']] ?? null,
+                'tags' => $tags[(int) $project['id']] ?? [],
             ];
+        }
+
+        $filters = [['key' => '', 'label' => 'Všechny', 'count' => $counts['all']]];
+
+        foreach (self::LIST_FILTERS as $key => $label) {
+            $filters[] = ['key' => $key, 'label' => $label, 'count' => $counts[$key]];
         }
 
         return $this->view('projects/index', [
@@ -81,6 +113,7 @@ final class ProjectController extends Controller
             'projects' => $rows,
             'q' => $q,
             'filter' => $filter,
+            'filters' => $filters,
             'counts' => $counts,
             'meta' => get_count($counts['all'], 'projekt', 'projekty', 'projektů') . ' · '
                 . get_count($this->kernel->clients()->countActive(), 'klient', 'klienti', 'klientů'),

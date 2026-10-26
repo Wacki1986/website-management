@@ -5,12 +5,17 @@
  * Hledání běží při psaní (`live-search.js`): vymění pilulky (jejich
  * odkazy nesou `q`), tabulku a patičku.
  *
+ * Sloupec Služby ukazuje štítky domény a hostingu, které klientovi
+ * prodáváme (`ProjectServices::tags()`) — služba jen kvůli přístupům
+ * štítek nemá. Skupina stojí pod klientem.
+ *
  * @var \App\Core\View\View $this
  * @var string              $title
- * @var array<int, array<string, mixed>> $projects řádky se `state`, `hosts`, `firstSite` (pro ikonu) a `renewal` (nejbližší obnova, null = žádná)
+ * @var array<int, array<string, mixed>> $projects řádky se `state`, `hosts`, `firstSite` (pro ikonu), `renewal` (nejbližší obnova, null = žádná) a `tags` (štítky služeb)
  * @var string              $q
- * @var string              $filter   '' | bez-klienta | bez-webu
- * @var array{all: int, bez-klienta: int, bez-webu: int} $counts
+ * @var string              $filter   '' | domena | hosting | bez-klienta | bez-webu
+ * @var array<int, array{key: string, label: string, count: int}> $filters pilulky
+ * @var array{all: int}     $counts
  * @var string              $meta
  * @var string              $tabsHtml  záložky Projekty / Obnovy a fakturace
  */
@@ -27,15 +32,15 @@ $filterUrl = static fn (string $key): string => get_url('projekty') . '?' . http
             <label class="search" style="max-width:340px"><?= get_icon('search', 'icon--sm') ?><input type="search" name="q" value="<?= $this->e($q) ?>" placeholder="Hledat projekt, klienta, skupinu nebo doménu…" class="search__input" aria-label="Hledat"></label>
             <?php if ($filter !== ''): ?><input type="hidden" name="filtr" value="<?= $this->e($filter) ?>"><?php endif; ?>
             <div class="pill-group" data-live-region="filters">
-                <a class="pill<?= $filter === '' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('') ?>">Všechny <span class="pill__note"><?= $counts['all'] ?></span></a>
-                <a class="pill<?= $filter === 'bez-klienta' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('bez-klienta') ?>">Bez klienta <span class="pill__note"><?= $counts['bez-klienta'] ?></span></a>
-                <a class="pill<?= $filter === 'bez-webu' ? ' pill--brand' : '' ?>" href="<?= $filterUrl('bez-webu') ?>">Bez webu <span class="pill__note"><?= $counts['bez-webu'] ?></span></a>
+                <?php foreach ($filters as $pill): ?>
+                    <a class="pill<?= $filter === $pill['key'] ? ' pill--brand' : '' ?>" href="<?= $filterUrl($pill['key']) ?>"><?= $this->e($pill['label']) ?> <span class="pill__note"><?= $pill['count'] ?></span></a>
+                <?php endforeach; ?>
             </div>
             <noscript><button type="submit" class="btn btn--secondary btn--sm">Hledat</button></noscript>
         </form>
 
         <div class="table table--projects" data-live-region="table">
-            <div class="table__head"><div>Projekt</div><div>Klient</div><div>Skupina</div><div class="table__cell table__cell--right">Weby</div><div>Stav</div><div>Nejbližší obnova</div><div></div></div>
+            <div class="table__head"><div>Projekt</div><div>Klient</div><div>Služby</div><div class="table__cell table__cell--right">Weby</div><div>Stav</div><div>Nejbližší obnova</div><div></div></div>
 
             <?php if ($projects === []): ?>
                 <?php render_empty($counts['all'] === 0 ? 'Zatím žádný projekt' : 'Žádný projekt neodpovídá filtru',
@@ -53,8 +58,21 @@ $filterUrl = static fn (string $key): string => get_url('projekty') . '?' . http
                                 <div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($project['hosts']) ?></div>
                             </div>
                         </div>
-                        <div class="table__cell u-truncate text-secondary"><?= $this->e((string) ($project['client_name'] ?? '—')) ?></div>
-                        <div class="table__cell u-truncate text-secondary"><?= $this->e((string) ($project['umbrella'] ?? '—')) ?></div>
+                        <div class="table__cell" style="min-width:0">
+                            <div class="u-truncate text-secondary"><?= $this->e((string) ($project['client_name'] ?? '—')) ?></div>
+                            <?php if (($project['umbrella'] ?? null) !== null): ?><div class="table__secondary u-truncate" style="margin-top:0">skupina <?= $this->e((string) $project['umbrella']) ?></div><?php endif; ?>
+                        </div>
+                        <div class="table__cell">
+                            <?php if ($project['tags'] === []): ?>
+                                <span class="text-faint">—</span>
+                            <?php else: ?>
+                                <span class="service-tags">
+                                    <?php foreach ($project['tags'] as $tag): ?>
+                                        <span class="badge badge--brand service-tag" title="<?= $this->e($tag['title']) ?>"><?= get_icon($tag['icon']) ?><?= $this->e($tag['label']) ?></span>
+                                    <?php endforeach; ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
                         <div class="table__cell table__cell--right text-secondary" style="font-size:var(--font-size-label)"><?= (int) $project['site_count'] ?></div>
                         <div class="table__cell"><?= get_status($project['state']['tone'], $project['state']['label']) ?></div>
                         <div class="table__cell"><?= $project['renewal'] !== null ? get_status($project['renewal']['tone'], $project['renewal']['label']) : '<span class="text-faint">—</span>' ?></div>

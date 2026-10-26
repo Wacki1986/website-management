@@ -199,4 +199,42 @@ return [
 
         Urls::reset();
     },
+
+    'výpis projektů: štítky jen u služeb, které prodáváme; filtry Naše doména a Náš hosting; hledání podle domény' => function (): void {
+        $domain = ['kind' => 'domain', 'name' => 'pekarnanovak.cz', 'provider' => 'Wedos', 'plan' => '', 'paid_by' => 'us', 'sale_price' => '390.00', 'currency' => 'CZK', 'period_months' => 12];
+        assertTrue(ProjectServices::isResold($domain));
+        assertFalse(ProjectServices::isResold(['sale_price' => null] + $domain), 'Bez ceny = jen evidence');
+        assertFalse(ProjectServices::isResold(['paid_by' => 'client'] + $domain), 'Platí si klient');
+
+        $tags = ProjectServices::tags([
+            $domain,
+            ['name' => 'pekarna.eu'] + $domain,
+            ['kind' => 'hosting', 'name' => '', 'provider' => 'Wedos', 'plan' => 'NoLimit', 'sale_price' => null] + $domain,
+        ]);
+        assertSame(1, count($tags), 'Hosting bez ceny štítek nemá');
+        assertSame("2\u{00A0}domény", $tags[0]['label']);
+        assertSame("pekarnanovak.cz · 390\u{00A0}Kč / rok\npekarna.eu · 390\u{00A0}Kč / rok", $tags[0]['title']);
+        assertSame('Hosting', ProjectServices::tags([['kind' => 'hosting', 'provider' => 'Wedos', 'plan' => 'NoLimit'] + $domain])[0]['label']);
+
+        [$kernel] = loggedInKernel();
+        $ours = $kernel->projects()->create(['name' => 'pekarnanovak.cz']);
+        $kernel->projectServices()->create($ours, 'domain', ['name' => 'pekarnanovak.cz', 'paid_by' => 'us', 'sale_price' => 390]);
+        $kernel->projectServices()->create($ours, 'hosting', ['provider' => 'Wedos', 'paid_by' => 'us', 'sale_price' => 1290]);
+        $accessOnly = $kernel->projects()->create(['name' => 'kavarnadobra.cz']);
+        $kernel->projectServices()->create($accessOnly, 'domain', ['name' => 'kavarnadobra.cz']);
+
+        $list = kernelRequest($kernel, 'GET', '/projekty')->body();
+        assertContainsString('Naše doména <span class="pill__note">1</span>', $list);
+        assertContainsString('Náš hosting <span class="pill__note">1</span>', $list);
+        assertContainsString('service-tag" title="pekarnanovak.cz', $list);
+
+        $filtered = kernelRequest($kernel, 'GET', '/projekty', query: ['filtr' => 'domena'])->body();
+        assertContainsString('href="/projekty/' . $ours . '"', $filtered);
+        assertFalse(str_contains($filtered, 'href="/projekty/' . $accessOnly . '"'), 'Doména bez ceny do filtru nepatří');
+
+        // Projekt bez webu najde hledání podle domény ze služeb.
+        assertContainsString('href="/projekty/' . $accessOnly . '"', kernelRequest($kernel, 'GET', '/projekty', query: ['q' => 'kavarnadobra'])->body());
+
+        Urls::reset();
+    },
 ];

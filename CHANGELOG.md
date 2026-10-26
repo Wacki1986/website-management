@@ -12,6 +12,15 @@
   menší a klidnější písmo; kolečka s fajfkou a štítky, které Dompdf
   kreslil nepřesně, nahradily obyčejné znaky. Zápatí s kontaktem
   a číslem strany je pryč.
+- **Výpis projektů: štítky služeb.** Nový sloupec *Služby* ukazuje
+  štítek Doména a Hosting — jen u služeb, které klientovi prodáváme
+  (platíme my a je vyplněná cena pro klienta). Doména nebo hosting
+  evidované jen kvůli přístupům štítek nemají. Víc služeb téhož druhu
+  se sečte („2 domény"), bublina nad štítkem vyjmenuje, co pod ním je
+  i s cenou. Nové pilulky *Naše doména* a *Náš hosting* vyfiltrují
+  projekty, kde je prodáváme. Skupina se přesunula pod klienta
+  a hledání najde projekt i podle domény ze služeb (dřív jen podle
+  adresy webu).
 - **Oprava: stránka Reporty padala v půlce tabulky**, když měl některý
   web zapnuté pravidelné reporty — řádku naplánovaného reportu chyběla
   ikona webu. Chyba v šabloně navíc nechávala na stránce rozpracovanou

@@ -26,10 +26,10 @@ final class ProjectServices
     public const KIND_DOMAIN = 'domain';
     public const KIND_HOSTING = 'hosting';
 
-    /** @var array<string, array{label: string, icon: string, slug: string}> druh => popisek, ikona, část adresy */
+    /** @var array<string, array{label: string, icon: string, slug: string, plural: array{string, string, string}}> druh => popisek, ikona, část adresy, tvary k počtu */
     public const KINDS = [
-        self::KIND_DOMAIN => ['label' => 'Doména', 'icon' => 'globe', 'slug' => 'domena'],
-        self::KIND_HOSTING => ['label' => 'Hosting', 'icon' => 'server', 'slug' => 'hosting'],
+        self::KIND_DOMAIN => ['label' => 'Doména', 'icon' => 'globe', 'slug' => 'domena', 'plural' => ['doména', 'domény', 'domén']],
+        self::KIND_HOSTING => ['label' => 'Hosting', 'icon' => 'server', 'slug' => 'hosting', 'plural' => ['hosting', 'hostingy', 'hostingů']],
     ];
 
     /** @var array<int, string> měsíce => popisek periody */
@@ -233,6 +233,60 @@ final class ProjectServices
     // -----------------------------------------------------------------
     // Stavy pro obrazovky (bez databáze)
     // -----------------------------------------------------------------
+
+    /**
+     * Prodáváme ji klientovi: platíme my a je vyplněná cena pro klienta.
+     * Služba bez ceny je jen v evidenci — máme k ní přístupy, ale není naše.
+     *
+     * @param array<string, mixed> $service
+     */
+    public static function isResold(array $service): bool
+    {
+        return (string) $service['paid_by'] === self::PAID_BY_US && (float) ($service['sale_price'] ?? 0) > 0;
+    }
+
+    /**
+     * Štítky do výpisu projektů — jen domény a hosting, které klientovi
+     * prodáváme (`isResold()`). Jeden štítek na druh, víc služeb téhož
+     * druhu se sečte („2 domény"); bublina vyjmenuje, co pod štítkem je.
+     *
+     * @param array<int, array<string, mixed>> $services služby jednoho projektu
+     * @return array<int, array{kind: string, label: string, icon: string, title: string}>
+     */
+    public static function tags(array $services): array
+    {
+        $byKind = [];
+
+        foreach ($services as $service) {
+            if (isset(self::KINDS[(string) $service['kind']]) && self::isResold($service)) {
+                $byKind[(string) $service['kind']][] = $service;
+            }
+        }
+
+        $tags = [];
+
+        foreach (self::KINDS as $kind => $meta) {
+            if (!isset($byKind[$kind])) {
+                continue;
+            }
+
+            $count = count($byKind[$kind]);
+            $lines = array_map(static function (array $service) use ($kind): string {
+                $name = $kind === self::KIND_DOMAIN ? (string) $service['name'] : trim($service['provider'] . ' ' . $service['plan']);
+
+                return ($name !== '' ? $name : (string) $service['name']) . ' · ' . self::priceLabel($service);
+            }, $byKind[$kind]);
+
+            $tags[] = [
+                'kind' => $kind,
+                'label' => $count === 1 ? $meta['label'] : get_count($count, ...$meta['plural']),
+                'icon' => $meta['icon'],
+                'title' => implode("\n", $lines),
+            ];
+        }
+
+        return $tags;
+    }
 
     /** Doména v jednotném tvaru: bez schématu, cesty, www a velkých písmen. */
     public static function normalizeDomain(string $input): string

@@ -33,7 +33,7 @@ final class ProjectRepository
     /**
      * Seznam s klientem a počtem webů v monitoringu.
      *
-     * @param array{q?: string, client?: ?int} $filter `q` hledá v názvu projektu, klientovi, skupině i adresách webů
+     * @param array{q?: string, client?: ?int} $filter `q` hledá v názvu projektu, klientovi, skupině, adresách webů i doménách služeb
      * @return array<int, array<string, mixed>>
      */
     public function all(array $filter = []): array
@@ -42,8 +42,10 @@ final class ProjectRepository
         $params = [];
 
         if (($filter['q'] ?? '') !== '') {
-            $conditions[] = '(p.name LIKE :q1 OR c.name LIKE :q2 OR p.umbrella LIKE :q5 OR EXISTS (SELECT 1 FROM sites q WHERE q.project_id = p.id AND q.removed_at IS NULL AND (q.url LIKE :q3 OR q.name LIKE :q4)))';
-            $params['q1'] = $params['q2'] = $params['q3'] = $params['q4'] = $params['q5'] = '%' . $filter['q'] . '%';
+            $conditions[] = '(p.name LIKE :q1 OR c.name LIKE :q2 OR p.umbrella LIKE :q5
+                OR EXISTS (SELECT 1 FROM sites q WHERE q.project_id = p.id AND q.removed_at IS NULL AND (q.url LIKE :q3 OR q.name LIKE :q4))
+                OR EXISTS (SELECT 1 FROM project_services qs WHERE qs.project_id = p.id AND qs.name LIKE :q6))';
+            $params['q1'] = $params['q2'] = $params['q3'] = $params['q4'] = $params['q5'] = $params['q6'] = '%' . $filter['q'] . '%';
         }
 
         if (($filter['client'] ?? null) !== null) {
