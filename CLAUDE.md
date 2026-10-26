@@ -60,6 +60,9 @@ později: `dev/docs/02-todo.md`.
   (odkazy, formuláře s obyčejným POST) ale dál nemají zbytečně záviset na
   skriptu. Moduly v `www/assets/js/modules/`, import mapu verzuje
   `Kernel::jsImportMap()`.
+- **Poznámky s formátováním:** `<textarea data-rich-text>` dostane malý
+  editor (`rich-text.js` — tučně, odkaz, seznamy). Ukládá se text se
+  značkami, nikdy HTML; formát značek je popsaný v hlavičce modulu.
 
 ## Styl
 

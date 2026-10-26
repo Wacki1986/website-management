@@ -87,7 +87,7 @@ $back = get_url('projekty/' . (int) $project['id']);
                         <?= $form->text('invoiced_until', 'Vyfakturováno do', $values['invoiced_until'], type: 'date', class: 'form__field--caps',
                             hint: 'Vyplní tlačítko „Vyfakturováno" v přehledu; ručně jen při zakládání.') ?>
                     </div>
-                    <?= $form->textarea('note', 'Poznámka', $values['note'], class: 'form__field--caps', attributes: ['rows' => '3', 'placeholder' => 'Číslo zákazníka u poskytovatele, na koho je doména vedená…']) ?>
+                    <?= $form->textarea('note', 'Poznámka', $values['note'], class: 'form__field--caps', attributes: ['rows' => '3', 'data-rich-text' => true, 'placeholder' => 'Číslo zákazníka u poskytovatele, na koho je doména vedená…']) ?>
                     <div class="row">
                         <button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?><?= $service === null ? 'Přidat' : 'Uložit' ?></button>
                         <a class="btn btn--ghost" href="<?= $back ?>">Zrušit</a>

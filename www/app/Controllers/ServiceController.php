@@ -16,6 +16,7 @@ use App\Core\Monitor\PluginDirectory;
 use App\Core\Service\ServiceChecklists;
 use App\Core\Service\ServiceProtocol;
 use App\Core\Service\ServiceSchedule;
+use App\Core\Views\RichText;
 
 /**
  * Detail webu — záložka Servis (návrh `detail-webu-servis.html`):
@@ -53,7 +54,8 @@ final class ServiceController extends Controller
             $logKind = ServiceSchedule::KINDS[(string) $log['kind']] ?? ServiceSchedule::KINDS['small'];
             $checklist = ServiceChecklists::decode($log['checklist'] ?? null);
             $logs[] = $log + [
-                'text' => ServiceChecklists::text((string) $log['description'], $checklist),
+                // V tabulce jeden řádek textu — formátování poznámky je až v protokolu.
+                'text' => RichText::line(ServiceChecklists::text((string) $log['description'], $checklist)),
                 'date' => get_czech_date((string) $log['performed_on']),
                 'kindLabel' => $logKind['label'],
                 'icon' => $logKind['icon'],

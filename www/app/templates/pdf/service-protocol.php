@@ -23,7 +23,7 @@
  * @var string              $updateCount počet řádků aktualizací
  * @var array<int, string>  $otherChanges nové a odebrané pluginy (věty)
  * @var string              $updatesNote odkud jsou aktualizace
- * @var string              $note        poznámka ze zápisu servisu
+ * @var string              $note        poznámka ze zápisu servisu (text se značkami editoru, `get_rich_text`)
  * @var string              $logoPath    absolutní cesta k logu (bílá varianta pro tmavé záhlaví)
  * @var string              $studioName
  * @var string              $studioContact e-mail · telefon (může být prázdné)
@@ -98,6 +98,9 @@
     .note { margin-top: 9mm; padding: 4.5mm 5.5mm; background: #eef1fd; border-left: 1.2mm solid #3858e9; border-radius: 4px; }
     .note__label { font-size: 7.5pt; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #3858e9; }
     .note__text { margin-top: 1.5mm; font-size: 10pt; line-height: 1.3; color: #14162b; }
+    .note__text p, .note__text ul, .note__text ol { margin: 0 0 1.5mm; }
+    .note__text ul, .note__text ol { padding-left: 5mm; }
+    .note__text a { color: #3858e9; }
 
     .empty { font-size: 10pt; color: #5f6379; }
 
@@ -179,7 +182,7 @@
 <?php if ($note !== ''): ?>
     <div class="note">
         <div class="note__label">Poznámka k servisu</div>
-        <div class="note__text"><?= nl2br($this->e($note)) ?></div>
+        <div class="note__text"><?= get_rich_text($note) ?></div>
     </div>
 <?php endif; ?>
 

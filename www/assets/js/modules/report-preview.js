@@ -45,7 +45,10 @@ export function initReportPreview() {
 
             const max = Number(note.getAttribute('maxlength') || 400);
             const current = note.value.trim();
-            const next = (current === '' ? '' : current + ' ') + pill.dataset.noteAdd;
+            // Za odrážkou nebo číslovaným bodem (editor poznámky) patří fráze
+            // na nový řádek — jinak by se připojila k poslední položce seznamu.
+            const afterList = /(^|\n)\s*([-•*]|\d+[.)])\s[^\n]*$/.test(current);
+            const next = (current === '' ? '' : current + (afterList ? '\n' : ' ')) + pill.dataset.noteAdd;
             note.value = next.slice(0, max);
             note.dispatchEvent(new Event('input'));
             note.focus();

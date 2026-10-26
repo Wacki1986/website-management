@@ -120,6 +120,28 @@ final class Credentials
         return $stored !== '' ? $this->secrets->decrypt($stored) : null;
     }
 
+    /**
+     * Poznámky trezoru projektu (`projects.vault_note`) v čitelné podobě.
+     * Prázdný řetězec = nic nenapsáno, null = uložené nejde rozšifrovat.
+     */
+    public function note(int $projectId): ?string
+    {
+        $stored = (string) $this->db->scalar('SELECT vault_note FROM projects WHERE id = :id', ['id' => $projectId]);
+
+        return $stored !== '' ? $this->secrets->decrypt($stored) : '';
+    }
+
+    /** Prázdné poznámky se uloží jako NULL, ne jako zašifrovaný prázdný text. */
+    public function saveNote(int $projectId, #[SensitiveParameter] string $note): void
+    {
+        $note = trim($note);
+
+        $this->db->update('projects', [
+            'vault_note' => $note !== '' ? $this->secrets->encrypt($note) : null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], ['id' => $projectId]);
+    }
+
     public function countForProject(int $projectId): int
     {
         return (int) $this->db->scalar('SELECT COUNT(*) FROM credentials WHERE project_id = :project', ['project' => $projectId]);

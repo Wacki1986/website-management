@@ -16,6 +16,10 @@
  * @var array<int, array<string, mixed>> $rows řádky z `CredentialController::row()`
  * @var array<int, array{label: string, icon: string, url: string}> $addLinks přidání po druzích (ikona druhu jako ve výpisu)
  * @var string              $setupUrl  zapnutí dvoufázového přihlášení
+ * @var string              $note       poznámky trezoru v čitelné podobě
+ * @var bool                $noteBroken uložené poznámky nejde rozšifrovat
+ * @var string              $noteAction uložení poznámek
+ * @var int                 $noteMax    nejvíc znaků poznámek
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $pageTitle . ' — Přístupy']);
@@ -101,6 +105,20 @@ $this->extend('layout/shell', ['title' => $pageTitle . ' — Přístupy']);
         </section>
 
         <div class="card card--note">Hesla se nikdy neposílají e-mailem, nejsou v reportech ani v exportech. <?= $this->e($ownerNote) ?></div>
+
+        <section class="card">
+            <?php render_card_head('Poznámky', 'Co se nevejde k jednotlivým přístupům — PIN k podpoře hostingu, záložní kódy, kdo co spravuje. Ukládá se šifrovaně jako hesla.') ?>
+            <form method="post" action="<?= $noteAction ?>" class="card__body form" autocomplete="off" data-pending>
+                <?php render_csrf($csrfToken) ?>
+                <?php if ($noteBroken): ?>
+                    <?php render_notice($this, 'error', 'Uložené poznámky nejde přečíst', 'Změnil se app_key v config/env.php. Uložením se dosavadní poznámky přepíšou tím, co je v poli.') ?>
+                <?php endif; ?>
+                <textarea class="form__control form__control--textarea" name="vault_note" data-rich-text rows="8" maxlength="<?= $noteMax ?>" aria-label="Poznámky k přístupům" placeholder="Např. PIN k podpoře hostingu, kdo má přístup do Google účtu, kde jsou záložní kódy…"><?= $this->e($note) ?></textarea>
+                <div class="row">
+                    <button type="submit" class="btn btn--primary" data-pending-label="Ukládám…">Uložit poznámky</button>
+                </div>
+            </form>
+        </section>
     <?php endif; ?>
 </div>
 

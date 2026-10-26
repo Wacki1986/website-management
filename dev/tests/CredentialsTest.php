@@ -183,4 +183,29 @@ return [
 
         Urls::reset();
     },
+    'poznámky trezoru: šifrovaně, u webu i v projektu totéž, prázdné pole je smaže' => function (): void {
+        [$kernel, $token] = loggedInKernel();
+        $a = $kernel->sites()->create(['name' => 'Hotel', 'url' => 'https://hotelzlatylev.cz']);
+        $b = $kernel->sites()->create(['name' => 'Rezervace', 'url' => 'https://rezervace.hotelzlatylev.cz']);
+        $projectId = $kernel->projects()->createForSite($a, 'hotelzlatylev.cz', null);
+        $kernel->projects()->attachSite($b, $projectId);
+
+        assertContainsString('name="vault_note"', kernelRequest($kernel, 'GET', '/weby/' . $a . '/pristupy')->body());
+
+        $response = kernelRequest($kernel, 'POST', '/weby/' . $a . '/pristupy/poznamky', ['_token' => $token, 'vault_note' => "PIN podpory 4455\nZáložní kódy u Jana"]);
+        assertSame(302, $response->status());
+
+        $raw = (string) $kernel->db()->scalar('SELECT vault_note FROM projects WHERE id = :id', ['id' => $projectId]);
+        assertTrue(Secrets::isEncrypted($raw), 'Poznámky nejsou šifrované');
+        assertSame("PIN podpory 4455\nZáložní kódy u Jana", $kernel->credentials()->note($projectId));
+
+        assertContainsString('PIN podpory 4455', kernelRequest($kernel, 'GET', '/weby/' . $b . '/pristupy')->body(), 'Druhý web projektu vidí stejné poznámky');
+        assertContainsString('PIN podpory 4455', kernelRequest($kernel, 'GET', '/projekty/' . $projectId . '/pristupy')->body());
+
+        kernelRequest($kernel, 'POST', '/projekty/' . $projectId . '/pristupy/poznamky', ['_token' => $token, 'vault_note' => '  ']);
+        assertSame(null, $kernel->db()->scalar('SELECT vault_note FROM projects WHERE id = :id', ['id' => $projectId]));
+        assertSame('', $kernel->credentials()->note($projectId));
+
+        Urls::reset();
+    },
 ];

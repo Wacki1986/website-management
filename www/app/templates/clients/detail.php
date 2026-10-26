@@ -73,7 +73,7 @@ $field = function (string $label, string $value, bool $optional = false, string 
                     </div>
                     <div class="form__field">
                         <span class="form__label form__label--caps">Interní poznámka<span class="form__label-optional"> · nevidí ji klient</span></span>
-                        <div class="text-secondary" style="line-height:var(--line-height-relaxed);padding:6px 0;white-space:pre-line"><?= (string) $client['note'] !== '' ? $this->e((string) $client['note']) : '—' ?></div>
+                        <div class="text-secondary" style="padding:6px 0"><?= (string) $client['note'] !== '' ? get_rich_text((string) $client['note']) : '—' ?></div>
                     </div>
                 </div>
             </section>

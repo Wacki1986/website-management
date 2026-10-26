@@ -95,7 +95,7 @@ $loginRow = function () use ($form, $values, $usernameLabel, $hasPassword): void
 
                 <?php if (!$loginFirst) { $loginRow(); } ?>
 
-                <?= $form->textarea('note', 'Poznámka', $values['note'], hint: 'Cokoli dalšího — kdo účet spravuje, kam volat, PIN k podpoře hostingu.', attributes: ['rows' => '3', 'maxlength' => '5000']) ?>
+                <?= $form->textarea('note', 'Poznámka', $values['note'], hint: 'Cokoli dalšího — kdo účet spravuje, kam volat, PIN k podpoře hostingu.', attributes: ['rows' => '3', 'data-rich-text' => true, 'maxlength' => '5000']) ?>
 
                 <div class="row">
                     <button type="submit" class="btn btn--primary"><?= $isEdit ? 'Uložit změny' : 'Uložit přístup' ?></button>

@@ -1224,6 +1224,7 @@ final class Kernel
         $router->add('POST', '/weby/{id}/pristupy/{credentialId}/upravit', [CredentialController::class, 'update'], Router::AUTH_ONLY, 'sites.credentials.update');
         $router->add('POST', '/weby/{id}/pristupy/{credentialId}/smazat', [CredentialController::class, 'delete'], Router::AUTH_ONLY, 'sites.credentials.delete');
         $router->add('POST', '/weby/{id}/pristupy/{credentialId}/heslo', [CredentialController::class, 'password'], Router::AUTH_ONLY, 'sites.credentials.password');
+        $router->add('POST', '/weby/{id}/pristupy/poznamky', [CredentialController::class, 'saveNote'], Router::AUTH_ONLY, 'sites.credentials.note');
 
         $router->add('GET', '/weby/{id}/nastaveni', [SiteController::class, 'settings'], name: 'sites.settings');
         $router->add('POST', '/weby/{id}/nastaveni', [SiteController::class, 'update'], Router::AUTH_ONLY, 'sites.update');
@@ -1270,6 +1271,7 @@ final class Kernel
         $router->add('POST', '/projekty/{id}/pristupy/{credentialId}/upravit', [CredentialController::class, 'projectUpdate'], Router::AUTH_ONLY, 'projects.credentials.update');
         $router->add('POST', '/projekty/{id}/pristupy/{credentialId}/smazat', [CredentialController::class, 'projectDelete'], Router::AUTH_ONLY, 'projects.credentials.delete');
         $router->add('POST', '/projekty/{id}/pristupy/{credentialId}/heslo', [CredentialController::class, 'projectPassword'], Router::AUTH_ONLY, 'projects.credentials.password');
+        $router->add('POST', '/projekty/{id}/pristupy/poznamky', [CredentialController::class, 'projectSaveNote'], Router::AUTH_ONLY, 'projects.credentials.note');
         $router->add('GET', '/projekty/{id}/upravit', [ProjectController::class, 'editForm'], name: 'projects.edit');
         $router->add('POST', '/projekty/{id}/upravit', [ProjectController::class, 'update'], Router::AUTH_ONLY, 'projects.update');
         $router->add('POST', '/projekty/{id}/smazat', [ProjectController::class, 'delete'], Router::AUTH_ONLY, 'projects.delete');

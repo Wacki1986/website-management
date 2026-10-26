@@ -103,7 +103,7 @@ $base = 'projekty/' . (int) $project['id'];
             <?php if ((string) ($project['note'] ?? '') !== ''): ?>
                 <section class="card card--padded">
                     <div class="card__title">Poznámka</div>
-                    <div class="text-secondary" style="line-height:var(--line-height-relaxed);margin-top:8px;white-space:pre-line"><?= $this->e((string) $project['note']) ?></div>
+                    <div class="text-secondary" style="margin-top:8px"><?= get_rich_text((string) $project['note']) ?></div>
                 </section>
             <?php endif; ?>
         </div>

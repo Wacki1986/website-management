@@ -2,6 +2,26 @@
 
 ## Připravuje se
 
+- **Oprava: stránka Reporty padala v půlce tabulky**, když měl některý
+  web zapnuté pravidelné reporty — řádku naplánovaného reportu chyběla
+  ikona webu. Chyba v šabloně navíc nechávala na stránce rozpracovanou
+  půlku obsahu a pod ni se přilepila chybová stránka i s menu; teď se
+  rozpracovaný výstup zahodí a ukáže se jen chybová stránka.
+- **Poznámky v trezoru přístupů.** Pod přístupy (záložka Přístupy u webu
+  i trezor projektu) je karta *Poznámky* s volným textem — PIN k podpoře
+  hostingu, záložní kódy, kdo co spravuje. Patří projektu jako přístupy,
+  ukládají se šifrovaně a vidí je jen účet s odemčeným trezorem.
+  Migrace `projects.vault_note`.
+- **Malý editor poznámek** (`rich-text.js`): lišta s tlačítky Tučně,
+  Odkaz, Odrážky a Číslovaný seznam, zkratky Ctrl+B a Ctrl+K. Ukládá
+  obyčejný text se značkami (`**tučně**`, `[popis](https://…)`, `- `,
+  `1. `), vložený text z Wordu nebo webu přijde bez formátování. Má ho
+  každá poznámka: klient, projekt, doména/hosting projektu, přístup
+  v trezoru, Poznámky trezoru, zápis servisu a poznámka v reportu.
+  Formátovaně se poznámka ukáže v detailu klienta a projektu,
+  v PDF protokolu servisu a v e-mailu reportu (`Views\RichText`,
+  `get_rich_text()`); v tabulkách a textové verzi e-mailu jako prostý
+  text. Starší poznámky bez značek vypadají jako dřív.
 - **Nová záložka Služby v detailu webu** (návrh `dev/design/handoff-sluzby`,
   mezi Reporty a Přístupy). Karta *Nasazené služby*: zaškrtávátka pro
   GTM, Search Console, vlastní SMTP, Google Analytics, Matomo, Analytics

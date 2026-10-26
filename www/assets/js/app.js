@@ -31,6 +31,7 @@ const modules = [
     ['./modules/confirm-dialog.js', 'initConfirmDialogs'],
     ['./modules/service-tasks.js', 'initServiceTasks'],
     ['./modules/site-services.js', 'initSiteServices'],
+    ['./modules/rich-text.js', 'initRichText'],
     ['./modules/report-template.js', 'initReportTemplate'],
     ['./modules/tooltip.js', 'initTooltips'],
     ['./modules/vault.js', 'initVault'],

@@ -9,6 +9,7 @@ use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 use App\Core\Projects\Credentials;
+use App\Core\Views\RichText;
 
 /**
  * Trezor přístupů projektu — FTP, hosting, databáze, e-maily, registrátor.
@@ -23,10 +24,16 @@ use App\Core\Projects\Credentials;
  * jako jediné ze správy nechodí ve stránce: výpis ukazuje tečky a heslo si
  * oko nebo tlačítko kopírování dotáhne zvlášť (`password()`, `vault.js`).
  * Nezůstane tak v HTML, v historii prohlížeče ani v náhledu stránky.
+ *
+ * Pod přístupy jsou volné poznámky trezoru (`saveNote()`) — šifrované
+ * jako hesla, ale ve stránce čitelné, ať se dají rovnou upravit.
  */
 final class CredentialController extends Controller
 {
     use SiteHeaderTrait;
+
+    /** Nejdelší poznámky trezoru (znaky) — stejně jako `maxlength` pole. */
+    public const NOTE_MAX = 20000;
 
     // --- záložka Přístupy u webu ---------------------------------------
 
@@ -63,6 +70,11 @@ final class CredentialController extends Controller
     public function password(string $id, string $credentialId): Response
     {
         return $this->revealPassword($this->siteContext((int) $id), (int) $credentialId);
+    }
+
+    public function saveNote(string $id): Response
+    {
+        return $this->doSaveNote($this->siteContext((int) $id));
     }
 
     // --- trezor v detailu projektu --------------------------------------
@@ -102,6 +114,11 @@ final class CredentialController extends Controller
         return $this->revealPassword($this->projectContext((int) $id), (int) $credentialId);
     }
 
+    public function projectSaveNote(string $id): Response
+    {
+        return $this->doSaveNote($this->projectContext((int) $id));
+    }
+
     // --- společná práce ---------------------------------------------------
 
     /** @param array<string, mixed> $context */
@@ -109,11 +126,14 @@ final class CredentialController extends Controller
     {
         $locked = !$this->unlocked();
         $rows = [];
+        $note = '';
 
         if (!$locked) {
             foreach ($this->kernel->credentials()->forProject($context['projectId']) as $credential) {
                 $rows[] = $this->row($context['base'], $credential);
             }
+
+            $note = $this->kernel->credentials()->note($context['projectId']);
         }
 
         $addLinks = [];
@@ -128,7 +148,32 @@ final class CredentialController extends Controller
             'rows' => $rows,
             'addLinks' => $addLinks,
             'setupUrl' => get_url('nastaveni/dvoufazove'),
+            'note' => $note ?? '',
+            // Nečitelné poznámky (vyměněný app_key) se nesmí uložením prázdného pole přepsat potichu.
+            'noteBroken' => $note === null,
+            'noteAction' => get_url($context['base'] . '/poznamky'),
+            'noteMax' => self::NOTE_MAX,
         ]);
+    }
+
+    /**
+     * Poznámky trezoru — celý text najednou, prázdné pole je smaže.
+     *
+     * @param array<string, mixed> $context
+     */
+    private function doSaveNote(array $context): Response
+    {
+        $this->requireUnlocked();
+        $note = (string) $this->request()->input('vault_note', '');
+
+        if (mb_strlen($note) > self::NOTE_MAX) {
+            return $this->redirectWithFlash($context['base'], 'Poznámky jsou delší než ' . self::NOTE_MAX . ' znaků — zkraťte je.', 'error');
+        }
+
+        $this->kernel->credentials()->saveNote($context['projectId'], $note);
+        $this->audit($context, 'Přístupy: upraveny poznámky');
+
+        return $this->redirectWithFlash($context['base'], 'Poznámky jsou uložené.');
     }
 
     /** @param array<string, mixed> $context */
@@ -382,9 +427,9 @@ final class CredentialController extends Controller
         return [
             'title' => self::title($kind, $credential),
             'icon' => Credentials::KINDS[$kind]['icon'],
-            // Pod názvem: detail a poznámka; celá poznámka je v bublině.
-            'subline' => implode(' · ', array_filter([$detail, (string) $credential['note']], static fn (string $part): bool => $part !== '')),
-            'note' => (string) $credential['note'],
+            // Pod názvem: detail a poznámka; celá poznámka je v bublině (bez značek editoru).
+            'subline' => implode(' · ', array_filter([$detail, RichText::line((string) $credential['note'])], static fn (string $part): bool => $part !== '')),
+            'note' => RichText::plain((string) $credential['note'], true),
             'server' => $kind === 'ftp' || (in_array($kind, ['database', 'email'], true) && (string) $credential['url'] === '')
                 ? trim((string) $credential['host'] . ($kind === 'ftp' && $port !== null && (string) $credential['host'] !== '' ? ':' . $port : ''))
                 : (string) $credential['url'],

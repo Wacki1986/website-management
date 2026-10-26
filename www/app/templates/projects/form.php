@@ -52,7 +52,7 @@ $back = $project === null ? get_url('projekty') : get_url('projekty/' . (int) $p
                 <datalist id="umbrella-options">
                     <?php foreach ($umbrellas as $umbrella): ?><option value="<?= $this->e($umbrella) ?>"></option><?php endforeach; ?>
                 </datalist>
-                <?= $form->textarea('note', 'Poznámka', $values['note'], class: 'form__field--caps', attributes: ['rows' => '4', 'placeholder' => 'Co k projektu patří, na co si dát pozor…']) ?>
+                <?= $form->textarea('note', 'Poznámka', $values['note'], class: 'form__field--caps', attributes: ['rows' => '4', 'data-rich-text' => true, 'placeholder' => 'Co k projektu patří, na co si dát pozor…']) ?>
 
                 <div class="row">
                     <button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?><?= $project === null ? 'Založit projekt' : 'Uložit projekt' ?></button>

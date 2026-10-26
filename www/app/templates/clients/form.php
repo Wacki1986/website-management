@@ -117,7 +117,7 @@ $back = $client === null ? get_url('klienti') : get_url('klienti/' . (int) $clie
             <?php endif; ?>
 
             <section class="card card--padded">
-                <?= $form->textarea('note', 'Interní poznámka', (string) $values['note'], class: 'form__field--caps', attributes: ['rows' => '4', 'placeholder' => 'Kdy volat, co neměnit bez domluvy, jak fakturovat…'], hint: 'Nevidí ji klient.') ?>
+                <?= $form->textarea('note', 'Interní poznámka', (string) $values['note'], class: 'form__field--caps', attributes: ['rows' => '4', 'data-rich-text' => true, 'placeholder' => 'Kdy volat, co neměnit bez domluvy, jak fakturovat…'], hint: 'Nevidí ji klient.') ?>
             </section>
         </div>
 

@@ -101,7 +101,7 @@ $base = 'weby/' . (int) $site['id'];
                 </div>
 
                 <?= $form->textarea('description', 'Poznámka k servisu (nepovinné)', $values['description'], class: 'form__field--caps',
-                    attributes: ['rows' => '3', 'placeholder' => 'Např. doporučujeme obnovit fotografie v galerii — jsou z roku 2019.'],
+                    attributes: ['rows' => '3', 'data-rich-text' => true, 'placeholder' => 'Např. doporučujeme obnovit fotografie v galerii — jsou z roku 2019.'],
                     hint: 'V servisním protokolu budou hotové úkoly pod sebou a pod nimi tahle poznámka. Technické detaily patří do historie změn, tu plní monitor sám.') ?>
 
                 <div class="form__field">

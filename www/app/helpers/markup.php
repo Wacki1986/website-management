@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use App\Core\View\View;
 use App\Core\Views\Format;
+use App\Core\Views\RichText;
 
 /**
  * Číslo se správným tvarem podstatného jména — `get_count(4, 'web', 'weby', 'webů')`.
@@ -102,6 +103,15 @@ function get_dot(string $tone): string
     $tone = in_array($tone, ['ok', 'warning', 'error', 'muted'], true) ? $tone : 'muted';
 
     return '<span class="dot dot--' . $tone . '" aria-hidden="true"></span>';
+}
+
+/**
+ * Poznámka s formátováním z editoru (`data-rich-text`): tučně, odkazy,
+ * seznamy. Escapuje `RichText::html()`; prázdná poznámka = prázdný řetězec.
+ */
+function get_rich_text(string $text): string
+{
+    return trim($text) === '' ? '' : '<div class="rich-text-view">' . RichText::html($text) . '</div>';
 }
 
 /**

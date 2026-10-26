@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Reports;
 
 use App\Core\Sites\ContentFreshness;
+use App\Core\Views\RichText;
 
 /**
  * HTML klientského reportu podle návrhu `nahled-reportu.html`.
@@ -111,7 +112,7 @@ final class ReportRenderer
         if ($note !== '') {
             $blocks['note'] = $row('note', false) . '<td style="padding:20px ' . $pad . ' 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:16px 18px;border-radius:12px;background:#eef1fd;border:1px solid rgba(56,88,233,.22);">'
                 . '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:' . self::BRAND . ';">' . $ed('note_label', $e(mb_strtoupper($t('note_label')))) . '</div>'
-                . '<div style="font-size:14px;line-height:1.55;color:' . self::TEXT . ';margin-top:6px;">' . nl2br($e($note)) . '</div>'
+                . '<div style="font-size:14px;line-height:1.55;color:' . self::TEXT . ';margin-top:6px;">' . self::noteHtml($note) . '</div>'
                 . '</td></tr></table></td></tr>';
         }
 
@@ -341,7 +342,7 @@ final class ReportRenderer
         $note = trim((string) ($options['note'] ?? ''));
 
         if ($note !== '') {
-            $blocks['note'] = ['', $t('note_label') . ': ' . $note];
+            $blocks['note'] = ['', $t('note_label') . ': ' . RichText::plain($note, true)];
         }
 
         if (in_array('updates', $sections, true) && $summary['done'] !== []) {
@@ -430,4 +431,16 @@ final class ReportRenderer
         return $host === '' ? $html : str_replace($host, '<b style="font-weight:600;color:' . self::TEXT . ';">' . $host . '</b>', $html);
     }
 
+    /** Poznámka od studia s formátováním z editoru — e-mail nezná třídy, proto inline styly. */
+    private static function noteHtml(string $note): string
+    {
+        return RichText::html($note, [
+            'p' => 'margin:0 0 8px;',
+            'ul' => 'margin:0 0 8px;padding-left:20px;',
+            'ol' => 'margin:0 0 8px;padding-left:20px;',
+            'li' => 'margin:0 0 2px;',
+            'a' => 'color:' . self::BRAND . ';text-decoration:underline;',
+            'b' => 'font-weight:700;',
+        ]);
+    }
 }

@@ -84,7 +84,7 @@ $noteLength = mb_strlen((string) $report['note']);
                 <?php render_csrf($csrfToken) ?>
                 <div class="card__title">Poznámka pro klienta</div>
                 <div class="card__note">Nepovinné. Objeví se v reportu jako modrý blok — sem patří, co jste udělali navíc.</div>
-                <textarea class="form__control" name="note" rows="5" style="margin-top:12px" maxlength="<?= $noteMax ?>" placeholder="Tento měsíc jsme navíc…" data-note<?= $editable ? '' : ' disabled' ?>><?= $this->e((string) $report['note']) ?></textarea>
+                <textarea class="form__control" name="note" rows="5" style="margin-top:12px" maxlength="<?= $noteMax ?>" placeholder="Tento měsíc jsme navíc…" data-note data-rich-text aria-label="Poznámka pro klienta"<?= $editable ? '' : ' disabled' ?>><?= $this->e((string) $report['note']) ?></textarea>
                 <div class="row" style="justify-content:space-between;margin-top:8px">
                     <span class="text-caption"><span data-note-counter><?= $noteLength ?></span> / <?= $noteMax ?> znaků</span>
                     <?php if ($editable): ?>

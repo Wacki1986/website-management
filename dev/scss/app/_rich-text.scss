@@ -1,0 +1,111 @@
+@use "../abstracts/mixins" as *;
+
+// app/_rich-text.scss — malý editor poznámek (`rich-text.js`): tučně,
+// odkaz, odrážky, číslovaný seznam. Návrh ho nemá; rámeček a pole
+// vypadají jako `.form__control`, lišta nahoře jako ghost tlačítka.
+
+// Ikony lišty — stejný zápis jako ikony v abstracts/_icons.scss.
+:root {
+  --icon-bold: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20stroke-width%3D%222.4%22%20d%3D%22M7%205h5.5a3.5%203.5%200%200%201%200%207H7zM7%2012h6.5a3.5%203.5%200%200%201%200%207H7z%22%2F%3E%3C%2Fsvg%3E");
+  --icon-link: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M10%2014a4%204%200%200%200%205.66%200l3-3a4%204%200%200%200-5.66-5.66l-1%201%22%2F%3E%3Cpath%20d%3D%22M14%2010a4%204%200%200%200-5.66%200l-3%203a4%204%200%200%200%205.66%205.66l1-1%22%2F%3E%3C%2Fsvg%3E");
+  --icon-list: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9.5%206H20M9.5%2012H20M9.5%2018H20%22%2F%3E%3Ccircle%20cx%3D%224.5%22%20cy%3D%226%22%20r%3D%221.3%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%224.5%22%20cy%3D%2212%22%20r%3D%221.3%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%224.5%22%20cy%3D%2218%22%20r%3D%221.3%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E");
+  --icon-list-ordered: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M10%206h10M10%2012h10M10%2018h10%22%2F%3E%3Cpath%20stroke-width%3D%221.5%22%20d%3D%22M3.5%204.8%205%204v5M3.5%209h3M3.3%2014.3c.3-.7.9-1%201.6-1%20.8%200%201.4.5%201.4%201.2%200%20.9-1.1%201.6-3%203.5h3.2%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.rich-text {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-card-solid);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--border-radius-large);
+  overflow: hidden;
+
+  &:focus-within { @include focus-ring; }
+}
+
+.rich-text__toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-sunken);
+}
+
+.rich-text__button[aria-pressed="true"] {
+  background: var(--color-surface-muted);
+  color: var(--color-brand);
+}
+
+.rich-text__icon--bold { -webkit-mask-image: var(--icon-bold); mask-image: var(--icon-bold); }
+.rich-text__icon--link { -webkit-mask-image: var(--icon-link); mask-image: var(--icon-link); }
+.rich-text__icon--list { -webkit-mask-image: var(--icon-list); mask-image: var(--icon-list); }
+.rich-text__icon--list-ordered { -webkit-mask-image: var(--icon-list-ordered); mask-image: var(--icon-list-ordered); }
+
+.rich-text--readonly {
+  background: var(--color-surface-sunken);
+
+  .rich-text__area { color: var(--color-text-secondary); }
+}
+
+// Výška podle `rows` původního pole (proměnnou nastaví skript).
+.rich-text__area {
+  position: relative;
+  min-height: calc(var(--rich-text-rows, 6) * 1.6em + 22px);
+  padding: 11px 13px;
+  line-height: var(--line-height-body);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+
+  p { margin: 0; }
+
+  ul,
+  ol {
+    margin: 2px 0;
+    padding-left: 22px;
+  }
+
+  ul { list-style: disc; }
+  ol { list-style: decimal; }
+
+  b,
+  strong { font-weight: var(--font-weight-bold); }
+
+  a {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
+}
+
+// Zástupný text prázdného editoru (contenteditable `placeholder` nemá).
+.rich-text__area--empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset: 11px 13px auto;
+  color: var(--color-text-faint);
+  pointer-events: none;
+}
+
+// Uložená poznámka v režimu čtení (`get_rich_text()`): odstavce, seznamy,
+// odkazy. Zalomení řádků uvnitř odstavce dělá <br> ze serveru.
+.rich-text-view {
+  line-height: var(--line-height-relaxed);
+  overflow-wrap: anywhere;
+
+  p,
+  ul,
+  ol { margin: 0; }
+
+  > * + * { margin-top: 8px; }
+
+  ul,
+  ol { padding-left: 22px; }
+
+  ul { list-style: disc; }
+  ol { list-style: decimal; }
+
+  b { font-weight: var(--font-weight-bold); color: var(--color-text-primary); }
+
+  a { text-decoration: underline; }
+}
