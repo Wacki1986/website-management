@@ -3,6 +3,7 @@
  * Detail webu — Obsah (návrh `detail-webu-obsah.html`).
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var array               $site
  * @var array<int, array<string, mixed>> $rows
  * @var string|null         $fetchedAt
@@ -17,7 +18,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Obsah']);
         <?php render_card_head('Typy obsahu', $fetchedAt !== null ? 'Naposledy načteno ' . get_when($fetchedAt) : 'Čeká na data z pluginu') ?>
 
         <?php if ($rows === []): ?>
-            <?php render_empty('Zatím žádná data', 'Přehled obsahu dorazí s první kontrolou přes plugin MEDIAGRAFIK Monitor.', 'report') ?>
+            <?php render_empty('Zatím žádná data', 'Přehled obsahu dorazí s první kontrolou přes plugin ' . $pluginName . '.', 'report') ?>
         <?php else: ?>
             <div class="table table--content">
                 <div class="table__head"><div>Typ obsahu</div><div class="table__cell table__cell--right">Publikováno</div><div class="table__cell table__cell--right">Koncepty</div><div>Poslední příspěvek</div><div>Stáří</div></div>

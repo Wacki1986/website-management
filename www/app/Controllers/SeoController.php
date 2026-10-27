@@ -16,7 +16,7 @@ use App\Core\Modules\SeoScore;
  * a nefunkční odkazy, vpravo karta skóre a viditelnost. Data o Search
  * Console z návrhu tu nejsou (modul Search Console zatím není).
  *
- * Data posílá plugin MEDIAGRAFIK Monitor pod klíčem `seo` — od 1.6.0
+ * Data posílá náš plugin na webu pod klíčem `seo` — od 1.6.0
  * skóre a viditelnost, od 1.7.0 i pokrytí metadat, co stránkám chybí
  * a nefunkční odkazy. Bez zapnutého modulu záložka neexistuje.
  */
@@ -60,7 +60,7 @@ final class SeoController extends Controller
                 'pages' => array_slice($pages, 0, self::TAB_PAGES),
                 'pagesTotal' => count($pages),
                 'noPlugin' => self::plugin($seo) === '',
-                'upgradeNote' => !isset($seo['coverage']) ? 'Pokrytí metadat, co stránkám chybí a nefunkční odkazy posílá MEDIAGRAFIK Monitor ' . self::DETAILS_SINCE . ' — aktualizujte ho na záložce Pluginy.' : '',
+                'upgradeNote' => !isset($seo['coverage']) ? 'Pokrytí metadat, co stránkám chybí a nefunkční odkazy posílá ' . $this->kernel->brand()->pluginName() . ' ' . self::DETAILS_SINCE . ' — aktualizujte ho na záložce Pluginy.' : '',
             ] + $view;
         }
 
@@ -99,13 +99,13 @@ final class SeoController extends Controller
         if ($snapshot !== null && $version !== '' && version_compare($version, $since, '<')) {
             return [
                 'title' => 'Potřeba novější plugin',
-                'text' => 'SEO data posílá MEDIAGRAFIK Monitor ' . $since . ' a novější (web má ' . $version . ') — aktualizujte ho na záložce Pluginy nebo ve wp-admin.',
+                'text' => 'SEO data posílá ' . $this->kernel->brand()->pluginName() . ' ' . $since . ' a novější (web má ' . $version . ') — aktualizujte ho na záložce Pluginy nebo ve wp-admin.',
             ];
         }
 
         return [
             'title' => 'Zatím žádná data',
-            'text' => 'SEO data přijdou s další kontrolou přes plugin MEDIAGRAFIK Monitor. Hned je načte „Zkontrolovat teď".',
+            'text' => 'SEO data přijdou s další kontrolou přes plugin ' . $this->kernel->brand()->pluginName() . '. Hned je načte „Zkontrolovat teď".',
         ];
     }
 

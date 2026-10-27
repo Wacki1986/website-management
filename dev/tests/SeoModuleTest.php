@@ -223,7 +223,7 @@ return [
         ]);
 
         $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/seo')->body();
-        assertContainsString('MEDIAGRAFIK Monitor 1.6.0 a novější (web má 1.5.5)', $html);
+        assertContainsString('Správa webů – Monitor 1.6.0 a novější (web má 1.5.5)', $html);
 
         Urls::reset();
     },

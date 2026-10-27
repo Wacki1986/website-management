@@ -227,7 +227,7 @@ return [
             [$kernel, $token, $siteId] = puKernel($url);
 
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
-            assertContainsString('potřebuje MEDIAGRAFIK Monitor 1.1.0', $html);
+            assertContainsString('potřebuje Správa webů – Monitor 1.1.0', $html);
             assertFalse(str_contains($html, 'data-plugin-update-one'), 'Řádkové tlačítko Aktualizovat nemá být aktivní');
 
             $response = kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/aktualizovat', [
@@ -248,7 +248,7 @@ return [
 
         assertSame(null, SiteActions::blocked($site, ['plugin_version' => '1.2.0'], PluginClient::ACTION_CORE_UPDATE));
         assertSame(null, SiteActions::blocked($site, ['plugin_version' => '1.1.0'], PluginClient::ACTION_PLUGIN_UPDATE));
-        assertContainsString('potřebuje MEDIAGRAFIK Monitor 1.2.0 (web má 1.1.0)', (string) SiteActions::blocked($site, ['plugin_version' => '1.1.0'], PluginClient::ACTION_PLUGIN_DELETE));
+        assertContainsString('potřebuje Správa webů – Monitor 1.2.0 (web má 1.1.0)', (string) SiteActions::blocked($site, ['plugin_version' => '1.1.0'], PluginClient::ACTION_PLUGIN_DELETE));
         assertContainsString('nemá napojený', (string) SiteActions::blocked(['api_key' => ''], ['plugin_version' => '1.2.0'], PluginClient::ACTION_CORE_UPDATE));
 
         assertTrue(SiteActions::isDeletable(['is_active' => 0, 'file' => 'contact-form-7/wp-contact-form-7.php']));
@@ -307,7 +307,7 @@ return [
 
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
             assertFalse(str_contains($html, 'pluginy/smazat?plugin='));
-            assertContainsString('potřebuje MEDIAGRAFIK Monitor 1.2.0', $html);
+            assertContainsString('potřebuje Správa webů – Monitor 1.2.0', $html);
 
             kernelRequest($kernel, 'POST', '/weby/' . $siteId . '/pluginy/smazat', ['_token' => $token, 'plugin' => 'contact-form-7/wp-contact-form-7.php']);
             assertFalse(is_file($state . '.deleted'));
@@ -509,7 +509,7 @@ return [
 
         $old = SiteActions::reviewUpdateResults($result, $updatable, $library, '1.8.0')[0];
         assertSame('failed', $old['status']);
-        assertContainsString('MEDIAGRAFIK Monitor 1.9.0 (web má 1.8.0)', $old['message']);
+        assertContainsString('Správa webů – Monitor 1.9.0 (web má 1.8.0)', $old['message']);
         assertFalse(str_contains($old['message'], 'licenci'), 'Licence u pluginu z knihovny neradit');
 
         $new = SiteActions::reviewUpdateResults($result, $updatable, $library, '1.9.0')[0];

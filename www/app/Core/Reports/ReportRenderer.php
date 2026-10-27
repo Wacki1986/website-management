@@ -55,7 +55,7 @@ final class ReportRenderer
         $row = static fn (string $key, bool $toggle = true): string => '<tr'
             . ($preview && $toggle ? ' data-report-section="' . $key . '"' . ($on($key) ? '' : ' hidden') : '')
             . ($editable ? ' data-tpl-section="' . $key . '"' : '') . '>';
-        $studio = $options['studio'] ?? ['name' => 'MEDIAGRAFIK', 'email' => '', 'phone' => ''];
+        $studio = $options['studio'] ?? ['name' => '', 'email' => '', 'phone' => ''];
         $logoUrl = $options['logoUrl'] ?? '';
         $mobile = (bool) ($options['mobile'] ?? false);
         $note = trim((string) ($options['note'] ?? ''));
@@ -323,7 +323,7 @@ final class ReportRenderer
     public function text(array $summary, array $options = []): string
     {
         $sections = $options['sections'] ?? ReportRepository::defaultSections();
-        $studio = $options['studio'] ?? ['name' => 'MEDIAGRAFIK', 'email' => '', 'phone' => ''];
+        $studio = $options['studio'] ?? ['name' => '', 'email' => '', 'phone' => ''];
         $t = self::texts($summary, $options);
         $lines = [
             mb_strtoupper('Zpráva o vašem webu · ' . $summary['period']['label']),
@@ -406,7 +406,7 @@ final class ReportRenderer
     private static function texts(array $summary, array $options): callable
     {
         $texts = array_merge(ReportTemplate::defaults(), (array) ($options['texts'] ?? []));
-        $values = ReportTemplate::values($summary, (string) ($options['studio']['name'] ?? 'MEDIAGRAFIK'));
+        $values = ReportTemplate::values($summary, (string) ($options['studio']['name'] ?? ''));
 
         return static fn (string $key): string => ReportTemplate::fill((string) ($texts[$key] ?? ''), $values);
     }

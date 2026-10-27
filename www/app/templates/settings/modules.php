@@ -8,6 +8,7 @@
  * ho volá atributem `form`, formuláře se nesmí vnořovat.
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var string              $title
  * @var string              $activeTab
  * @var array<int, array{key: string, label: string, title: string, text: string, plugin_since: string, on: bool, newSites: bool, siteCount: int, offerAll: bool}> $modules
@@ -46,7 +47,7 @@ $this->extend('layout/shell', ['title' => $title]);
                                 <?= get_toggle('new_sites', $module['newSites'], 'Zapnout u nových webů') ?>
                             </div>
                             <div class="summary-list__row"><span class="summary-list__label">Zapnuto u webů</span><span class="summary-list__value"><?= $module['siteCount'] ?> z <?= $totalSites ?></span></div>
-                            <div class="summary-list__row"><span class="summary-list__label">Plugin na webu</span><span class="summary-list__value">MEDIAGRAFIK Monitor <?= $this->e($module['plugin_since']) ?> a novější</span></div>
+                            <div class="summary-list__row"><span class="summary-list__label">Plugin na webu</span><span class="summary-list__value"><?= $this->e($pluginName) ?> <?= $this->e($module['plugin_since']) ?> a novější</span></div>
                         </div>
                         <div class="row">
                             <button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Uložit</button>

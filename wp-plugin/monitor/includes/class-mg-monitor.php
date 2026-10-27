@@ -1,19 +1,5 @@
 <?php
 
-/**
- * Plugin Name: MEDIAGRAFIK Monitor
- * Plugin URI: https://mediagrafik.cz
- * Description: Napojení webu na Správu webů studia MEDIAGRAFIK — hub si přes REST API a API klíč načítá verze, pluginy, obsah a stav zabezpečení. Plugin sám nic neodesílá.
- * Version: 1.9.1
- * Requires at least: 6.8
- * Requires PHP: 7.4
- * Author: Mediagrafik.cz
- * Author URI: https://mediagrafik.cz
- * License: GPL v2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: mediagrafik-monitor
- */
-
 // Zabránění přímému přístupu k souboru
 if (!defined('ABSPATH')) {
     exit;
@@ -34,12 +20,18 @@ if (!defined('ABSPATH')) {
  * nabízí WordPressu pro sebe
  * (`MG_Updater`) i pro pluginy z knihovny Správy webů (`MG_Library`).
  *
- * Verzi je nutné změnit na dvou místech: hlavička `Version:` a konstanta
- * `self::VERSION`. Distribuci (plugin-info.json + ZIP) dělá hub.
+ * Třída je ve vlastním souboru, ne v hlavním: hlavní soubor nejdřív
+ * zkontroluje, jestli na webu už neběží jiná kopie pluginu (od jiné
+ * správy) — a PHP by třídu z téhož souboru deklarovalo dřív, než se ta
+ * kontrola vůbec provede.
+ *
+ * Verzi je nutné změnit na dvou místech: hlavička `Version:` hlavního
+ * souboru a konstanta `self::VERSION`. Distribuci (plugin-info.json + ZIP)
+ * dělá hub. Název, složku a adresu hubu nese `brand.php`.
  */
 final class MG_Monitor
 {
-    const VERSION = '1.9.1';
+    const VERSION = '1.10.0';
 
     const OPTION_KEY_HASH = 'mg_monitor_key_hash';
     const OPTION_KEY_HINT = 'mg_monitor_key_hint';
@@ -48,12 +40,6 @@ final class MG_Monitor
 
     /** Přihlášení ze Správy webů povoleno? '1' / '0', výchozí povoleno. */
     const OPTION_ALLOW_LOGIN = 'mg_monitor_allow_login';
-
-    /**
-     * Odkud se stahují aktualizace pluginu. Adresa hubu se ukládá při
-     * vložení klíče (admin stránka) — plugin tak sám ví, kam se ptát.
-     */
-    const DEFAULT_HUB_URL = 'https://sprava.mediagrafik.cz';
 
     /** @var MG_Monitor|null */
     private static $instance = null;
@@ -82,7 +68,7 @@ final class MG_Monitor
         add_filter('rest_authentication_errors', array('MG_Rest_Controller', 'allow_keyed_request'), 5);
 
         if (is_admin()) {
-            new MG_Admin_Page(plugin_basename(__FILE__));
+            new MG_Admin_Page(self::basename());
         }
 
         add_action('plugins_loaded', array($this, 'init_updater'));
@@ -92,7 +78,7 @@ final class MG_Monitor
 
     private function load_dependencies()
     {
-        $dir = plugin_dir_path(__FILE__);
+        $dir = plugin_dir_path(MG_MONITOR_FILE);
 
         require_once $dir . 'includes/class-mg-api-key.php';
         require_once $dir . 'includes/class-mg-rate-limit.php';
@@ -109,26 +95,56 @@ final class MG_Monitor
         require_once $dir . 'admin/class-mg-admin-page.php';
     }
 
+    /** Hlavní soubor pluginu, jak ho zná WordPress (`slozka/soubor.php`). */
+    public static function basename()
+    {
+        return plugin_basename(MG_MONITOR_FILE);
+    }
+
+    /** REST namespace — musí sedět se slugem správy (`PluginClient`). */
+    public static function rest_namespace()
+    {
+        return MG_MONITOR_SLUG . '/v1';
+    }
+
+    /**
+     * Adresa Správy webů: uložená v nastavení pluginu (vloží se s klíčem),
+     * jinak ta, ze které plugin stáhl (`brand.php`). Prázdná = nevíme.
+     */
+    public static function hub_url()
+    {
+        $hub = trim((string) get_option(self::OPTION_HUB_URL, ''));
+
+        return rtrim($hub !== '' ? $hub : MG_MONITOR_HUB_URL, '/');
+    }
+
+    /** Veřejná adresa ve správě pro tenhle plugin (`/plugin/{slug}/…`). */
+    public static function hub_plugin_url($path)
+    {
+        return self::hub_url() . '/plugin/' . MG_MONITOR_SLUG . '/' . ltrim($path, '/');
+    }
+
     /**
      * Aktualizace z hubu — tohoto pluginu i pluginů z knihovny Správy webů.
-     * Adresa se odvozuje z uložené adresy hubu.
+     * Adresa se odvozuje z uložené adresy hubu; bez ní není odkud.
      */
     public function init_updater()
     {
-        $hub = trim((string) get_option(self::OPTION_HUB_URL, ''));
-        $hub = rtrim($hub !== '' ? $hub : self::DEFAULT_HUB_URL, '/');
+        if (self::hub_url() === '') {
+            return;
+        }
 
-        $this->updater = new MG_Updater($hub . '/plugin/mediagrafik-monitor/plugin-info.json', __FILE__, self::VERSION);
-        $this->library = new MG_Library($hub);
+        $this->updater = new MG_Updater(self::hub_plugin_url('plugin-info.json'), MG_MONITOR_FILE, self::VERSION);
+        $this->library = new MG_Library(self::hub_url());
     }
 
-    /** @return MG_Updater|null null jen před `plugins_loaded` */
+    /** @return MG_Updater|null null jen před `plugins_loaded` nebo bez adresy hubu */
     public function updater()
     {
         return $this->updater;
     }
 
-    /** @return MG_Library|null null jen před `plugins_loaded` */
+    /** @return MG_Library|null null jen před `plugins_loaded` nebo bez adresy hubu */
     public function library()
     {
         return $this->library;
@@ -144,7 +160,3 @@ final class MG_Monitor
         }
     }
 }
-
-register_activation_hook(__FILE__, array('MG_Monitor', 'activate'));
-
-MG_Monitor::instance();

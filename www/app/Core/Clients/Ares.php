@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Clients;
 
+use App\Core\Brand\Brand;
+
 /**
  * Načtení firmy z ARESu podle IČO (návrh: „Načíst z ARESu" u nového klienta).
  *
@@ -16,7 +18,7 @@ final class Ares
     public const ENDPOINT = 'https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/';
 
     /** @param callable|null $fetcher pro testy: fn(string $url): array{status: int, body: string} */
-    public function __construct(private readonly int $timeout = 8, private $fetcher = null)
+    public function __construct(private readonly int $timeout = 8, private $fetcher = null, private readonly string $userAgent = Brand::USER_AGENT)
     {
     }
 
@@ -69,7 +71,7 @@ final class Ares
             CURLOPT_CONNECTTIMEOUT => 4,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_USERAGENT => 'MEDIAGRAFIK-Sprava-webu/1.0',
+            CURLOPT_USERAGENT => $this->userAgent,
         ]);
 
         $body = curl_exec($handle);

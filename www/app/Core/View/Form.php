@@ -217,9 +217,12 @@ final class Form
     ): string {
         $id ??= self::idFor($name);
 
+        // Skutečné pole je schované v `.checkbox` z design systému — stav
+        // (fajfku) kreslí CSS přes `:has(:checked)`, ne třída ze serveru.
         $html = sprintf(
-            '<div class="%s"><label class="form__check">'
-                . '<input type="checkbox" id="%s" name="%s" value="%s"%s%s>'
+            '<div class="%s"><label class="form__check"><span class="checkbox">'
+                . '<input type="checkbox" class="visually-hidden" id="%s" name="%s" value="%s"%s%s>'
+                . '<span class="checkbox__mark"></span></span>'
                 . '<span>%s</span></label>',
             self::e($this->wrapperClass($name, $class)),
             self::e($id),

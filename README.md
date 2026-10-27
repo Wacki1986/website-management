@@ -1,9 +1,13 @@
-# Správa webů — MEDIAGRAFIK
+# Správa webů
 
-Interní aplikace studia pro správu klientských WordPress webů: eviduje weby
-a klienty, hlídá dostupnost, SSL a verze, sbírá data z pluginu **MEDIAGRAFIK
-Monitor** na straně webu, generuje alerty, vede servisní plán a historii
+Interní aplikace pro správu klientských WordPress webů: eviduje weby
+a klienty, hlídá dostupnost, SSL a verze, sbírá data z našeho pluginu
+(**Monitor**) na straně webu, generuje alerty, vede servisní plán a historii
 a posílá klientům reporty.
+
+Název firmy, loga i název a složka pluginu nejsou v kódu — každá instance si je
+nastaví v Nastavení → Základní nastavení (provozní příručka, kapitola 10). Tentýž kód
+tak běží pro MEDIAGRAFIK i pro další nasazení.
 
 | Dokument | K čemu |
 |---|---|
@@ -38,7 +42,8 @@ repozitář
 │  ├─ tools/        build, vývojový server, založení správce, sync designu
 │  ├─ tests/        testy (bez závislostí)
 │  └─ docs/         plán a provozní příručka
-└─ wp-plugin/       plugin MEDIAGRAFIK Monitor pro WordPress
+├─ dev/brand/      podklady značky jednotlivých instancí (k nahrání v Základním nastavení)
+└─ wp-plugin/       náš plugin (Monitor) pro WordPress — jméno mu dá instance
 ```
 
 ## Vývoj

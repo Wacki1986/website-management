@@ -2,6 +2,32 @@
 
 ## Připravuje se
 
+- **Značka instance — aplikace bez natvrdo zapsaného MEDIAGRAFIK.**
+  Tentýž kód teď může běžet ve víc nasazeních (studio, vlastní weby na
+  volné noze). Nová záložka **Nastavení → Základní nastavení** (první
+  v řadě): název firmy, web, kontaktní e-mail a telefon do patičky reportů,
+  název a složka pluginu (výchozí název „{firma} Monitor“; složka se po
+  napojení prvního webu zamkne a změnit jde jen s výslovným potvrzením),
+  nahrání loga aplikace (světlý a tmavý motiv), loga firmy do e-mailů
+  a reportů, loga na tmavé záhlaví PDF protokolu
+  a ikony aplikace (celá sada pro prohlížeč, iPhone a Android se vyrobí
+  z jednoho PNG). Soubory jdou ven routou `/znacka/…`. Ze značky berou
+  i texty o pluginu (~40 míst), popisek v Authenticatoru, pozvánka
+  kolegům a User-Agent požadavků na weby (`SpravaWebu/1.0 (+web firmy)`). Loga se nahrávají tlačítkem hned po
+  výběru souboru, nebo přetažením souboru na řádek loga (`file-upload.js`), náhled má vždy pozadí, pro které je
+  logo udělané.
+  Výchozí logo „Správa webů“ je bez podtitulu „od MEDIAGRAFIK“; podklady
+  pro instanci MG jsou v `dev/brand/mediagrafik/`.
+- **Plugin s razítkem instance (Monitor 1.10.0).** Build dělá jeden
+  neutrální balíček `monitor-<verze>.zip`; každá správa ho při stažení
+  orazítkuje — složka a hlavní soubor podle složky ze Základního nastavení
+  (výchozí historická `mediagrafik-monitor`), hlavička pluginu s názvem
+  a webem firmy, `brand.php` s adresou správy. REST
+  namespace (`/wp-json/<slug>/v1`) i adresy `/plugin/<slug>/…` jdou
+  podle slugu. Dvě kopie pluginu od různých správ na jednom webu web
+  neshodí — druhá se nespustí a ohlásí to. Zdroj pluginu je teď
+  ve `wp-plugin/monitor/`, build má volbu `-OutDir` na zkoušku mimo
+  `www/` (build do `www/storage/plugin/` = vydání všem webům).
 - **Servisní protokol v PDF: stáří webu, nové a odebrané pluginy,
   příští servis.** Vpravo v záhlaví je rámeček *Stáří webu* („5 let ·
   spuštěn 15. 3. 2021") podle data spuštění z Nastavení webu, počítaný

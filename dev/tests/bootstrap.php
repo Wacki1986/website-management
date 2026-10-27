@@ -21,7 +21,7 @@ Autoloader::addNamespace('App', WWW_ROOT . '/app');
 Autoloader::register();
 
 // Globální funkce pro šablony — stejný seznam jako v app/bootstrap.php.
-foreach (['markup', 'url', 'forms', 'time'] as $helpers) {
+foreach (['markup', 'url', 'forms', 'time', 'brand'] as $helpers) {
     $file = WWW_ROOT . '/app/helpers/' . $helpers . '.php';
 
     if (is_file($file)) {

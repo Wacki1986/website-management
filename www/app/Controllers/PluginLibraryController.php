@@ -19,10 +19,10 @@ use App\Core\Sites\SiteRepository;
  * Knihovna pluginů — placené a vlastní pluginy mimo wordpress.org.
  *
  * Stránka `/knihovna` (nahrání ZIPu, přehled, na kterých webech plugin je,
- * „Nainstalovat na weby", „Aktualizovat všude" — to i pro náš MEDIAGRAFIK
+ * „Nainstalovat na weby", „Aktualizovat všude" — to i pro náš plugin
  * Monitor v samostatné kartě)
- * a dvě veřejné adresy pro plugin MEDIAGRAFIK Monitor na webech — pod
- * `/plugin/mediagrafik-monitor/`, kde už je výjimka z Basic auth:
+ * a dvě veřejné adresy pro náš plugin na webech — pod `/plugin/{slug}/`,
+ * kde už je výjimka z Basic auth:
  *
  *  - `knihovna.json` — seznam pluginů s odkazy ke stažení; web se prokáže
  *    otiskem svého API klíče (hlavička `X-MG-Key-Hash`),
@@ -70,7 +70,7 @@ final class PluginLibraryController extends Controller
     }
 
     /**
-     * Náš MEDIAGRAFIK Monitor — do knihovny se nenahrává, rozdává ho správa
+     * Náš plugin (Monitor) — do knihovny se nenahrává, rozdává ho správa
      * sama (`PluginDistribution`, ZIP dává `build-plugin.ps1`). Na stránce
      * je kvůli „Aktualizovat všude" po vydání nové verze. Null = správa
      * zatím žádnou verzi nerozdává.
@@ -85,12 +85,13 @@ final class PluginLibraryController extends Controller
             return null;
         }
 
+        $distribution = $this->kernel->pluginDistribution();
         $version = (string) $info['version'];
-        $zip = $this->kernel->pluginDistribution()->zipPath(PluginDistribution::SLUG . '-' . $version . '.zip');
+        $zip = $distribution->zipPath($distribution->zipName($version));
         $plugin = [
-            'slug' => PluginDistribution::SLUG,
-            'name' => (string) ($info['name'] ?? 'MEDIAGRAFIK Monitor'),
-            'file' => PluginDistribution::SLUG . '/' . PluginDistribution::SLUG . '.php',
+            'slug' => $distribution->slug(),
+            'name' => (string) $info['name'],
+            'file' => $distribution->pluginFile(),
             'version' => $version,
         ];
 

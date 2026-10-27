@@ -7,6 +7,7 @@
  * a výběr klienta proto stojí mimo ně.
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var string              $title
  * @var array<int, array<string, mixed>> $rows     řádky se `state`, `host`, `cells` (Uptime, WP, PHP, Databáze, Aktualizace — `SiteCells::of()`), `service`, `report`, `seo`…
  * @var array<string, array<int, array<string, mixed>>> $groups   při seskupení: klient => řádky
@@ -103,7 +104,7 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
 
             <?php if ($rows === []): ?>
                 <?php if ($counts['all'] === 0 && $q === '' && $clientId === null): ?>
-                    <?php render_empty('Zatím žádný web v monitoringu', 'Přidejte první web — dostane API klíč pro plugin MEDIAGRAFIK Monitor a hned se začne hlídat.', 'globe',
+                    <?php render_empty('Zatím žádný web v monitoringu', 'Přidejte první web — dostane API klíč pro plugin ' . $pluginName . ' a hned se začne hlídat.', 'globe',
                         '<a class="btn btn--primary btn--sm" href="' . get_url('weby/pridat') . '">' . get_btn_icon('plus') . 'Přidat web</a>') ?>
                 <?php else: ?>
                     <?php render_empty('Žádný web neodpovídá filtru', 'Zkuste zrušit filtr stavu nebo hledat podle jiného jména.', 'search',

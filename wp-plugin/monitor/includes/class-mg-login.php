@@ -36,7 +36,7 @@ final class MG_Login
     public static function create_link($login)
     {
         if (!self::is_allowed()) {
-            return new WP_Error('login_disabled', 'Přihlášení ze Správy webů je na webu vypnuté (Nastavení → MEDIAGRAFIK Monitor).', array('status' => 403));
+            return new WP_Error('login_disabled', 'Přihlášení ze Správy webů je na webu vypnuté (Nastavení → ' . MG_MONITOR_NAME . ').', array('status' => 403));
         }
 
         $login = trim((string) $login);

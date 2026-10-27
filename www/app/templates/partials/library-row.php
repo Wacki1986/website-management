@@ -1,6 +1,6 @@
 <?php
 /**
- * Řádek tabulky v Knihovně pluginů — plugin z knihovny i náš MEDIAGRAFIK
+ * Řádek tabulky v Knihovně pluginů — plugin z knihovny i náš plugin
  * Monitor v samostatné kartě. Weby jako pilulky: oranžová s verzí = čeká
  * na aktualizaci, šedá = aktuální (u víc webů schované za „+ N aktuálních",
  * rozbalí `library-update.js`). Ikona „Aktualizovat všude" otevře okno

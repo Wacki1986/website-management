@@ -72,7 +72,7 @@ trait SiteHeaderTrait
             'intervalLabel' => 'kontrola ' . (SiteRepository::INTERVALS[(int) $site['check_interval_min']] ?? 'každých ' . (int) $site['check_interval_min'] . ' min'),
             'apiWarning' => $apiDown ? [
                 'title' => 'Web neodpovídá monitorovacímu API',
-                'text' => 'Plugin MEDIAGRAFIK Monitor neodpověděl' . ($site['last_snapshot_at'] !== null ? ' od ' . get_when((string) $site['last_snapshot_at']) : '')
+                'text' => 'Plugin ' . $this->kernel->brand()->pluginName() . ' neodpověděl' . ($site['last_snapshot_at'] !== null ? ' od ' . get_when((string) $site['last_snapshot_at']) : '')
                     . '. ' . ((string) $site['snapshot_error'] !== '' ? $site['snapshot_error'] . ' ' : '') . 'Data níže jsou z poslední úspěšné kontroly.',
             ] : null,
         ];

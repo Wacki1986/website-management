@@ -3,7 +3,7 @@
  * Knihovna pluginů — placené a vlastní pluginy mimo wordpress.org (návrh
  * stránku nemá; skládá se jako seznam klientů: hlavička, karta, tabulka).
  *
- * Nahrání ZIPu nahradí předchozí verzi. Weby s pluginem MEDIAGRAFIK
+ * Nahrání ZIPu nahradí předchozí verzi. Weby s naším pluginem
  * Monitor od verze `$since` si novou verzi nabídnou k aktualizaci samy.
  *
  * „Aktualizovat všude" (ikona v Akcích) otevře okno se seznamem webů;
@@ -19,18 +19,19 @@
  * Weby ve sloupci jsou pilulky: oranžová se starší verzí, šedá aktuální.
  * U víc webů se šedé schovají za „+ N aktuálních" (rozbalí skript).
  *
- * Náš MEDIAGRAFIK Monitor má nad knihovnou vlastní kartu se stejným
+ * Náš monitorovací plugin má nad knihovnou vlastní kartu se stejným
  * řádkem — nenahrává se sem, rozdává ho správa (`storage/plugin/`), ale
  * po vydání nové verze se odsud rozešle na všechny weby.
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var string              $title
  * @var array<string, mixed>|null        $monitor  řádek Monitoru (null = správa žádnou verzi nerozdává)
  * @var array<int, array<string, mixed>> $rows     pluginy knihovny — řádky z `PluginLibraryController::row()`
  *                                                 (klíče popisuje partial `library-row`)
  * @var array<int, array<string, mixed>> $dialogs  řádky s weby k aktualizaci → okno `library-update-dialog`
  * @var array<int, array<string, mixed>> $installDialogs okna „Nainstalovat na weby" → partial `plugin-install-dialog`
- * @var string              $since      od které verze MEDIAGRAFIK Monitoru weby knihovnu znají
+ * @var string              $since      od které verze našeho pluginu weby knihovnu znají
  * @var string              $installSince od které verze umí plugin z knihovny nainstalovat
  * @var string              $maxUpload  limit nahrávání na hostingu (upload_max_filesize)
  * @var string              $csrfToken
@@ -55,13 +56,13 @@ $this->extend('layout/shell', ['title' => $title]);
         </form>
 
         <aside class="split__aside">
-            <div class="card card--note">Weby si novou verzi nabídnou k aktualizaci samy (ve správě i ve wp-admin), když mají plugin MEDIAGRAFIK Monitor <?= $this->e($since) ?> nebo novější. Ikonou „Aktualizovat všude" ji rozešlete na všechny weby najednou, ikonou plus plugin nainstalujete na weby, kde ještě není (potřebují Monitor <?= $this->e($installSince) ?>). ZIPy nejsou veřejně ke stažení — každý web dostane odkaz podepsaný jen pro sebe.</div>
+            <div class="card card--note">Weby si novou verzi nabídnou k aktualizaci samy (ve správě i ve wp-admin), když mají plugin <?= $this->e($pluginName) ?> <?= $this->e($since) ?> nebo novější. Ikonou „Aktualizovat všude" ji rozešlete na všechny weby najednou, ikonou plus plugin nainstalujete na weby, kde ještě není (potřebují <?= $this->e($pluginName) ?> <?= $this->e($installSince) ?>). ZIPy nejsou veřejně ke stažení — každý web dostane odkaz podepsaný jen pro sebe.</div>
         </aside>
     </div>
 
     <?php if ($monitor !== null): ?>
         <section class="card card--scroll-x">
-            <?php render_card_head('MEDIAGRAFIK Monitor', 'náš plugin — novou verzi rozdává správa sama, do knihovny se nenahrává') ?>
+            <?php render_card_head($pluginName, 'náš plugin — novou verzi rozdává správa sama, do knihovny se nenahrává') ?>
             <div class="table table--library">
                 <div class="table__head"><div>Plugin</div><div>Verze</div><div>Na webech</div><div>Vydáno</div><div class="table__cell table__cell--right">Akce</div></div>
                 <?= $this->partial('partials/library-row', ['plugin' => $monitor, 'csrfToken' => $csrfToken]) ?>

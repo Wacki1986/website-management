@@ -1,7 +1,7 @@
 {
     "name": "Správa webů",
     "short_name": "Správa",
-    "description": "Monitoring WordPress webů klientů MEDIAGRAFIK, alerty, servis a reporty.",
+    "description": "Monitoring webů klientů, alerty, servis a reporty.",
     "lang": "cs",
     "start_url": "../",
     "scope": "../",
@@ -9,8 +9,8 @@
     "background_color": "#ffffff",
     "theme_color": "#3858e9",
     "icons": [
-        { "src": "favicons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-        { "src": "favicons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-        { "src": "favicons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+        { "src": "../znacka/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "../znacka/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        { "src": "../znacka/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
     ]
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
 use App\Core\Events\EventLog;
 use App\Core\Modules\Modules;
 use App\Core\Modules\SeoScore;
@@ -203,7 +204,7 @@ final class AlertEngine
 
         // Plugin neodpovídá (3× po sobě).
         $apiDown = ($site['api_status'] ?? 'ok') !== 'ok' && (int) ($site['api_failures'] ?? 0) >= 3;
-        $this->toggle($site, 'api_error', $apiDown, 'warning', 'Plugin MEDIAGRAFIK Monitor neodpovídá',
+        $this->toggle($site, 'api_error', $apiDown, 'warning', 'Plugin ' . Brand::currentPluginName() . ' neodpovídá',
             (string) ($site['snapshot_error'] ?? '') . ' Data v detailu jsou z poslední úspěšné kontroly.',
             'pravidlo: 3 neúspěšné pokusy o načtení dat', 'Plugin zase odpovídá, data jsou čerstvá.', $now, $quiet);
 

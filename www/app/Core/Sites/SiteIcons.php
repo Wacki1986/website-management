@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Sites;
 
+use App\Core\Brand\Brand;
 use App\Core\Db\Connection;
 use App\Core\Http\HttpException;
 
@@ -51,7 +52,7 @@ final class SiteIcons
         private readonly SiteRepository $sites,
         private readonly string $storagePath,
         private readonly int $timeout = 8,
-        private readonly string $userAgent = 'MEDIAGRAFIK-Monitor/1.0 (+https://mediagrafik.cz)',
+        private readonly string $userAgent = Brand::USER_AGENT,
     ) {
     }
 

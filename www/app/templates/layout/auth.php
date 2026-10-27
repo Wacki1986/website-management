@@ -27,8 +27,9 @@
 <div class="auth">
     <div class="auth__box">
         <a class="auth__brand" href="<?= get_url('/') ?>">
-            <img class="auth__logo app-logo--light" src="<?= get_asset('img/sprava-logo.svg') ?>" alt="Správa webů od MEDIAGRAFIK">
-            <img class="auth__logo app-logo--dark" src="<?= get_asset('img/sprava-logo-dark.svg') ?>" alt="Správa webů od MEDIAGRAFIK">
+            <?php // Logo z Nastavení → Základní nastavení, jinak výchozí „Správa webů“. ?>
+            <img class="auth__logo app-logo--light" src="<?= get_brand_logo('app') ?>" alt="<?= $this->e($appName) ?>">
+            <img class="auth__logo app-logo--dark" src="<?= get_brand_logo('app_dark') ?>" alt="<?= $this->e($appName) ?>">
         </a>
 
         <?php // Nepřihlášené stránky nemají toasty — hlášky se vypisují rovnou. ?>

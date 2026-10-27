@@ -23,7 +23,8 @@ use Dompdf\Options;
  * Do PDF jde jen podmnožina použitých znaků, soubor zůstává malý.
  *
  * Z bezpečnosti Dompdf nesahá na síť ani mimo povolené složky: obrázky
- * a písma jen z `vendor/instrument-sans` a `assets/img`.
+ * a písma jen z `vendor/instrument-sans`, `assets/img` a `storage/brand`
+ * (logo studia nahrané v Nastavení → Základní nastavení).
  */
 final class PdfRenderer
 {
@@ -40,10 +41,12 @@ final class PdfRenderer
     /**
      * @param string $rootPath  kořen aplikace (`www/`)
      * @param string $cacheDir  zapisovatelná složka pro metriky písem a dočasné soubory
+     * @param string $brandDir  nahraná loga instance (`storage/brand`)
      */
     public function __construct(
         private readonly string $rootPath,
         private readonly string $cacheDir,
+        private readonly string $brandDir = '',
     ) {
     }
 
@@ -67,7 +70,7 @@ final class PdfRenderer
         $options->setFontDir($this->cacheDir);
         $options->setFontCache($this->cacheDir);
         $options->setTempDir($this->cacheDir);
-        $options->setChroot([$this->fontDir(), $this->rootPath . '/assets/img']);
+        $options->setChroot(array_values(array_filter([$this->fontDir(), $this->rootPath . '/assets/img', $this->brandDir])));
         $options->setAllowedProtocols(['file://' => ['rules' => []], 'data://' => ['rules' => []]]);
         $options->setIsRemoteEnabled(false);
         $options->setIsPhpEnabled(false);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
 use App\Core\Db\Connection;
 use App\Core\Events\EventLog;
 use App\Core\Modules\SeoRepository;
@@ -89,7 +90,7 @@ final class SnapshotImporter
 
         // Plugin, který se ozval poprvé, je událost sama o sobě.
         if ($previous === null) {
-            $this->events->record($siteId, EventLog::KIND_SYSTEM, 'ok', 'Plugin MEDIAGRAFIK Monitor poprvé odpověděl — data načtena');
+            $this->events->record($siteId, EventLog::KIND_SYSTEM, 'ok', 'Plugin ' . Brand::currentPluginName() . ' poprvé odpověděl — data načtena');
             $changes[] = 'první načtení dat';
         }
 
@@ -122,7 +123,7 @@ final class SnapshotImporter
         // Třetí selhání v řadě = událost (a v P2 alert), ne každé.
         if ($failures === 3) {
             $this->events->record($siteId, EventLog::KIND_SYSTEM, 'error',
-                'Plugin MEDIAGRAFIK Monitor neodpovídá: ' . (string) ($result['error'] ?? ''), ['code' => $result['code']]);
+                'Plugin ' . Brand::currentPluginName() . ' neodpovídá: ' . (string) ($result['error'] ?? ''), ['code' => $result['code']]);
         }
 
         return 'plugin neodpověděl (' . $result['code'] . ')';
@@ -324,7 +325,7 @@ final class SnapshotImporter
      * čtou záložka, seznam webů, dashboard, alert i report.
      *
      * Počítá se přes `PluginOffers` — stejně jako tlačítka Aktualizovat
-     * v tabulce, včetně verzí z Knihovny pluginů a MEDIAGRAFIK Monitoru.
+     * v tabulce, včetně verzí z Knihovny pluginů a našeho pluginu.
      *
      * @return int nový počet
      */

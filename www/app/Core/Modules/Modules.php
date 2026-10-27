@@ -23,7 +23,7 @@ final class Modules
     public const SEO = 'seo';
 
     /**
-     * `plugin_since` — od které verze MEDIAGRAFIK Monitoru plugin data
+     * `plugin_since` — od které verze našeho pluginu plugin data
      * modulu posílá (starší parametr `modules` ignoruje).
      */
     public const REGISTRY = [

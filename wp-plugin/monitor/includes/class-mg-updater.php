@@ -92,13 +92,13 @@ final class MG_Updater
         }
 
         return (object) array(
-            'name' => isset($remote->name) ? $remote->name : 'MEDIAGRAFIK Monitor',
+            'name' => isset($remote->name) ? $remote->name : MG_MONITOR_NAME,
             'slug' => $this->plugin_slug,
             'version' => $remote->version,
             'tested' => isset($remote->tested) ? $remote->tested : '',
             'requires' => isset($remote->requires) ? $remote->requires : '',
             'requires_php' => isset($remote->requires_php) ? $remote->requires_php : '',
-            'author' => isset($remote->author) ? $remote->author : 'Mediagrafik.cz',
+            'author' => isset($remote->author) ? $remote->author : MG_MONITOR_AUTHOR,
             'homepage' => isset($remote->homepage) ? $remote->homepage : '',
             'download_link' => $remote->download_url,
             'sections' => array(
@@ -134,7 +134,7 @@ final class MG_Updater
         return $remote;
     }
 
-    /** Soubor pluginu (`slozka/mediagrafik-monitor.php`) — tak ho zná upgrader. */
+    /** Soubor pluginu (`slozka/slozka.php`) — tak ho zná upgrader. */
     public function basename()
     {
         return $this->plugin_basename;

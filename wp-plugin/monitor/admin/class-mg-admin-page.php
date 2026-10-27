@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Nastavení → MEDIAGRAFIK Monitor: vložení API klíče, adresa hubu,
+ * Nastavení → (název pluginu z `brand.php`): vložení API klíče, adresa hubu,
  * povolení přihlášení ze Správy webů, kdy hub naposledy četl data,
  * a tlačítko „Otestovat sběr dat".
  *
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  */
 final class MG_Admin_Page
 {
-    const SLUG = 'mediagrafik-monitor';
+    const SLUG = MG_MONITOR_SLUG;
 
     /**
      * Po aktivaci pluginu bez uloženého klíče se jednou přesměruje sem —
@@ -81,7 +81,7 @@ final class MG_Admin_Page
 
     public function add_menu()
     {
-        add_options_page('MEDIAGRAFIK Monitor', 'MEDIAGRAFIK Monitor', 'manage_options', self::SLUG, array($this, 'render'));
+        add_options_page(MG_MONITOR_NAME, MG_MONITOR_NAME, 'manage_options', self::SLUG, array($this, 'render'));
     }
 
     public function handle_actions()
@@ -143,8 +143,8 @@ final class MG_Admin_Page
         // volání tady je vypisovalo podruhé.
         ?>
         <div class="wrap">
-            <h1>MEDIAGRAFIK Monitor</h1>
-            <p>Tento plugin nic neposílá. Správa webů studia MEDIAGRAFIK si data načítá sama a prokazuje se API klíčem, který vložíte níže.</p>
+            <h1><?php echo esc_html(MG_MONITOR_NAME); ?></h1>
+            <p>Tento plugin nic neposílá. Správa webů<?php echo MG_MONITOR_AUTHOR !== '' ? ' (' . esc_html(MG_MONITOR_AUTHOR) . ')' : ''; ?> si data načítá sama a prokazuje se API klíčem, který vložíte níže.</p>
 
             <form method="post">
                 <?php wp_nonce_field('mg_monitor_settings'); ?>
@@ -160,7 +160,7 @@ final class MG_Admin_Page
                     <tr>
                         <th scope="row"><label for="mg_monitor_hub">Adresa Správy webů</label></th>
                         <td>
-                            <input type="url" class="regular-text code" id="mg_monitor_hub" name="mg_monitor_hub" value="<?php echo esc_attr($hub); ?>" placeholder="https://sprava.mediagrafik.cz">
+                            <input type="url" class="regular-text code" id="mg_monitor_hub" name="mg_monitor_hub" value="<?php echo esc_attr($hub); ?>" placeholder="<?php echo esc_attr(MG_MONITOR_HUB_URL !== '' ? MG_MONITOR_HUB_URL : 'https://'); ?>">
                             <p class="description">Odtud si plugin bere své aktualizace. Nepovinné — bez vyplnění se použije výchozí adresa.</p>
                         </td>
                     </tr>

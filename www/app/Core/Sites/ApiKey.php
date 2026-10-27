@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Sites;
 
 /**
- * API klíč webu — pověření, kterým se hub prokazuje pluginu MEDIAGRAFIK
+ * API klíč webu — pověření, kterým se hub prokazuje našemu pluginu
  * Monitor na straně WordPressu.
  *
  * Tvar `mg_live_` + 32 znaků [A-Za-z0-9]: předpona říká na první pohled,

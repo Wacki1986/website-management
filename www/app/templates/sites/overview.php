@@ -7,6 +7,7 @@
  * `apiError` (pás nad obsahem — v `partials/site-header`).
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var array               $site
  * @var array<string, array<string, mixed>>|null $metrics  wp/php/db/theme, null = ještě žádná data;
  *                                                     wp.updateUrl = potvrzení aktualizace WordPressu (null = nejde)
@@ -143,7 +144,7 @@ $percentTone = $percent === null ? 'text-faint' : ($percent < 99 ? 'metric__valu
             <?php elseif ($metrics === null && $uptime['checks'] === 0): ?>
                 <div class="score-card score-card--quiet">
                     <div class="score-card__label"><?= get_dot('muted') ?>Čeká na první data</div>
-                    <div class="score-card__note"><?= $isWordpress ? 'Nainstalujte na web plugin MEDIAGRAFIK Monitor, vložte API klíč z Nastavení a klikněte na „Zkontrolovat teď".' : 'Klikněte na „Zkontrolovat teď" — ověří se dostupnost a SSL certifikát.' ?></div>
+                    <div class="score-card__note"><?= $isWordpress ? 'Nainstalujte na web plugin ' . $this->e($pluginName) . ', vložte API klíč z Nastavení a klikněte na „Zkontrolovat teď".' : 'Klikněte na „Zkontrolovat teď" — ověří se dostupnost a SSL certifikát.' ?></div>
                 </div>
             <?php else: ?>
                 <div class="score-card score-card--ok score-card--quiet">

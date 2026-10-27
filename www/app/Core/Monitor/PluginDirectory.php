@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
 use App\Core\Db\Connection;
 
 /**
@@ -44,8 +45,6 @@ final class PluginDirectory
     /** Kolik pluginů nejvýš ověřit za jeden průchod cronu. */
     public const PER_RUN = 40;
 
-    /** Vlastní plugin studia v adresáři není a hodnotit ho nemá smysl. */
-    private const SKIP = ['mediagrafik-monitor'];
 
     /**
      * Slug z cesty pluginu v SQL — stejně jako `slug()`: složka, nebo název
@@ -70,6 +69,7 @@ final class PluginDirectory
         private readonly MonitorSettings $settings,
         ?callable $fetcher = null,
         private readonly int $timeout = 8,
+        private readonly string $userAgent = Brand::USER_AGENT,
     ) {
         $this->fetcher = $fetcher;
     }
@@ -115,7 +115,8 @@ final class PluginDirectory
                 'newBefore' => date('Y-m-d H:i:s', $now - self::NEW_VERSION_HOURS * 3600),
             ],
         );
-        $slugs = array_values(array_diff(array_unique(array_map(static fn (array $row): string => (string) $row['slug'], $rows)), self::SKIP, ['']));
+        // Náš vlastní plugin v adresáři wordpress.org není — hodnotit ho nemá smysl.
+        $slugs = array_values(array_diff(array_unique(array_map(static fn (array $row): string => (string) $row['slug'], $rows)), [Brand::currentPluginSlug(), '']));
 
         return array_slice($slugs, 0, $limit);
     }
@@ -430,7 +431,7 @@ final class PluginDirectory
             CURLOPT_CONNECTTIMEOUT => 4,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_USERAGENT => 'MEDIAGRAFIK-Sprava-webu/1.0',
+            CURLOPT_USERAGENT => $this->userAgent,
         ]);
 
         $body = curl_exec($handle);

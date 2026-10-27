@@ -10,6 +10,7 @@ declare(strict_types=1);
  * a rate limiter, o které tu nejde.
  */
 
+use App\Core\Brand\Brand;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Kernel;
@@ -41,6 +42,8 @@ function loggedInKernel(string $userName = 'Technik', array $env = []): array
     ], WWW_ROOT);
 
     Urls::bind($kernel->url(...), $kernel->asset(...));
+    // Jako app/bootstrap.php — šablony a statická logika berou značku odtud.
+    Brand::bind($kernel->brand(...));
 
     $now = date('Y-m-d H:i:s');
     $userId = $kernel->db()->insert('users', [

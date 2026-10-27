@@ -47,7 +47,7 @@ final class MG_Plugin_Install
         $manifest = $library !== null ? $library->fresh_manifest() : null;
 
         if ($manifest === null) {
-            return new WP_Error('library_unavailable', 'Web se nedostal ke knihovně pluginů ve Správě webů — zkontrolujte adresu správy v nastavení pluginu MEDIAGRAFIK Monitor.', array('status' => 502));
+            return new WP_Error('library_unavailable', 'Web se nedostal ke knihovně pluginů ve Správě webů — zkontrolujte adresu správy v nastavení pluginu ' . MG_MONITOR_NAME . '.', array('status' => 502));
         }
 
         MG_Site_Actions::load_admin();

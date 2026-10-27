@@ -7,6 +7,7 @@
  * a tabulku.
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var string              $title
  * @var array{all: int, problem: int, attention: int, ok: int, unknown: int} $counts
  * @var int                 $needs
@@ -38,11 +39,11 @@ $segments = [
 ?>
 <div class="app__content">
     <?php if ($counts['all'] === 0): ?>
-        <?php render_page_head('Dashboard', 'Přehled stavu všech webů v péči studia') ?>
+        <?php render_page_head('Dashboard', 'Přehled stavu všech spravovaných webů') ?>
         <section class="card">
             <?php render_empty(
                 'Zatím žádný web v monitoringu',
-                'Přidejte první web, nastavte mu API klíč pluginu MEDIAGRAFIK Monitor a dashboard se začne plnit.',
+                'Přidejte první web, nastavte mu API klíč pluginu ' . $pluginName . ' a dashboard se začne plnit.',
                 'globe',
                 '<a class="btn btn--primary" href="' . get_url('weby/pridat') . '">' . get_btn_icon('plus') . 'Přidat web</a>',
             ) ?>

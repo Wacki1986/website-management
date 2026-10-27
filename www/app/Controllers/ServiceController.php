@@ -280,9 +280,11 @@ final class ServiceController extends Controller
         [$from, $to] = ServiceProtocol::eventWindow((string) $log['performed_on']);
         $events = $this->kernel->events()->betweenTimes((int) $id, $from, $to, ServiceProtocol::EVENT_KINDS);
 
+        // Záhlaví protokolu je tmavé — logo firmy ve světlé variantě
+        // (Nastavení → Základní nastavení); bez něj se tam napíše název firmy.
         $html = $this->kernel->view()->render('pdf/service-protocol', ServiceProtocol::data($site, $log, $events, [
-            'name' => (string) ($mail['from_name'] !== '' ? $mail['from_name'] : 'MEDIAGRAFIK'),
-        ], $pdf->imagePath('logo-mediagrafik-pdf-light.svg'), date('Y-m-d'), $this->kernel->service()->plan((int) $id)));
+            'name' => $this->kernel->brand()->studioName((string) $mail['from_name']),
+        ], (string) $this->kernel->brand()->assets()->uploaded('studio_inverse'), date('Y-m-d'), $this->kernel->service()->plan((int) $id)));
 
         return new Response($pdf->render($html), 200, [
             'Content-Type' => 'application/pdf',

@@ -171,7 +171,7 @@ final class TwoFactorController extends Controller
         return $this->view('settings/dvoufazove', [
             'title' => 'Spárování telefonu',
             'available' => $available,
-            'otpauthUri' => $secret !== '' ? Totp::provisioningUri($secret, $account, TwoFactor::ISSUER) : '',
+            'otpauthUri' => $secret !== '' ? Totp::provisioningUri($secret, $account, $this->kernel->brand()->twoFactorIssuer()) : '',
             'secretFormatted' => Totp::formatSecret($secret),
             'account' => $account,
             'errors' => $errors,

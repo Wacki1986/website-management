@@ -21,8 +21,11 @@ use SensitiveParameter;
  */
 final class TwoFactor
 {
-    /** Pod tímhle jménem se účet objeví v aplikaci Authenticator. */
-    public const ISSUER = 'Správa webů MEDIAGRAFIK';
+    /**
+     * Pod tímhle jménem se účet objeví v aplikaci Authenticator, když
+     * instance nemá vyplněné studio — jinak `Brand::twoFactorIssuer()`.
+     */
+    public const ISSUER = 'Správa webů';
 
     public const RECOVERY_COUNT = 10;
 

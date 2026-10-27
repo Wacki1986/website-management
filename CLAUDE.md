@@ -1,6 +1,7 @@
-# Pravidla projektu — Správa webů (MEDIAGRAFIK)
+# Pravidla projektu — Správa webů
 
-Správce projektu je poučený laik (15 let zkušeností s WordPressem) — kód se
+Aplikace vzniká pro MEDIAGRAFIK, ale běží i v dalších instancích (správce
+ji nasazuje i pro své vlastní weby). Správce projektu je poučený laik (15 let zkušeností s WordPressem) — kód se
 píše tak, aby byl čitelný na první pohled, ne jen správný. Architektura je
 převzatá ze správy instancí dispu (`../dispu/sprava-instanci`): Kernel →
 Router → Controller → View, žádný framework, žádný Composer. Průvodce čtením
@@ -14,7 +15,8 @@ později: `dev/docs/02-todo.md`.
   `app/templates`, `app/helpers` (globální funkce), `database/migrations`.
 - `dev/` — nenasazuje se: `scss/` (design balíček + `app/` doplňky), `tests/`,
   `tools/`, `docs/`, `design/` (handoff z Claude Design, nedotýkat se).
-- `wp-plugin/mediagrafik-monitor/` — plugin na straně WordPress webu.
+- `wp-plugin/monitor/` — plugin na straně WordPress webu (neutrální; jméno,
+  složku a adresu správy mu při stažení doplní instance — `PluginDistribution`).
 
 ## Design
 
@@ -37,6 +39,17 @@ později: `dev/docs/02-todo.md`.
   `.choice__item`, `.pick__item`, `.toggle`) se stav **nekreslí třídou
   `--active`/`--on` ze serveru**, jen CSS `:has(:checked)` v `app/_extras.scss`
   — třída by po kliknutí zůstala viset. Třídy z návrhu jen u odkazů a tlačítek.
+
+## Značka instance
+
+- **Název firmy, loga, název pluginu ani doména nesmí být v kódu natvrdo.**
+  Texty berou `$pluginName` / `$studioName` (sdílené proměnné šablon),
+  v PHP `$kernel->brand()`, ve statické logice `Brand::currentPluginName()`;
+  loga a ikony `get_brand_logo()` / `get_brand_icon()`. Složka (slug) pluginu
+  je v Základním nastavení (`Brand::pluginSlug()`), nikdy literál.
+- Placeholdery ve formulářích neutrální (`vasedomena.cz`, `spravce`).
+- `dev/tests/BrandTest.php` prochází hlavní stránky a hlídá, že na nich
+  „MEDIAGRAFIK“ není — novou stránku tam přidat.
 
 ## Šablony (`www/app/templates/`)
 

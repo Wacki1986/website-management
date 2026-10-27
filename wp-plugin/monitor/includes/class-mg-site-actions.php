@@ -46,7 +46,7 @@ final class MG_Site_Actions
         self::load_admin();
 
         $installed = get_plugins();
-        $own = plugin_basename(dirname(__DIR__) . '/mediagrafik-monitor.php');
+        $own = MG_Monitor::basename();
         $items = array();
         $deletable = array();
 
@@ -65,7 +65,7 @@ final class MG_Site_Actions
 
             if ($file === $own) {
                 $item['status'] = 'skipped';
-                $item['message'] = 'MEDIAGRAFIK Monitor se ze správy mazat nedá — bez něj by správa web ztratila.';
+                $item['message'] = MG_MONITOR_NAME . ' se ze správy mazat nedá — bez něj by správa web ztratila.';
             } elseif (is_plugin_active($file) || is_plugin_active_for_network($file)) {
                 $item['status'] = 'skipped';
                 $item['message'] = 'Plugin je aktivní — nejdřív ho ve wp-admin deaktivujte.';
@@ -141,8 +141,8 @@ final class MG_Site_Actions
             return new WP_Error('plugin_missing', 'Plugin na webu není — načtěte data znovu.', array('status' => 404));
         }
 
-        if ($file === plugin_basename(dirname(__DIR__) . '/mediagrafik-monitor.php')) {
-            return new WP_Error('plugin_self', 'MEDIAGRAFIK Monitor se ze správy vypnout nedá — správa by k webu ztratila přístup.', array('status' => 409));
+        if ($file === MG_Monitor::basename()) {
+            return new WP_Error('plugin_self', MG_MONITOR_NAME . ' se ze správy vypnout nedá — správa by k webu ztratila přístup.', array('status' => 409));
         }
 
         if (is_multisite() && is_plugin_active_for_network($file)) {

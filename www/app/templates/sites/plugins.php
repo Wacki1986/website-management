@@ -14,6 +14,7 @@
  * které na webu nejsou (`plugin-install.js` je pak instaluje po jednom).
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var array               $site
  * @var array<int, array<string, mixed>> $rows  řádky `site_plugins` + `updatable`, `ignored`, `deleteUrl`, `watchAction`, `watchLabel`,
  *                                              `activeAction` (aktivovat/deaktivovat, null = nejde), `activeLabel`,
@@ -77,7 +78,7 @@ $this->extend('layout/shell', ['title' => $site['name'] . ' — Pluginy']);
         </form>
 
         <?php if ($rows === []): ?>
-            <?php render_empty($hasSnapshot ? 'Web nemá žádný plugin' : 'Zatím žádná data', $hasSnapshot ? 'Nový přidáte tlačítkem Přidat z knihovny.' : 'Seznam pluginů dorazí s první kontrolou přes plugin MEDIAGRAFIK Monitor.', 'plugin') ?>
+            <?php render_empty($hasSnapshot ? 'Web nemá žádný plugin' : 'Zatím žádná data', $hasSnapshot ? 'Nový přidáte tlačítkem Přidat z knihovny.' : 'Seznam pluginů dorazí s první kontrolou přes plugin ' . $pluginName . '.', 'plugin') ?>
         <?php else: ?>
             <form id="plugin-update" method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/pluginy/aktualizovat') ?>" data-selection data-plugin-update>
                 <?php render_csrf($csrfToken) ?>

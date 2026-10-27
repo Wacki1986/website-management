@@ -7,6 +7,7 @@
  * `.platform-other`) přepíná CSS podle zaškrtnuté volby (`app/_extras.scss`).
  *
  * @var \App\Core\View\View  $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var string               $title
  * @var array<string, mixed> $values
  * @var array<string,string> $errors
@@ -75,7 +76,7 @@ $form = $this->form($errors, array_key_first($errors));
                 <div style="font-weight:var(--font-weight-semibold)">Co bude dál</div>
                 <div class="text-subtle" style="font-size:var(--font-size-label);margin-top:6px;line-height:var(--line-height-relaxed)">
                     1. Web dostane API klíč.<br>
-                    2. Na webu nainstalujte plugin MEDIAGRAFIK Monitor a klíč do něj vložte.<br>
+                    2. Na webu nainstalujte plugin <?= $this->e($pluginName) ?> a klíč do něj vložte.<br>
                     3. „Zkontrolovat teď" načte verze, pluginy, obsah a zabezpečení.
                 </div>
             </div>

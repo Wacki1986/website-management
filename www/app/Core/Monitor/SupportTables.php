@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
 use App\Core\Settings\Settings;
 
 /**
@@ -41,6 +42,7 @@ final class SupportTables
         private readonly Settings $settings,
         ?callable $fetcher = null,
         private readonly int $timeout = 10,
+        private readonly string $userAgent = Brand::USER_AGENT,
     ) {
         $this->fetcher = $fetcher;
     }
@@ -212,7 +214,7 @@ final class SupportTables
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => 3,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_USERAGENT => 'MEDIAGRAFIK-Sprava-webu/1.0',
+            CURLOPT_USERAGENT => $this->userAgent,
         ]);
 
         $body = curl_exec($handle);

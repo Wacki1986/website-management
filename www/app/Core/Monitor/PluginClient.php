@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
 use App\Core\Sites\SiteRepository;
 
 /**
- * Klient pluginu MEDIAGRAFIK Monitor na straně WordPress webu.
+ * Klient monitorovacího pluginu na straně WordPress webu (název a slug
+ * pluginu jsou podle instance — `Brand`).
  *
  * Model je **pull**: hub volá web (WP-Cron je nespolehlivý, hub řídí čas
  * i zátěž a z odpovědi pozná stav pluginu). Endpointy jsou GET pod
- * `/wp-json/mediagrafik-monitor/v1/…`, pověření nese hlavička `X-MG-Key`.
+ * `/wp-json/{slug}/v1/…`, pověření nese hlavička `X-MG-Key`.
  * Akce (aktualizace a mazání pluginů, aktualizace WordPressu) jsou POST
  * s podpisem navíc.
  *
@@ -29,7 +31,8 @@ use App\Core\Sites\SiteRepository;
  */
 final class PluginClient
 {
-    public const NAMESPACE = 'mediagrafik-monitor/v1';
+    /** Výchozí namespace (`Brand::DEFAULT_PLUGIN_SLUG`) — instance předává svůj v konstruktoru. */
+    public const NAMESPACE = Brand::DEFAULT_PLUGIN_SLUG . '/v1';
     public const HEADER = 'X-MG-Key';
 
     public const ACTION_PLUGIN_UPDATE = 'plugin-update';
@@ -77,8 +80,10 @@ final class PluginClient
      */
     public function __construct(
         private readonly int $timeout = 25,
-        private readonly string $userAgent = 'MEDIAGRAFIK-Monitor/1.0 (+https://mediagrafik.cz)',
+        private readonly string $userAgent = Brand::USER_AGENT,
         private readonly int $actionTimeout = 240,
+        private readonly string $namespace = self::NAMESPACE,
+        private readonly string $pluginName = Brand::APP_NAME . ' – Monitor',
     ) {
     }
 
@@ -194,9 +199,9 @@ final class PluginClient
      * v pluginu. Cesta je routa WordPressu (bez `/wp-json`), takže podpis
      * platí pro hezkou adresu i pro záložku `?rest_route=`.
      */
-    public static function signature(string $method, string $endpoint, int $timestamp, string $body, #[\SensitiveParameter] string $apiKey): string
+    public static function signature(string $method, string $endpoint, int $timestamp, string $body, #[\SensitiveParameter] string $apiKey, string $namespace = self::NAMESPACE): string
     {
-        $payload = $method . "\n/" . self::NAMESPACE . '/' . $endpoint . "\n" . $timestamp . "\n" . $body;
+        $payload = $method . "\n/" . $namespace . '/' . $endpoint . "\n" . $timestamp . "\n" . $body;
 
         return hash_hmac('sha256', $payload, $apiKey);
     }
@@ -249,14 +254,14 @@ final class PluginClient
      * Adresa endpointu — hezká, nebo přes `?rest_route=` (záložka). Dotaz
      * v endpointu (`summary?modules=seo`) se u záložky připojí přes `&`.
      */
-    public static function endpointUrl(string $siteUrl, string $endpoint, bool $fallback = false): string
+    public static function endpointUrl(string $siteUrl, string $endpoint, bool $fallback = false, string $namespace = self::NAMESPACE): string
     {
         $base = rtrim($siteUrl, '/');
         [$path, $query] = array_pad(explode('?', $endpoint, 2), 2, '');
 
         return $fallback
-            ? $base . '/?rest_route=/' . self::NAMESPACE . '/' . $path . ($query !== '' ? '&' . $query : '')
-            : $base . '/wp-json/' . self::NAMESPACE . '/' . $path . ($query !== '' ? '?' . $query : '');
+            ? $base . '/?rest_route=/' . $namespace . '/' . $path . ($query !== '' ? '&' . $query : '')
+            : $base . '/wp-json/' . $namespace . '/' . $path . ($query !== '' ? '?' . $query : '');
     }
 
     /**
@@ -276,7 +281,7 @@ final class PluginClient
                 self::HEADER . ': ' . $site['key'],
             ];
             $options = [
-                CURLOPT_URL => self::endpointUrl($site['url'], $endpoint, $fallback),
+                CURLOPT_URL => self::endpointUrl($site['url'], $endpoint, $fallback, $this->namespace),
                 CURLOPT_RETURNTRANSFER => true,
                 // Přesměrování se nesleduje: přesměrovaný požadavek by nesl
                 // klíč jinam, než kam patří.
@@ -289,7 +294,7 @@ final class PluginClient
             if ($payload !== null) {
                 $headers[] = 'Content-Type: application/json';
                 $headers[] = 'X-MG-Timestamp: ' . $timestamp;
-                $headers[] = 'X-MG-Signature: ' . self::signature('POST', $endpoint, $timestamp, $payload, $site['key']);
+                $headers[] = 'X-MG-Signature: ' . self::signature('POST', $endpoint, $timestamp, $payload, $site['key'], $this->namespace);
                 $options[CURLOPT_POST] = true;
                 $options[CURLOPT_POSTFIELDS] = $payload;
             }
@@ -327,7 +332,7 @@ final class PluginClient
             $error = $errors[(int) $handle] ?? ($httpStatus === 0 ? 'Spojení se nepodařilo navázat.' : null);
             $result = $error !== null
                 ? self::result(false, 'unreachable', $httpStatus, null, $error)
-                : self::classify($httpStatus, is_string($body) ? $body : '');
+                : $this->classify($httpStatus, is_string($body) ? $body : '');
 
             // Přesměrování (web běží na www, nebo se přestěhoval): říct kam,
             // ať jde adresa v Nastavení opravit — klíč se tam sám neposílá.
@@ -376,7 +381,7 @@ final class PluginClient
     }
 
     /** @return array{ok: bool, code: string, status: int, data: ?array<string, mixed>, error: ?string, plugin_version: string} */
-    private static function classify(int $status, string $body): array
+    private function classify(int $status, string $body): array
     {
         $decoded = json_decode($body, true);
 
@@ -412,7 +417,7 @@ final class PluginClient
 
         // Odpověď WordPressu bez našeho pluginu (`{"code":"rest_no_route",…}`).
         if ($wpCode === 'rest_no_route') {
-            return self::result(false, 'no_plugin', $status, null, 'Plugin MEDIAGRAFIK Monitor na webu není nainstalovaný nebo aktivní.');
+            return self::result(false, 'no_plugin', $status, null, 'Plugin ' . $this->pluginName . ' na webu není nainstalovaný nebo aktivní.');
         }
 
         // Cizí zásah do REST (bezpečnostní plugin) — 401/403 s WP obálkou.

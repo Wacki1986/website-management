@@ -62,9 +62,10 @@ $monitorNote = is_array($monitor)
 <div class="app">
     <aside class="sidebar">
         <a class="sidebar__logo" href="<?= get_url('/') ?>">
-            <?php // Dvě varianty loga: nápis je tmavý, v tmavém motivu světlý (app/_extras.scss). ?>
-            <img class="app-logo--light" src="<?= get_asset('img/sprava-logo.svg') ?>" alt="Správa webů od MEDIAGRAFIK">
-            <img class="app-logo--dark" src="<?= get_asset('img/sprava-logo-dark.svg') ?>" alt="Správa webů od MEDIAGRAFIK">
+            <?php // Dvě varianty loga: nápis je tmavý, v tmavém motivu světlý (app/_extras.scss).
+                  // Obě z Nastavení → Základní nastavení, jinak výchozí „Správa webů“. ?>
+            <img class="app-logo--light" src="<?= get_brand_logo('app') ?>" alt="<?= $this->e($appName) ?>">
+            <img class="app-logo--dark" src="<?= get_brand_logo('app_dark') ?>" alt="<?= $this->e($appName) ?>">
         </a>
 
         <?php // Telefon: tlačítko s ikonou menu; na počítači je nav vidět stále (CSS). ?>

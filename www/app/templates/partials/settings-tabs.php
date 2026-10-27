@@ -5,9 +5,10 @@
  * a dá se odkázat.
  *
  * @var \App\Core\View\View $this
- * @var string              $activeTab monitoring|alerty|moduly|servis|reporty|email|oznameni|uzivatele
+ * @var string              $activeTab monitoring|alerty|moduly|servis|reporty|email|oznameni|uzivatele|zakladni
  */
 $tabs = [
+    ['key' => 'zakladni', 'label' => 'Základní nastavení', 'url' => get_url('nastaveni/zakladni')],
     ['key' => 'monitoring', 'label' => 'Monitoring', 'url' => get_url('nastaveni/monitoring')],
     ['key' => 'alerty', 'label' => 'Alerty a prahy', 'url' => get_url('nastaveni/alerty')],
     ['key' => 'moduly', 'label' => 'Moduly', 'url' => get_url('nastaveni/moduly')],

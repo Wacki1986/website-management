@@ -71,11 +71,11 @@ $form = $this->form();
                     </div>
 
                     <?= $form->text('alert_emails', 'Alerty posílat na', $alertEmails, class: 'form__field--caps', measure: 'none',
-                        attributes: ['placeholder' => 'studio@mediagrafik.cz, petra@mediagrafik.cz'],
+                        attributes: ['placeholder' => 'studio@vasedomena.cz, petra@vasedomena.cz'],
                         hint: 'Více adres oddělte čárkou. Prázdné = jen upozornění na telefon.') ?>
 
-                    <?= $form->text('wp_login_user', 'Účet studia na webech', $wpLoginUser, class: 'form__field--caps', measure: 'none',
-                        attributes: ['placeholder' => 'mediagrafik', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
+                    <?= $form->text('wp_login_user', 'Výchozí účet na webech', $wpLoginUser, class: 'form__field--caps', measure: 'none',
+                        attributes: ['placeholder' => 'spravce', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
                         hint: 'Uživatelské jméno (nebo e-mail) správcovského účtu, do kterého tlačítko „wp-admin" přihlásí bez hesla. U webu jde přepsat. Prázdné = tlačítko jen otevře přihlášení.') ?>
 
                     <div class="row"><button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Uložit nastavení</button></div>

@@ -14,13 +14,10 @@
   font-size: var(--font-size-body);
   cursor: pointer;
 
-  input {
-    margin: 3px 0 0;
-    width: 16px;
-    height: 16px;
-    accent-color: var(--color-brand);
-    flex: none;
-  }
+  // Zaškrtávátko z design systému (`.checkbox`), zarovnané na první řádek
+  // popisku; fokus klávesnicí nese rámeček kolem něj.
+  .checkbox { margin-top: 3px; }
+  .checkbox:has(input:focus-visible) { @include focus-ring; }
 }
 
 .form__required { color: var(--color-status-error-text); }

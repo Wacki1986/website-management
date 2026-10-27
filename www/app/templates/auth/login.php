@@ -15,7 +15,7 @@ $form = $this->form();
 ?>
 <div class="auth__head">
     <h1 class="auth__title">Přihlášení</h1>
-    <p class="text-subtle">Interní nástroj studia pro správu klientských webů.</p>
+    <p class="text-subtle">Interní nástroj pro správu klientských webů.</p>
 </div>
 
 <form class="card card--padded form" method="post" action="<?= get_url('prihlaseni') ?>">

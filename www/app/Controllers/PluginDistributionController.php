@@ -9,7 +9,7 @@ use App\Core\Http\HttpException;
 use App\Core\Http\Response;
 
 /**
- * Výdej pluginu MEDIAGRAFIK Monitor WordPressu na webech klientů:
+ * Výdej našeho pluginu WordPressu na webech klientů (`/plugin/{slug}/…`):
  * `plugin-info.json` (verze, changelog, adresa ZIPu) a samotný ZIP.
  * Obojí připravuje `dev/tools/build-plugin.ps1` do `storage/plugin/`.
  */

@@ -12,7 +12,7 @@ use App\Core\Plugin\PluginLibrary;
  * Které pluginy webu správa nabízí k aktualizaci — jedno místo pro všechny.
  *
  * Dřív se to počítalo dvakrát a pokaždé jinak: tabulka pluginů brala
- * i novější verze z Knihovny pluginů a MEDIAGRAFIK Monitoru, uložený
+ * i novější verze z Knihovny pluginů a našeho pluginu, uložený
  * počet (metrika, výpis webů, dashboard, alerty) jen to, co hlásí
  * WordPress. Placený plugin z knihovny (WordPress bez licence o nové verzi
  * neví) pak v tabulce měl tlačítko Aktualizovat, ale v počtech chyběl.

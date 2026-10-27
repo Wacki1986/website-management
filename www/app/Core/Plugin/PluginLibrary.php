@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Plugin;
 
+use App\Core\Brand\Brand;
 use App\Core\Db\Connection;
 use App\Core\Http\HttpException;
 use ZipArchive;
@@ -12,7 +13,7 @@ use ZipArchive;
  * Knihovna pluginů mimo wordpress.org (placené, vlastní) — od každého jen
  * nejnovější verze.
  *
- * Distribuce jde stejnou cestou jako u MEDIAGRAFIK Monitoru: plugin na
+ * Distribuce jde stejnou cestou jako u našeho pluginu: plugin na
  * webu (1.4.0+) se správy zeptá na seznam (`manifest()`) a WordPressu nabídne
  * aktualizaci; ZIP si stáhne přes odkaz podepsaný pro konkrétní web
  * (`packageToken()`) — placené pluginy tak nejsou volně ke stažení.
@@ -187,7 +188,7 @@ final class PluginLibrary
                 'version' => (string) $plugin['version'],
                 'requires' => (string) $plugin['requires_wp'],
                 'requires_php' => (string) $plugin['requires_php'],
-                'package' => rtrim($appUrl, '/') . '/plugin/mediagrafik-monitor/knihovna/' . rawurlencode($slug) . '.zip?web=' . $siteId . '&podpis=' . $this->packageToken($slug, $siteId),
+                'package' => rtrim($appUrl, '/') . '/plugin/' . Brand::currentPluginSlug() . '/knihovna/' . rawurlencode($slug) . '.zip?web=' . $siteId . '&podpis=' . $this->packageToken($slug, $siteId),
             ];
         }
 
@@ -216,7 +217,7 @@ final class PluginLibrary
     }
 
     /**
-     * Na kterých webech je náš MEDIAGRAFIK Monitor a v jaké verzi — pro jeho
+     * Na kterých webech je náš plugin (Monitor) a v jaké verzi — pro jeho
      * kartu v knihovně. Pozná se podle souboru jako v `SiteActions::isMonitor()`:
      * složka na webu se může jmenovat jinak (ruční nahrání ZIPu s verzí).
      *
@@ -231,7 +232,7 @@ final class PluginLibrary
              JOIN sites s ON s.id = p.site_id AND s.removed_at IS NULL
              WHERE p.file LIKE :pattern
              ORDER BY s.name',
-            ['pattern' => '%/' . PluginDistribution::SLUG . '.php'],
+            ['pattern' => '%/' . Brand::currentPluginSlug() . '.php'],
         ) as $row) {
             $sites[] = ['id' => (int) $row['id'], 'name' => (string) $row['name'], 'version' => (string) $row['version'], 'file' => (string) $row['file']];
         }

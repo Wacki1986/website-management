@@ -58,9 +58,13 @@ return [
         assertTrue(is_array($icons) && $icons !== [], 'manifest bez ikon je neinstalovatelný');
 
         $purposes = [];
+        // Ikony vede manifest na /znacka/ — bez nahrané ikony je routa vydá
+        // z assets/favicons/. Instance bez Nastavení → Základní nastavení musí jít instalovat.
+        $assets = new App\Core\Brand\BrandAssets(sys_get_temp_dir() . '/pwa-test-bez-znacky', WWW_ROOT . '/assets');
 
         foreach ($icons as $icon) {
-            $file = WWW_ROOT . '/assets/' . $icon['src'];
+            assertTrue(str_starts_with($icon['src'], '../znacka/'), 'ikona má vést přes /znacka/: ' . $icon['src']);
+            $file = (string) ($assets->resolve(substr($icon['src'], strlen('../znacka/')))['path'] ?? '');
             assertTrue(is_file($file), 'ikona z manifestu chybí: ' . $icon['src']);
 
             [$width, $height] = (array) getimagesize($file);
@@ -176,7 +180,8 @@ return [
             // Server serveru nebo cizí klient — žádné heslo.
             'system/monitor-cron' => 'hostingový cron přes wget',
             'r/[a-f0-9]{32}\.gif' => 'sledovací obrázek v klientských reportech',
-            'plugin/mediagrafik-monitor/' => 'aktualizace pluginu na webech klientů',
+            'plugin/' => 'aktualizace pluginu na webech klientů (`/plugin/{slug}/`)',
+            'znacka/' => 'loga a ikony z Nastavení → Základní nastavení (manifest, e-maily)',
         ];
 
         foreach ($needed as $pattern => $why) {

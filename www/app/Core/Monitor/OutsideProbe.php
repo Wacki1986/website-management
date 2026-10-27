@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
+
 /**
  * Kontroly zabezpečení, které jde udělat jen **zvenku** — jako útočník,
  * bez pluginu: je přihlašovací stránka veřejná? Chrání administraci
@@ -16,7 +18,7 @@ namespace App\Core\Monitor;
 final class OutsideProbe
 {
     /** @param callable|null $fetcher pro testy: fn(string $url, bool $follow): array{status: int, headers: array<string,string>, body: string, error: string} */
-    public function __construct(private readonly int $timeout = 8, private $fetcher = null)
+    public function __construct(private readonly int $timeout = 8, private $fetcher = null, private readonly string $userAgent = Brand::USER_AGENT)
     {
     }
 
@@ -123,7 +125,7 @@ final class OutsideProbe
             CURLOPT_MAXREDIRS => 3,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => $this->timeout,
-            CURLOPT_USERAGENT => 'MEDIAGRAFIK-Monitor/1.0 (+https://mediagrafik.cz)',
+            CURLOPT_USERAGENT => $this->userAgent,
             CURLOPT_HEADERFUNCTION => static function ($curl, string $line) use (&$headers): int {
                 $parts = explode(':', $line, 2);
 

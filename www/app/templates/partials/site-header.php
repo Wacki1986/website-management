@@ -5,6 +5,7 @@
  * `SiteController::header()`.
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var array               $site
  * @var string              $tab           klíč aktivní záložky — „Zkontrolovat teď" se na ni vrátí
  * @var string              $tabsHtml      hotové záložky (get_tabs)
@@ -70,7 +71,7 @@
                 <div style="font-weight:var(--font-weight-semibold);color:var(--color-status-error-text)"><?= $this->e($apiWarning['title']) ?></div>
                 <div class="text-caption"><?= $this->e($apiWarning['text']) ?></div>
             </div>
-            <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>" data-pending data-pending-overlay="Kontroluji web…" data-pending-note="Zkouším znovu spojení s pluginem MEDIAGRAFIK Monitor.">
+            <form method="post" action="<?= get_url('weby/' . (int) $site['id'] . '/zkontrolovat') ?>" data-pending data-pending-overlay="Kontroluji web…" data-pending-note="Zkouším znovu spojení s pluginem <?= $this->e($pluginName) ?>.">
                 <?php render_csrf($csrfToken) ?>
                 <input type="hidden" name="back" value="<?= $this->e($tab) ?>">
                 <button type="submit" class="btn btn--secondary btn--sm">Zkusit znovu</button>

@@ -15,7 +15,7 @@ use App\Core\Sites\SiteActions;
 
 /**
  * Akce, které na webu klienta něco mění — přes podepsaný požadavek na
- * plugin MEDIAGRAFIK Monitor:
+ * náš plugin na webu:
  *
  *  - aktualizace pluginů (záložka Pluginy, hromadně i z řádku),
  *  - instalace pluginu z knihovny (okno na záložce Pluginy a v Knihovně),
@@ -254,7 +254,7 @@ final class SiteActionController extends Controller
         }
 
         if ($plugin === null || ((int) $plugin['is_active'] === 1) === $active) {
-            return $this->redirectWithFlash($back, $active ? 'Aktivovat jde jen neaktivní plugin, který na webu je.' : 'Deaktivovat jde jen aktivní plugin (kromě MEDIAGRAFIK Monitoru).', 'warning');
+            return $this->redirectWithFlash($back, $active ? 'Aktivovat jde jen neaktivní plugin, který na webu je.' : 'Deaktivovat jde jen aktivní plugin (kromě ' . $this->kernel->brand()->pluginName() . ').', 'warning');
         }
 
         $name = (string) $plugin['name'];

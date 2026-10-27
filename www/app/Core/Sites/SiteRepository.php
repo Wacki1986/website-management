@@ -47,7 +47,7 @@ final class SiteRepository
      */
     public const RETRY_INTERVAL = 15;
 
-    /** WordPress s pluginem MEDIAGRAFIK Monitor — API klíč, pluginy, aktualizace, zabezpečení. */
+    /** WordPress s naším pluginem — API klíč, pluginy, aktualizace, zabezpečení. */
     public const PLATFORM_WORDPRESS = 'wordpress';
 
     /** Jiný systém (Shoptet, Webnode, statické HTML…) — hlídá se jen dostupnost, SSL a doména. */
@@ -93,7 +93,7 @@ final class SiteRepository
         return $scheme . '://' . $host . $port . $path;
     }
 
-    /** Web s pluginem MEDIAGRAFIK Monitor? Řádek bez sloupce (starší data) je WordPress. @param array<string, mixed> $site */
+    /** Web s naším pluginem? Řádek bez sloupce (starší data) je WordPress. @param array<string, mixed> $site */
     public static function isWordpress(array $site): bool
     {
         return ($site['platform'] ?? self::PLATFORM_WORDPRESS) === self::PLATFORM_WORDPRESS;
@@ -232,6 +232,15 @@ final class SiteRepository
     public function countActive(): int
     {
         return (int) $this->db->scalar('SELECT COUNT(*) FROM sites WHERE removed_at IS NULL');
+    }
+
+    /**
+     * Weby, na kterých náš plugin aspoň jednou odpověděl — ty by změna
+     * složky pluginu (Nastavení → Základní nastavení) odpojila.
+     */
+    public function countConnected(): int
+    {
+        return (int) $this->db->scalar('SELECT COUNT(*) FROM sites WHERE removed_at IS NULL AND last_snapshot_at IS NOT NULL');
     }
 
     /** @param array<string, mixed> $data */

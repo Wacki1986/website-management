@@ -54,7 +54,7 @@ final class MG_Library
             return array();
         }
 
-        $response = wp_remote_get($this->hub_url . '/plugin/mediagrafik-monitor/knihovna.json', array(
+        $response = wp_remote_get($this->hub_url . '/plugin/' . MG_MONITOR_SLUG . '/knihovna.json', array(
             'timeout' => 10,
             'headers' => array('Accept' => 'application/json', 'X-MG-Key-Hash' => $hash),
         ));
@@ -90,7 +90,7 @@ final class MG_Library
     /** Vede odkaz na balíček do naší správy? Cizí adresu instalace odmítne. */
     public function owns_package($url)
     {
-        return strpos((string) $url, $this->hub_url . '/plugin/mediagrafik-monitor/knihovna/') === 0;
+        return strpos((string) $url, $this->hub_url . '/plugin/' . MG_MONITOR_SLUG . '/knihovna/') === 0;
     }
 
     public function check_for_updates($transient)
@@ -163,7 +163,7 @@ final class MG_Library
                     'requires' => isset($entry['requires']) ? (string) $entry['requires'] : '',
                     'requires_php' => isset($entry['requires_php']) ? (string) $entry['requires_php'] : '',
                     'download_link' => (string) $entry['package'],
-                    'sections' => array('description' => 'Plugin z knihovny Správy webů studia MEDIAGRAFIK.'),
+                    'sections' => array('description' => 'Plugin z knihovny Správy webů' . (MG_MONITOR_AUTHOR !== '' ? ' (' . MG_MONITOR_AUTHOR . ')' : '') . '.'),
                 );
             }
         }

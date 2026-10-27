@@ -130,7 +130,7 @@ return [
             [$kernel, , $siteId] = piKernel($url, [[PI_FLIPBOOK, 'FlipBook Pro']]);
             $html = kernelRequest($kernel, 'GET', '/weby/' . $siteId . '/pluginy')->body();
 
-            assertContainsString('MEDIAGRAFIK Monitor 1.8.0 (web má 1.7.0)', $html);
+            assertContainsString('Správa webů – Monitor 1.8.0 (web má 1.7.0)', $html);
             assertFalse(str_contains($html, 'data-confirm="plugin-install"'), 'Okno se otevřít nesmí');
             assertFalse(str_contains($html, 'data-plugin-install'));
         });
@@ -256,7 +256,7 @@ return [
             assertContainsString('data-confirm="library-install-flipbook-pro"', $html);
             assertContainsString('id="library-install-flipbook-pro"', $html);
             assertContainsString('data-action="/weby/' . $siteId . '/pluginy/instalovat" data-file="' . PI_FLIPBOOK . '" data-name="Kavárna"', $html);
-            assertContainsString('Web zatím nemá napojený plugin MEDIAGRAFIK Monitor.', $html);
+            assertContainsString('Web zatím nemá napojený plugin Správa webů – Monitor.', $html);
 
             // Elementor chybí jen na nenapojeném webu — okno jen s důvodem, bez tlačítka.
             assertContainsString('id="library-install-elementor"', $html);

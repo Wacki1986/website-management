@@ -30,7 +30,7 @@
  * @var string              $updatesNote odkud jsou aktualizace
  * @var array{kind: string, date: string, rhythm: string}|null $nextService příští servis podle plánu
  * @var string              $note        poznámka ze zápisu servisu (text se značkami editoru, `get_rich_text`)
- * @var string              $logoPath    absolutní cesta k logu (bílá varianta pro tmavé záhlaví)
+ * @var string              $logoPath    absolutní cesta k logu (bílá varianta pro tmavé záhlaví), '' = jméno studia textem
  * @var string              $studioName  popisek loga
  */
 ?>
@@ -53,6 +53,7 @@
     .band { position: absolute; top: -16mm; left: -18mm; width: 210mm; height: 68mm; background: #1b1e38; }
     .band__inner { margin: 11mm 18mm 0; width: 174mm; }
     .band__logo { height: 8.5mm; }
+    .band__studio { font-size: 14pt; font-weight: bold; letter-spacing: 0.04em; color: #ffffff; vertical-align: middle; }
     .band__meta { text-align: right; vertical-align: middle; }
     .band__meta .caps { color: #9fb0ff; }
     .band__number { margin-top: 0.5mm; font-size: 11pt; font-weight: 600; color: #ffffff; }
@@ -142,7 +143,11 @@
 <div class="band">
     <table class="band__inner">
         <tr>
-            <td><img class="band__logo" src="<?= $this->e($logoPath) ?>" alt="<?= $this->e($studioName) ?>"></td>
+            <?php if ($logoPath !== ''): ?>
+                <td><img class="band__logo" src="<?= $this->e($logoPath) ?>" alt="<?= $this->e($studioName) ?>"></td>
+            <?php else: ?>
+                <td class="band__studio"><?= $this->e($studioName) ?></td>
+            <?php endif; ?>
             <td class="band__meta">
                 <div class="caps">Servisní protokol</div>
                 <div class="band__number">č. <?= $this->e($number) ?></div>

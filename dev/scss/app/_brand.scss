@@ -1,0 +1,97 @@
+// app/_brand.scss — Nastavení → Základní nastavení: loga a ikona instance.
+// Návrh tuhle obrazovku nemá; skládá se z karet a tlačítek design systému.
+
+@use "../abstracts/mixins" as *;
+
+:root {
+  --icon-upload: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2015V4%22%2F%3E%3Cpath%20d%3D%22M7.5%208.5L12%204l4.5%204.5%22%2F%3E%3Cpath%20d%3D%22M5%2019.5h14%22%2F%3E%3C%2Fsvg%3E");
+}
+
+// Řádek jednoho loga: náhled vlevo, popis a tlačítka vpravo.
+.brand-asset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-subtle);
+
+  &__body {
+    display: grid;
+    gap: 10px;
+    flex: 1;
+    min-width: 240px;
+  }
+
+  &__title { font-weight: var(--font-weight-semibold); }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+}
+
+// Náhled má vždy pozadí, pro které je logo udělané — nezávisle na motivu
+// aplikace. Logo s tmavým písmem na tmavé kartě by jinak nebylo vidět.
+.brand-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 72px;
+  padding: 10px 14px;
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--color-border-subtle);
+  background: #ffffff;
+  color: #6b7085;
+  font-size: var(--font-size-label);
+
+  img { max-width: 100%; max-height: 100%; }
+
+  &--dark {
+    background: #1b1f33;
+    border-color: #2c3150;
+    color: #a3a8c3;
+  }
+
+  &--icon {
+    width: 72px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+}
+
+// Nahrání souboru: tlačítko je `<label>` se skrytým polem — soubor se
+// odešle hned po výběru (file-upload.js). Klávesnicí se dá na pole dojít
+// tabulátorem, rámeček fokusu nese tlačítko.
+.btn:has(> input[type="file"]) { cursor: pointer; }
+.btn:has(> input[type="file"]:focus-visible) { @include focus-ring; }
+
+// Odesílá se: tlačítko ztlumené, aby nikdo neklikal podruhé.
+form[data-uploading] .btn { opacity: 0.6; pointer-events: none; }
+
+// Pole jen ke čtení (zamčená složka pluginu): na první pohled jiné než
+// pole k vyplnění — utlumené písmo, vnořené pozadí, zámek místo kurzoru.
+input.form__control[readonly] {
+  color: var(--color-text-subtle);
+  background: var(--color-surface-sunken);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+// Přetahování souboru nad řádek loga (file-upload.js): plocha se zvýrazní,
+// ať je jasné, že sem jde soubor pustit.
+.brand-asset {
+  margin-inline: -10px;
+  padding-inline: 10px;
+  padding-bottom: 6px;
+  border-radius: var(--border-radius-large);
+  transition: background-color var(--transition-fast) var(--easing-standard), box-shadow var(--transition-fast) var(--easing-standard);
+}
+
+.is-dragover {
+  background: var(--color-brand-soft);
+  box-shadow: inset 0 0 0 2px var(--color-brand);
+}

@@ -147,7 +147,7 @@ return [
         assertContainsString('data-confirm="library-update-flipbook-pro"', $page);
         assertContainsString('data-library-target data-action="/weby/' . $sites['1.4.0'] . '/pluginy/aktualizovat" data-file="flipbook-pro/flipbook-pro.php" data-name="Penam"', $page);
         assertFalse(str_contains($page, '/weby/' . $sites['1.3.1'] . '/pluginy/aktualizovat'), 'Web s Monitorem < 1.4.0 se do „všude" zařadit nemá');
-        assertContainsString('<span class="progress-list__note">Pluginy z knihovny umí web stáhnout až s MEDIAGRAFIK Monitorem 1.4.0 (web má 1.3.1)', $page);
+        assertContainsString('<span class="progress-list__note">Pluginy z knihovny umí web stáhnout až s pluginem Správa webů – Monitor 1.4.0 (web má 1.3.1)', $page);
         assertContainsString('11.20.0 → 12.6.3', $page);
         assertContainsString("Aktualizovat na 1\u{00A0}webu", $page);
 

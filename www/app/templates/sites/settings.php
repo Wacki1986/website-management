@@ -4,6 +4,7 @@
  * Karta klientských reportů je partial `report-settings-card`.
  *
  * @var \App\Core\View\View $this
+ * @var string              $pluginName  název monitorovacího pluginu (Nastavení → Základní nastavení)
  * @var array               $site
  * @var string|null         $freshKey       čerstvě vygenerovaný klíč — ukáže se jen jednou
  * @var string              $keyMasked      mg_live_••••4f7a
@@ -12,8 +13,8 @@
  * @var array<int|string, string> $projects id => „název (klient)" + volba oddělení do nového projektu
  * @var array<int, string>  $intervals
  * @var string|null         $pluginVersion  verze pluginu k distribuci
- * @var string              $pluginInfoUrl
- * @var string              $defaultLoginUser výchozí účet studia pro přihlášení (Nastavení → Monitoring)
+ * @var string              $pluginZipPath  adresa ZIPu pluginu (`plugin/{slug}/{slug}-{verze}.zip`), '' = nepřipraveno
+ * @var string              $defaultLoginUser výchozí účet pro přihlášení (Nastavení → Monitoring)
  * @var string              $iconNote  odkud je ikona webu (favicona / nahrané logo / žádná)
  * @var array<string, array{label: string, title: string, text: string, on: bool}> $moduleChoices globálně zapnuté moduly a jejich volba u webu
  * @var string              $csrfToken
@@ -33,11 +34,11 @@ $base = 'weby/' . (int) $site['id'];
                 <div class="form">
                     <div>
                         <div class="card__title">Připojení</div>
-                        <div class="card__note"><?= $isWordpress ? 'Plugin MEDIAGRAFIK Monitor na straně webu ověřuje požadavky tímto klíčem.' : 'Web běží na systému ' . $this->e($platformLabel) . ' — bez pluginu se hlídá dostupnost, SSL certifikát a doména.' ?></div>
+                        <div class="card__note"><?= $isWordpress ? 'Plugin ' . $this->e($pluginName) . ' na straně webu ověřuje požadavky tímto klíčem.' : 'Web běží na systému ' . $this->e($platformLabel) . ' — bez pluginu se hlídá dostupnost, SSL certifikát a doména.' ?></div>
                     </div>
 
                     <?php if ($freshKey !== null): ?>
-                        <?php render_notice($this, 'warning', 'Nový klíč se ukazuje jen teď', 'Zkopírujte ho do pluginu na webu (Nastavení → MEDIAGRAFIK Monitor). Po obnovení stránky už uvidíte jen poslední čtyři znaky.') ?>
+                        <?php render_notice($this, 'warning', 'Nový klíč se ukazuje jen teď', 'Zkopírujte ho do pluginu na webu (Nastavení → ' . $pluginName . '). Po obnovení stránky už uvidíte jen poslední čtyři znaky.') ?>
                     <?php endif; ?>
 
                     <?php if ($isWordpress): ?>
@@ -65,7 +66,7 @@ $base = 'weby/' . (int) $site['id'];
                                 <label class="segmented__item"><input type="radio" name="platform" value="wordpress"<?= $isWordpress ? ' checked' : '' ?> class="visually-hidden">WordPress</label>
                                 <label class="segmented__item"><input type="radio" name="platform" value="other"<?= !$isWordpress ? ' checked' : '' ?> class="visually-hidden">Jiný systém</label>
                             </div>
-                            <div class="form__hint"><?= $isWordpress ? 'Přepnutím na jiný systém se smaže API klíč a data z pluginu (verze, pluginy). Historie, uptime, servis a reporty zůstanou.' : 'Přepnutím na WordPress dostane web API klíč pro plugin MEDIAGRAFIK Monitor.' ?></div>
+                            <div class="form__hint"><?= $isWordpress ? 'Přepnutím na jiný systém se smaže API klíč a data z pluginu (verze, pluginy). Historie, uptime, servis a reporty zůstanou.' : 'Přepnutím na WordPress dostane web API klíč pro plugin ' . $this->e($pluginName) . '.' ?></div>
                         </div>
                         <?= $form->text('url', 'Adresa webu', (string) $site['url'], type: 'text', required: true, class: 'form__field--caps',
                             attributes: ['class' => 'form__control--mono', 'autocomplete' => 'off'],
@@ -81,8 +82,8 @@ $base = 'weby/' . (int) $site['id'];
                                 attributes: ['placeholder' => $isWordpress ? rtrim((string) $site['url'], '/') . '/wp-admin/' : 'https://admin.shoptet.cz', 'class' => 'form__control--mono'],
                                 hint: $isWordpress ? 'Prázdné = /wp-admin/. Vyplňte, když je přihlášení na jiné adrese.' : 'Tlačítko „Administrace" v hlavičce webu. Prázdné = tlačítko se neukáže.') ?>
                             <?= $form->text('wp_login_user', 'Přihlašovat jako', (string) $site['wp_login_user'], class: 'form__field--caps platform-wordpress',
-                                attributes: ['placeholder' => $defaultLoginUser !== '' ? $defaultLoginUser : 'mediagrafik', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
-                                hint: $defaultLoginUser !== '' ? 'Prázdné = výchozí účet studia „' . $defaultLoginUser . '" z Nastavení → Monitoring.' : 'Účet, do kterého „wp-admin" přihlásí bez hesla. Výchozí pro všechny weby nastavíte v Nastavení → Monitoring.') ?>
+                                attributes: ['placeholder' => $defaultLoginUser !== '' ? $defaultLoginUser : 'spravce', 'autocomplete' => 'off', 'class' => 'form__control--mono'],
+                                hint: $defaultLoginUser !== '' ? 'Prázdné = výchozí účet „' . $defaultLoginUser . '" z Nastavení → Monitoring.' : 'Účet, do kterého „wp-admin" přihlásí bez hesla. Výchozí pro všechny weby nastavíte v Nastavení → Monitoring.') ?>
                             <?= $form->text('backup_note', 'Zálohy', (string) $site['backup_note'], class: 'form__field--caps', attributes: ['placeholder' => 'denně · 03:00'], hint: 'Jen poznámka do přehledu, dokud plugin zálohy neumí zjistit.') ?>
                             <?= $form->text('launched_on', 'Datum spuštění webu', (string) ($site['launched_on'] ?? ''), type: 'date', class: 'form__field--caps', keyLabel: '· nepovinné',
                                 hint: 'Ukazuje se v přehledu webu i s tím, jak dlouho web běží.') ?>
@@ -126,11 +127,11 @@ $base = 'weby/' . (int) $site['id'];
                         <div class="card__note">Co nainstalovat a kam vložit klíč.</div>
                     </div>
                     <div class="summary-list">
-                        <div class="summary-list__row"><span class="summary-list__label">Plugin</span><span class="summary-list__value">MEDIAGRAFIK Monitor<?= $pluginVersion !== null ? ' ' . $this->e($pluginVersion) : '' ?></span></div>
-                        <div class="summary-list__row"><span class="summary-list__label">Stažení ZIP</span><span class="summary-list__value"><?= $pluginVersion !== null ? '<a href="' . get_url('plugin/mediagrafik-monitor/mediagrafik-monitor-' . $this->e($pluginVersion) . '.zip') . '">mediagrafik-monitor-' . $this->e($pluginVersion) . '.zip</a>' : '<span class="text-faint">zatím nepřipraveno (dev/tools/build-plugin.ps1)</span>' ?></span></div>
+                        <div class="summary-list__row"><span class="summary-list__label">Plugin</span><span class="summary-list__value"><?= $this->e($pluginName) ?><?= $pluginVersion !== null ? ' ' . $this->e($pluginVersion) : '' ?></span></div>
+                        <div class="summary-list__row"><span class="summary-list__label">Stažení ZIP</span><span class="summary-list__value"><?= $pluginZipPath !== '' ? '<a href="' . get_url($pluginZipPath) . '">' . $this->e(basename($pluginZipPath)) . '</a>' : '<span class="text-faint">zatím nepřipraveno (dev/tools/build-plugin.ps1)</span>' ?></span></div>
                         <div class="summary-list__row"><span class="summary-list__label">Stav pluginu</span><span class="summary-list__value"><?= $this->e(match ((string) $site['api_status']) { 'ok' => 'odpovídá', 'bad_key' => 'špatný klíč', 'no_plugin' => 'není nainstalovaný', 'error' => 'chyba: ' . (string) $site['snapshot_error'], default => 'zatím neověřeno' }) ?></span></div>
                     </div>
-                    <div class="text-subtle" style="font-size:var(--font-size-label);line-height:var(--line-height-relaxed)">Ve WordPressu: Pluginy → Nahrát plugin → ZIP → Aktivovat → Nastavení → MEDIAGRAFIK Monitor → vložit API klíč. Aktualizace pluginu pak chodí automaticky z téhle aplikace.</div>
+                    <div class="text-subtle" style="font-size:var(--font-size-label);line-height:var(--line-height-relaxed)">Ve WordPressu: Pluginy → Nahrát plugin → ZIP → Aktivovat → Nastavení → <?= $this->e($pluginName) ?> → vložit API klíč. Aktualizace pluginu pak chodí automaticky z téhle aplikace.</div>
                 </div>
             </section>
             <?php endif; ?>

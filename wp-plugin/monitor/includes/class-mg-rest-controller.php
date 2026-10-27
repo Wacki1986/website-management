@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * REST endpointy pro hub: `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`
+ * REST endpointy pro hub: `/wp-json/{slug}/v1/{ping,summary,security}` (slug z `brand.php`)
  * (GET; `summary?modules=seo` přidá data volitelných modulů) a akce `POST /actions/{plugin-update,plugin-install,plugin-delete,plugin-activation,
  * core-update,login-link}`.
  *
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  */
 final class MG_Rest_Controller
 {
-    const NAMESPACE_V1 = 'mediagrafik-monitor/v1';
+    const NAMESPACE_V1 = MG_MONITOR_SLUG . '/v1';
 
     public static function register_routes()
     {
@@ -98,7 +98,7 @@ final class MG_Rest_Controller
         }
 
         if (!MG_Api_Key::is_configured()) {
-            return new WP_Error('invalid_key', 'Plugin zatím nemá vložený API klíč (Nastavení → MEDIAGRAFIK Monitor).', array('status' => 401));
+            return new WP_Error('invalid_key', 'Plugin zatím nemá vložený API klíč (Nastavení → ' . MG_MONITOR_NAME . ').', array('status' => 401));
         }
 
         if (!MG_Api_Key::verify($key)) {
@@ -260,7 +260,7 @@ final class MG_Rest_Controller
     }
 
     /**
-     * @param WP_REST_Request $request tělo `{"user": "mediagrafik"}`
+     * @param WP_REST_Request $request tělo `{"user": "spravce"}`
      * @return WP_REST_Response|WP_Error
      */
     public static function login_link($request)

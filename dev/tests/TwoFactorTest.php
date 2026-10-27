@@ -99,12 +99,12 @@ return [
     },
 
     'adresa pro QR kód nese tajemství a jméno aplikace' => function (): void {
-        $uri = Totp::provisioningUri('ABCDEFGH', 'petra@mediagrafik.cz', TwoFactor::ISSUER);
+        $uri = Totp::provisioningUri('ABCDEFGH', 'petra@studio.cz', TwoFactor::ISSUER);
 
         assertContainsString('otpauth://totp/', $uri);
         assertContainsString('secret=ABCDEFGH', $uri);
-        assertContainsString('petra%40mediagrafik.cz', $uri);
-        assertContainsString('issuer=Spr%C3%A1va%20web%C5%AF%20MEDIAGRAFIK', $uri);
+        assertContainsString('petra%40studio.cz', $uri);
+        assertContainsString('issuer=Spr%C3%A1va%20web%C5%AF', $uri);
     },
 
     'zapnutí se špatným kódem nic neuloží' => function (): void {

@@ -16,7 +16,7 @@ return [
 
     // Absolutní adresa aplikace (bez lomítka na konci). Z ní se skládají
     // odkazy v e-mailech i adresa pro cron.
-    'app_url' => 'https://sprava.mediagrafik.cz',
+    'app_url' => 'https://sprava.vasedomena.cz',
 
     'timezone' => 'Europe/Prague',
 
@@ -59,8 +59,8 @@ return [
      */
     'mail' => [
         'transport' => 'none',
-        'from_address' => 'monitor@mediagrafik.cz',
-        'from_name' => 'MEDIAGRAFIK · správa webů',
+        'from_address' => 'monitor@vasedomena.cz',
+        'from_name' => 'Firma · správa webů',
     ],
 
     /**

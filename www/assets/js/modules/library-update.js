@@ -7,7 +7,7 @@
  * jedna aktualizace trvá i desítky sekund a všechny najednou by na hostingu
  * narazily na časový limit. Každý požadavek si po sobě načte čerstvá data
  * z webu (`refresh=1`) a zapíše audit i historii webu. Cestu pluginu nese
- * každý web zvlášť (`data-file`) — MEDIAGRAFIK Monitor může mít na webu
+ * každý web zvlášť (`data-file`) — náš plugin (Monitor) může mít na webu
  * jinak pojmenovanou složku.
  *
  * Průběh je přímo v okně: pruh „Aktualizuji 3 z 12: Penam CZ…" a vlevo

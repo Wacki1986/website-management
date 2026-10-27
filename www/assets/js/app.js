@@ -37,6 +37,8 @@ const modules = [
     ['./modules/vault.js', 'initVault'],
     ['./modules/qr.js', 'initQrCodes'],
     ['./modules/live-search.js', 'initLiveSearch'],
+    ['./modules/file-upload.js', 'initFileUpload'],
+    ['./modules/unlock-field.js', 'initUnlockField'],
 ];
 
 const loaded = await Promise.allSettled(modules.map(([path]) => import(path)));

@@ -78,13 +78,13 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
                 </div>
 
                 <div class="form__row">
-                    <?= $form->text('from_name', 'Jméno odesílatele', (string) $mail['from_name'], attributes: ['placeholder' => 'MEDIAGRAFIK · správa webů'], class: 'form__field--caps') ?>
-                    <?= $form->text('from_address', 'Adresa odesílatele', (string) $mail['from_address'], type: 'email', attributes: ['placeholder' => 'monitor@mediagrafik.cz', 'class' => 'form__control--mono'], class: 'form__field--caps') ?>
+                    <?= $form->text('from_name', 'Jméno odesílatele', (string) $mail['from_name'], attributes: ['placeholder' => 'Firma · správa webů'], class: 'form__field--caps') ?>
+                    <?= $form->text('from_address', 'Adresa odesílatele', (string) $mail['from_address'], type: 'email', attributes: ['placeholder' => 'monitor@vasedomena.cz', 'class' => 'form__control--mono'], class: 'form__field--caps') ?>
                 </div>
 
                 <?= $form->text('mail_logo_url', 'Logo v e-mailech (URL)', $mailLogoUrl, type: 'url', class: 'form__field--caps',
-                    hint: 'Absolutní adresa obrázku pro hlavičku e-mailů (výška 28 px). Prázdné = místo loga jméno odesílatele.',
-                    attributes: ['placeholder' => 'https://mediagrafik.cz/logo.png']) ?>
+                    hint: 'Jen když v Nastavení → Základní nastavení není nahrané logo firmy (to má přednost). Absolutní adresa obrázku, výška 28 px. Prázdné = místo loga jméno odesílatele.',
+                    attributes: ['placeholder' => 'https://vasedomena.cz/logo.png']) ?>
 
                 <div class="row"><button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Uložit nastavení</button></div>
             </form>
@@ -92,7 +92,7 @@ $configured = $mailProblems === [] && (string) $mail['transport'] !== 'none';
             <form method="post" action="<?= get_url('nastaveni/email/test') ?>" class="card__footer" style="padding:14px 0 0;margin-top:18px">
                 <?php render_csrf($csrfToken) ?>
                 <div class="row" style="flex-wrap:nowrap">
-                    <input class="form__control form__control--inline" type="email" name="test_to" placeholder="jmeno@mediagrafik.cz" aria-label="Zkušební e-mail na" style="min-width:220px">
+                    <input class="form__control form__control--inline" type="email" name="test_to" placeholder="jmeno@vasedomena.cz" aria-label="Zkušební e-mail na" style="min-width:220px">
                     <button type="submit" class="btn btn--secondary btn--sm"><?= get_btn_icon('mail') ?>Odeslat testovací e-mail</button>
                 </div>
                 <?php if ($lastTest !== ''): ?>

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Monitor;
 
+use App\Core\Brand\Brand;
+
 /**
  * Kontrola dostupnosti — paralelní GET na kořeny webů (curl_multi).
  *
@@ -14,9 +16,9 @@ namespace App\Core\Monitor;
  */
 final class UptimeClient
 {
-    public const USER_AGENT = 'MEDIAGRAFIK-Monitor/1.0 (+https://mediagrafik.cz)';
+    public const USER_AGENT = Brand::USER_AGENT;
 
-    public function __construct(private readonly int $timeout = 10, private readonly int $batchSize = 30)
+    public function __construct(private readonly int $timeout = 10, private readonly int $batchSize = 30, private readonly string $userAgent = self::USER_AGENT)
     {
     }
 
@@ -66,7 +68,7 @@ final class UptimeClient
                 CURLOPT_MAXREDIRS => 3,
                 CURLOPT_CONNECTTIMEOUT => max(2, min(5, $this->timeout)),
                 CURLOPT_TIMEOUT => $this->timeout,
-                CURLOPT_USERAGENT => self::USER_AGENT,
+                CURLOPT_USERAGENT => $this->userAgent,
                 CURLOPT_HTTPHEADER => ['Accept: text/html,*/*', 'Cache-Control: no-cache'],
                 // Tělo se nikam neukládá — stačí stavový kód a čas.
                 CURLOPT_WRITEFUNCTION => static fn ($curl, string $chunk): int => strlen($chunk),

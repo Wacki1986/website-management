@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Reports;
 
+use App\Core\Brand\Brand;
 use App\Core\Events\EventLog;
 use App\Core\Log\Logger;
 use App\Core\Monitor\Notifier;
@@ -35,6 +36,7 @@ final class ReportSender
         private readonly Notifier $notifier,
         private readonly Logger $logger,
         private readonly string $appUrl,
+        private readonly ?Brand $brand = null,
     ) {
     }
 
@@ -286,7 +288,8 @@ final class ReportSender
     public function options(array $summary, string $note, array $sections, string $pixelUrl = '', bool $mobile = false): array
     {
         $mail = $this->mailSettings->current();
-        $logo = $this->settings->get('mail_logo_url');
+        $fromName = (string) $mail['from_name'];
+        $email = $this->brand !== null && $this->brand->email() !== '' ? $this->brand->email() : (string) $mail['from_address'];
         $template = new ReportTemplate($this->settings);
 
         return [
@@ -294,15 +297,28 @@ final class ReportSender
             'sections' => $sections,
             'pixelUrl' => $pixelUrl,
             'mobile' => $mobile,
-            'logoUrl' => $logo !== '' ? $logo : rtrim($this->appUrl, '/') . '/assets/img/logo-mediagrafik.svg',
+            'logoUrl' => $this->logoUrl(),
+            // Firma ze Základního nastavení; co tam chybí, doplní Odchozí pošta.
             'studio' => [
-                'name' => (string) ($mail['from_name'] !== '' ? $mail['from_name'] : 'MEDIAGRAFIK'),
-                'email' => (string) $mail['from_address'],
+                'name' => $this->brand?->studioName($fromName) ?? $fromName,
+                'email' => $email,
                 'phone' => $this->settings->get('report_phone'),
             ],
-            'contactUrl' => (string) $mail['from_address'] !== '' ? 'mailto:' . $mail['from_address'] : '',
+            'contactUrl' => $email !== '' ? 'mailto:' . $email : '',
             'texts' => $template->texts(),
             'order' => $template->order(),
         ];
+    }
+
+    /**
+     * Logo do hlavičky reportu (absolutní adresa — otevírá ho poštovní
+     * klient): nahrané logo studia, jinak adresa z Odchozí pošty, jinak ''
+     * a místo loga se napíše jméno studia.
+     */
+    private function logoUrl(): string
+    {
+        $target = $this->brand?->assets()->uploaded('studio') !== null ? $this->brand?->assets()->logoTarget('studio') : null;
+
+        return $target !== null ? rtrim($this->appUrl, '/') . '/' . $target['path'] : $this->settings->get('mail_logo_url');
     }
 }

@@ -8,6 +8,8 @@ use App\Core\Audit\AuditLog;
 use App\Core\Auth\Avatars;
 use App\Core\Auth\PasswordPolicy;
 use App\Core\Auth\UserRepository;
+use App\Core\Brand\Brand;
+use App\Core\Brand\BrandAssets;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Response;
@@ -446,6 +448,153 @@ final class SettingsController extends Controller
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uloženy úkoly servisu (' . implode(', ', $counts) . ')');
 
         return $this->redirectWithFlash('nastaveni/servis', 'Seznamy úkolů jsou uložené. Platí pro nové zápisy servisu, zapsané zůstávají, jak byly.');
+    }
+
+    // -----------------------------------------------------------------
+    // Základní nastavení — značka instance
+    // -----------------------------------------------------------------
+
+    /**
+     * Kdo správu provozuje: firma, kontakt, plugin, loga a ikona.
+     * Stejný kód běží ve více nasazeních — tady se každé pojmenuje.
+     */
+    public function general(): Response
+    {
+        $brand = $this->kernel->brand();
+        $assets = $brand->assets();
+        $logos = [];
+
+        foreach (BrandAssets::SLOTS as $slot => $definition) {
+            $logos[] = [
+                'slot' => $slot,
+                'label' => $definition['label'],
+                'hint' => $definition['hint'],
+                'uploaded' => $assets->uploaded($slot) !== null,
+                'hasPreview' => $assets->logoTarget($slot) !== null,
+                'dark' => in_array($slot, ['app_dark', 'studio_inverse'], true),
+            ];
+        }
+
+        $connected = $this->kernel->sites()->countConnected();
+
+        return $this->view('settings/zakladni', [
+            'title' => 'Nastavení',
+            'activeTab' => 'zakladni',
+            'values' => $brand->forForm(),
+            'defaultPluginName' => $brand->defaultPluginName(),
+            'pluginSlug' => $brand->pluginSlug(),
+            'pluginNamespace' => $brand->pluginNamespace(),
+            'slugLocked' => $connected > 0,
+            'connectedLabel' => get_count($connected, 'napojený web', 'napojené weby', 'napojených webů'),
+            'logos' => $logos,
+            'hasIcon' => $assets->hasIcon(),
+            'iconMinSize' => BrandAssets::ICON_MIN_SIZE,
+        ]);
+    }
+
+    /** Firma: název, web a kontakt do patičky reportů. */
+    public function saveGeneral(): Response
+    {
+        $request = $this->request();
+        $web = trim($request->string('web'));
+        $email = trim($request->string('email'));
+
+        if ($web !== '' && (filter_var($web, FILTER_VALIDATE_URL) === false || !preg_match('#^https?://#', $web))) {
+            return $this->redirectWithFlash('nastaveni/zakladni', 'Web firmy musí být celá adresa (https://…), nebo prázdný.', 'error');
+        }
+
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return $this->redirectWithFlash('nastaveni/zakladni', 'Kontaktní e-mail nemá platný tvar.', 'error');
+        }
+
+        $this->kernel->brand()->save([
+            'name' => $request->string('name'),
+            'web' => rtrim($web, '/'),
+            'email' => $email,
+            'phone' => $request->string('phone'),
+        ]);
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uloženo základní nastavení (firma)');
+
+        return $this->redirectWithFlash('nastaveni/zakladni', 'Údaje o firmě jsou uložené.');
+    }
+
+    /**
+     * Plugin na webech: název a složka. Složka (slug) je složka pluginu ve
+     * WordPressu a začátek adresy jeho REST API — když na ni už odpovídá
+     * nějaký web, změna ho odpojí (plugin s novou složkou je pro WordPress
+     * jiný plugin, starý se sám nepřejmenuje). Proto ji jde po napojení
+     * prvního webu změnit jen s výslovným potvrzením.
+     */
+    public function savePlugin(): Response
+    {
+        $request = $this->request();
+        $brand = $this->kernel->brand();
+        $this->kernel->brand()->save(['plugin' => $request->string('plugin')]);
+
+        $slug = mb_strtolower(trim($request->string('plugin_slug')));
+        $current = $brand->pluginSlug();
+
+        if ($slug === '' || $slug === $current) {
+            $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Uložen název pluginu');
+
+            return $this->redirectWithFlash('nastaveni/zakladni', 'Plugin je uložený. Nový název dostanou weby s příští aktualizací pluginu.');
+        }
+
+        if (!Brand::isValidSlug($slug)) {
+            return $this->redirectWithFlash('nastaveni/zakladni', 'Složka pluginu může mít jen malá písmena bez diakritiky, číslice a pomlčky (3–40 znaků), třeba „sprava-monitor“.', 'error');
+        }
+
+        $connected = $this->kernel->sites()->countConnected();
+
+        if ($connected > 0 && !$request->bool('plugin_slug_confirm')) {
+            return $this->redirectWithFlash('nastaveni/zakladni', 'Složka pluginu se nezměnila — je zamčená, protože na ni odpovídá ' . get_count($connected, 'web', 'weby', 'webů') . '. Změnu je potřeba výslovně potvrdit.', 'error');
+        }
+
+        $brand->savePluginSlug($slug);
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Změněna složka pluginu: ' . $current . ' → ' . $slug);
+
+        return $connected > 0
+            ? $this->redirectWithFlash('nastaveni/zakladni', 'Složka pluginu je teď „' . $slug . '“. ' . get_count($connected, 'web se odpojil', 'weby se odpojily', 'webů se odpojilo') . ' — na každý je potřeba nahrát plugin znovu (ZIP v Nastavení webu) a vložit API klíč.', 'warning')
+            : $this->redirectWithFlash('nastaveni/zakladni', 'Složka pluginu je teď „' . $slug . '“.');
+    }
+
+    /** Nahrání loga do slotu, nebo ikony (`icon`). */
+    public function uploadBrandFile(string $slot): Response
+    {
+        $assets = $this->kernel->brand()->assets();
+        $file = $this->request()->files['file'] ?? null;
+
+        if ($slot !== 'icon' && !isset(BrandAssets::SLOTS[$slot])) {
+            throw HttpException::notFound();
+        }
+
+        try {
+            if ($slot === 'icon') {
+                $assets->storeIcon($file);
+            } else {
+                $assets->storeLogo($slot, $file);
+            }
+        } catch (HttpException $e) {
+            return $this->redirectWithFlash('nastaveni/zakladni', $e->getMessage(), 'error');
+        }
+
+        $label = $slot === 'icon' ? 'Ikona aplikace' : BrandAssets::SLOTS[$slot]['label'];
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Nahráno: ' . $label);
+
+        return $this->redirectWithFlash('nastaveni/zakladni', $label . ' je nahrané.' . ($slot === 'icon' ? ' Nainstalovaná aplikace na ploše si novou ikonu vezme až po přeinstalaci.' : ''));
+    }
+
+    public function removeBrandFile(string $slot): Response
+    {
+        if ($slot !== 'icon' && !isset(BrandAssets::SLOTS[$slot])) {
+            throw HttpException::notFound();
+        }
+
+        $this->kernel->brand()->assets()->remove($slot);
+        $label = $slot === 'icon' ? 'Ikona aplikace' : BrandAssets::SLOTS[$slot]['label'];
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Odebráno: ' . $label);
+
+        return $this->redirectWithFlash('nastaveni/zakladni', $label . ' je odebrané — platí výchozí.');
     }
 
     // -----------------------------------------------------------------
@@ -1081,7 +1230,7 @@ final class SettingsController extends Controller
             $email,
             'Pozvánka — ' . Kernel::APP_NAME,
             EmailMessage::make('Vítejte — nastavte si heslo')
-                ->paragraph("Založili vám účet do správy webů studia MEDIAGRAFIK (přihlašovací jméno „{$username}“). "
+                ->paragraph('Založili vám účet do správy webů' . ($this->kernel->brand()->name() !== '' ? ' ' . $this->kernel->brand()->name() : '') . " (přihlašovací jméno „{$username}“). "
                     . 'Zbývá nastavit si heslo.')
                 ->paragraph('Při prvním přihlášení si pak spárujete telefon s aplikací Authenticator (Google nebo Microsoft Authenticator, 1Password, Bitwarden) — '
                     . 'přihlášení do správy chce kromě hesla i kód z telefonu. Mějte ho po ruce.')

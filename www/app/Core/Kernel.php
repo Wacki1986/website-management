@@ -6,6 +6,7 @@ namespace App\Core;
 
 use App\Controllers\AlertController;
 use App\Controllers\AuthController;
+use App\Controllers\BrandController;
 use App\Controllers\ClientController;
 use App\Controllers\ProjectController;
 use App\Controllers\ProjectServiceController;
@@ -40,6 +41,8 @@ use App\Core\Monitor\SupportTables;
 use App\Core\Monitor\UptimeClient;
 use App\Core\Monitor\UptimeRepository;
 use App\Core\Audit\AuditLog;
+use App\Core\Brand\Brand;
+use App\Core\Brand\BrandAssets;
 use App\Core\Clients\Ares;
 use App\Core\Clients\ClientRepository;
 use App\Core\Pdf\PdfRenderer;
@@ -124,7 +127,7 @@ final class Kernel
     ];
 
     /** Název aplikace — v liště a v předmětech e-mailů. */
-    public const APP_NAME = 'Správa webů';
+    public const APP_NAME = Brand::APP_NAME;
 
     private ?Connection $db = null;
     private ?Logger $logger = null;
@@ -143,6 +146,7 @@ final class Kernel
     private ?Credentials $credentials = null;
     private ?AuditLog $audit = null;
     private ?Settings $settings = null;
+    private ?Brand $brand = null;
     private ?MailSettings $mailSettings = null;
     private ?Mailer $mailer = null;
     private ?PasswordReset $passwordReset = null;
@@ -371,6 +375,16 @@ final class Kernel
         return $this->settings ??= new Settings($this->db(), $this->secrets());
     }
 
+    /** Značka instance — jméno studia, loga, název a slug pluginu (Nastavení → Základní nastavení). */
+    public function brand(): Brand
+    {
+        return $this->brand ??= new Brand(
+            $this->settings(),
+            (array) $this->env('plugin', []),
+            new BrandAssets($this->storagePath(), $this->rootPath('assets')),
+        );
+    }
+
     public function mailSettings(): MailSettings
     {
         return $this->mailSettings ??= new MailSettings($this->settings(), (array) $this->env('mail', []));
@@ -379,10 +393,11 @@ final class Kernel
     public function mailer(): Mailer
     {
         if ($this->mailer === null) {
-            // Logo do hlavičky e-mailů (Nastavení → Odchozí pošta). Bez
-            // databáze se prostě nepoužije — hlavičku nese název odesílatele.
+            // Logo do hlavičky e-mailů: nahrané logo firmy (Základní
+            // nastavení), jinak adresa z Odchozí pošty. Bez databáze se prostě
+            // nepoužije — hlavičku nese název odesílatele.
             try {
-                $logoUrl = $this->settings()->get('mail_logo_url');
+                $logoUrl = $this->studioLogoUrl();
             } catch (Throwable) {
                 $logoUrl = '';
             }
@@ -391,6 +406,17 @@ final class Kernel
         }
 
         return $this->mailer;
+    }
+
+    /**
+     * Absolutní adresa loga studia pro e-maily a reporty: nahrané logo,
+     * jinak adresa z Odchozí pošty, jinak '' (místo loga jméno textem).
+     */
+    public function studioLogoUrl(): string
+    {
+        $target = $this->brand()->assets()->uploaded('studio') !== null ? $this->brand()->assets()->logoTarget('studio') : null;
+
+        return $target !== null ? $this->appUrl($target['path']) : $this->settings()->get('mail_logo_url');
     }
 
     public function passwordReset(): PasswordReset
@@ -460,7 +486,7 @@ final class Kernel
 
     public function ares(): Ares
     {
-        return new Ares();
+        return new Ares(userAgent: $this->brand()->userAgent());
     }
 
     public function sites(): SiteRepository
@@ -486,7 +512,11 @@ final class Kernel
 
     public function pluginClient(): PluginClient
     {
-        return $this->pluginClient ??= new PluginClient();
+        return $this->pluginClient ??= new PluginClient(
+            userAgent: $this->brand()->userAgent(),
+            namespace: $this->brand()->pluginNamespace(),
+            pluginName: $this->brand()->pluginName(),
+        );
     }
 
     public function snapshots(): SnapshotImporter
@@ -513,7 +543,7 @@ final class Kernel
 
     public function outsideProbe(): OutsideProbe
     {
-        return $this->outsideProbe ??= new OutsideProbe();
+        return $this->outsideProbe ??= new OutsideProbe(userAgent: $this->brand()->userAgent());
     }
 
     public function securityAudit(): SecurityAudit
@@ -523,7 +553,7 @@ final class Kernel
 
     public function pluginDistribution(): PluginDistribution
     {
-        return $this->pluginDistribution ??= new PluginDistribution($this->storagePath('plugin'), $this->appUrl());
+        return $this->pluginDistribution ??= new PluginDistribution($this->storagePath('plugin'), $this->appUrl(), $this->brand());
     }
 
     /** Knihovna placených a vlastních pluginů (mimo wordpress.org). */
@@ -552,7 +582,7 @@ final class Kernel
     /** Ikony webů do seznamů — favicona z webu nebo nahrané logo. */
     public function siteIcons(): SiteIcons
     {
-        return new SiteIcons($this->db(), $this->sites(), $this->storagePath());
+        return new SiteIcons($this->db(), $this->sites(), $this->storagePath(), userAgent: $this->brand()->userAgent());
     }
 
     /** Seznamy úkolů k druhům servisu (Nastavení → Servis). */
@@ -564,7 +594,7 @@ final class Kernel
     /** PDF pro klienty (servisní protokol). Metriky písem si ukládá do `storage/pdf`. */
     public function pdf(): PdfRenderer
     {
-        return new PdfRenderer($this->rootPath(), $this->storagePath('pdf'));
+        return new PdfRenderer($this->rootPath(), $this->storagePath('pdf'), $this->storagePath('brand'));
     }
 
     public function dashboard(): DashboardData
@@ -591,7 +621,7 @@ final class Kernel
     {
         return $this->reportSender ??= new ReportSender(
             $this->reports(), $this->reportBuilder(), $this->reportRenderer(), $this->sites(), $this->mailer(), $this->mailSettings(),
-            $this->settings(), $this->events(), $this->notifier(), $this->logger(), $this->appUrl(),
+            $this->settings(), $this->events(), $this->notifier(), $this->logger(), $this->appUrl(), $this->brand(),
         );
     }
 
@@ -614,13 +644,13 @@ final class Kernel
     /** Pluginy v adresáři wordpress.org — opuštěné a stažené (krok cronu). */
     public function pluginDirectory(): PluginDirectory
     {
-        return $this->pluginDirectory ??= new PluginDirectory($this->db(), $this->monitorSettings());
+        return $this->pluginDirectory ??= new PluginDirectory($this->db(), $this->monitorSettings(), userAgent: $this->brand()->userAgent());
     }
 
     /** Konce podpory PHP a databází z endoflife.date (Nastavení → Monitoring, krok cronu). */
     public function supportTables(): SupportTables
     {
-        return $this->supportTables ??= new SupportTables($this->settings());
+        return $this->supportTables ??= new SupportTables($this->settings(), userAgent: $this->brand()->userAgent());
     }
 
     public function monitor(): MonitorRun
@@ -649,7 +679,7 @@ final class Kernel
             $this->events(),
             $this->logger(),
             $this->storagePath(MonitorRun::LOCK_FILE),
-            new UptimeClient($this->monitorSettings()->int('monitor_timeout_s')),
+            new UptimeClient($this->monitorSettings()->int('monitor_timeout_s'), userAgent: $this->brand()->userAgent()),
             $this->service(),
             $this->modules(),
         );
@@ -946,6 +976,10 @@ final class Kernel
 
         $view->share('kernel', $this);
         $view->share('appName', self::APP_NAME);
+        // Jméno studia a název pluginu jako text — šablony je skládají
+        // i do vět pro jiné pomocníky, ti si escapují sami (helpers/brand.php).
+        $view->share('studioName', $this->brand()->name());
+        $view->share('pluginName', $this->brand()->pluginName());
         $view->share('currentUser', $this->auth()->current());
         $view->share('csrfToken', session_status() === PHP_SESSION_ACTIVE ? $this->csrf()->token() : '');
         $view->share('flashes', $this->takeFlashes());
@@ -1289,12 +1323,18 @@ final class Kernel
 
         // Distribuce pluginu na weby klientů — volá WordPress, žádný
         // prohlížeč ani session. Bez výjimky v .htaccess je Basic auth odřízne.
-        // Knihovna pluginů pro weby — před obecnou adresou ZIPu Monitoru níže,
-        // jinak by `knihovna.json` spolkla `{file}`.
-        $router->add('GET', '/plugin/mediagrafik-monitor/knihovna.json', [PluginLibraryController::class, 'manifest'], Router::PUBLIC_ACCESS, 'library.manifest');
-        $router->add('GET', '/plugin/mediagrafik-monitor/knihovna/{file}', [PluginLibraryController::class, 'package'], Router::PUBLIC_ACCESS, 'library.package');
-        $router->add('GET', '/plugin/mediagrafik-monitor/plugin-info.json', [PluginDistributionController::class, 'info'], Router::PUBLIC_ACCESS, 'plugin.info');
-        $router->add('GET', '/plugin/mediagrafik-monitor/{file}', [PluginDistributionController::class, 'download'], Router::PUBLIC_ACCESS, 'plugin.download');
+        // Slug je podle instance (`Brand`, config/env.php). Knihovna pluginů
+        // pro weby — před obecnou adresou ZIPu Monitoru níže, jinak by
+        // `knihovna.json` spolkla `{file}`.
+        $plugin = '/plugin/' . $this->brand()->pluginSlug();
+        $router->add('GET', $plugin . '/knihovna.json', [PluginLibraryController::class, 'manifest'], Router::PUBLIC_ACCESS, 'library.manifest');
+        $router->add('GET', $plugin . '/knihovna/{file}', [PluginLibraryController::class, 'package'], Router::PUBLIC_ACCESS, 'library.package');
+        $router->add('GET', $plugin . '/plugin-info.json', [PluginDistributionController::class, 'info'], Router::PUBLIC_ACCESS, 'plugin.info');
+        $router->add('GET', $plugin . '/{file}', [PluginDistributionController::class, 'download'], Router::PUBLIC_ACCESS, 'plugin.download');
+
+        // Loga a ikony instance — veřejně: potřebuje je přihlašovací stránka,
+        // manifest, service worker i poštovní klient příjemce reportu.
+        $router->add('GET', '/znacka/{file}', [BrandController::class, 'file'], Router::PUBLIC_ACCESS, 'brand.file');
 
         // Přihlášení a účet.
         $router->add('GET', '/prihlaseni', [AuthController::class, 'show'], Router::PUBLIC_ACCESS, 'auth.show');
@@ -1329,6 +1369,13 @@ final class Kernel
         $router->add('GET', '/nastaveni/moduly', [SettingsController::class, 'modules'], name: 'settings.modules.show');
         $router->add('POST', '/nastaveni/moduly', [SettingsController::class, 'saveModules'], Router::AUTH_ONLY, 'settings.modules');
         $router->add('POST', '/nastaveni/moduly/{key}/vsechny-weby', [SettingsController::class, 'enableModuleForAll'], Router::AUTH_ONLY, 'settings.modules.all');
+
+        // Základní nastavení — firma, plugin, loga a ikona instance.
+        $router->add('GET', '/nastaveni/zakladni', [SettingsController::class, 'general'], name: 'settings.general.show');
+        $router->add('POST', '/nastaveni/zakladni', [SettingsController::class, 'saveGeneral'], Router::AUTH_ONLY, 'settings.general');
+        $router->add('POST', '/nastaveni/zakladni/plugin', [SettingsController::class, 'savePlugin'], Router::AUTH_ONLY, 'settings.general.plugin');
+        $router->add('POST', '/nastaveni/zakladni/soubor/{slot}', [SettingsController::class, 'uploadBrandFile'], Router::AUTH_ONLY, 'settings.general.upload');
+        $router->add('POST', '/nastaveni/zakladni/soubor/{slot}/smazat', [SettingsController::class, 'removeBrandFile'], Router::AUTH_ONLY, 'settings.general.remove');
 
         $router->add('GET', '/nastaveni/email', [SettingsController::class, 'email'], name: 'settings.mail.show');
         $router->add('POST', '/nastaveni/email', [SettingsController::class, 'saveMail'], Router::AUTH_ONLY, 'settings.mail');

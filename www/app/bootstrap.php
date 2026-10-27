@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 
 use App\Core\Autoloader;
+use App\Core\Brand\Brand;
 use App\Core\Kernel;
 use App\Core\View\Urls;
 
@@ -29,7 +30,7 @@ Autoloader::addNamespace('App', $rootPath . '/app');
 Autoloader::register();
 
 // Globální funkce pro šablony — autoloader umí jen třídy.
-foreach (['markup', 'url', 'forms', 'time'] as $helpers) {
+foreach (['markup', 'url', 'forms', 'time', 'brand'] as $helpers) {
     $file = $rootPath . '/app/helpers/' . $helpers . '.php';
 
     if (is_file($file)) {
@@ -66,6 +67,7 @@ $kernel = new Kernel($env, $rootPath);
 
 // Navázání get_url()/get_asset() před boot() — chybová stránka odkazy potřebuje.
 Urls::bind($kernel->url(...), $kernel->asset(...));
+Brand::bind($kernel->brand(...));
 
 $kernel->boot();
 

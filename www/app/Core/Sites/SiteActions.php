@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Sites;
 
+use App\Core\Brand\Brand;
 use App\Core\Monitor\PluginClient;
-use App\Core\Plugin\PluginDistribution;
 
 /**
  * Co jde na webu ze správy udělat — čistá logika bez sítě a databáze,
@@ -13,8 +13,9 @@ use App\Core\Plugin\PluginDistribution;
  *
  * Akce: aktualizace pluginů, instalace pluginu z knihovny, aktivace
  * a smazání neaktivního pluginu, aktualizace WordPressu, přihlášení do
- * wp-admin. Každou web zná až od určité verze pluginu
- * MEDIAGRAFIK Monitor (`PluginClient::ACTIONS_SINCE`).
+ * wp-admin. Každou web zná až od určité verze našeho pluginu
+ * (`PluginClient::ACTIONS_SINCE`). Název pluginu v hláškách je podle
+ * instance (`Brand::currentPluginName()`).
  */
 final class SiteActions
 {
@@ -44,15 +45,15 @@ final class SiteActions
     public static function blocked(array $site, ?array $snapshot, string $action): ?string
     {
         if ((string) ($site['api_key'] ?? '') === '' || $snapshot === null) {
-            return 'Web zatím nemá napojený plugin MEDIAGRAFIK Monitor.';
+            return 'Web zatím nemá napojený plugin ' . Brand::currentPluginName() . '.';
         }
 
         $since = PluginClient::ACTIONS_SINCE[$action];
         $installed = (string) $snapshot['plugin_version'];
 
         if (version_compare($installed, $since, '<')) {
-            return sprintf('Tahle akce ze správy potřebuje MEDIAGRAFIK Monitor %s (web má %s) — aktualizujte ho na záložce Pluginy nebo ve wp-admin.',
-                $since, $installed !== '' ? $installed : 'neznámou verzi');
+            return sprintf('Tahle akce ze správy potřebuje %s %s (web má %s) — aktualizujte ho na záložce Pluginy nebo ve wp-admin.',
+                Brand::currentPluginName(), $since, $installed !== '' ? $installed : 'neznámou verzi');
         }
 
         return null;
@@ -60,7 +61,7 @@ final class SiteActions
 
     /**
      * Pluginy, které jde ze správy aktualizovat: ty, u kterých web hlásí
-     * novou verzi, a MEDIAGRAFIK Monitor, když správa rozdává novější, než
+     * novou verzi, a náš plugin, když správa rozdává novější, než
      * má web — web sám by se o ní dozvěděl až po 12hodinové cache.
      *
      * Stejně se nabízí plugin z knihovny pluginů, když je v ní novější verze
@@ -137,7 +138,7 @@ final class SiteActions
      * @param array<int, array<string, mixed>> $items    výsledky po pluginech z `PluginClient::updatePlugins()`
      * @param array<string, array{name: string, new_version: string}> $updatable z `updatable()`
      * @param array<string, string>            $library  soubor => verze v knihovně (`libraryFor()`)
-     * @param string                           $monitor  verze MEDIAGRAFIK Monitoru na webu
+     * @param string                           $monitor  verze našeho pluginu na webu
      * @return array<int, array<string, mixed>>
      */
     public static function reviewUpdateResults(array $items, array $updatable, array $library = [], string $monitor = ''): array
@@ -156,10 +157,10 @@ final class SiteActions
                 !isset($library[$file]) => 'Web aktualizaci na ' . $expected . ' teď nenabídl a plugin zůstal ve verzi ' . $to
                     . ' — placený plugin nejspíš nemá platnou licenci nebo aktualizuje jen ve wp-admin. Zkontrolujte licenci a aktualizujte ve wp-admin → Pluginy (případně plugin přestaňte sledovat ikonou oka).',
                 version_compare($monitor, PluginClient::LIBRARY_FORCED_SINCE, '<') => 'Verzi ' . $expected . ' z knihovny web nevzal a plugin zůstal ve verzi ' . $to
-                    . ' — vlastní aktualizace pluginu (licence) nabídku knihovny přebila. Přednost knihovně dává až MEDIAGRAFIK Monitor '
+                    . ' — vlastní aktualizace pluginu (licence) nabídku knihovny přebila. Přednost knihovně dává až ' . Brand::currentPluginName() . ' '
                     . PluginClient::LIBRARY_FORCED_SINCE . ' (web má ' . ($monitor !== '' ? $monitor : 'neznámou verzi') . ') — aktualizujte nejdřív jeho.',
                 default => 'Verzi ' . $expected . ' z knihovny web nevzal a plugin zůstal ve verzi ' . $to
-                    . ' — nejspíš se nedostal ke knihovně pluginů ve Správě webů. Zkuste to znovu; když to nepomůže, zkontrolujte adresu správy v nastavení pluginu MEDIAGRAFIK Monitor.',
+                    . ' — nejspíš se nedostal ke knihovně pluginů ve Správě webů. Zkuste to znovu; když to nepomůže, zkontrolujte adresu správy v nastavení pluginu ' . Brand::currentPluginName() . '.',
             };
         }
 
@@ -168,7 +169,7 @@ final class SiteActions
 
     /**
      * Smazat jde jen neaktivní plugin — aktivní by nejdřív musel někdo
-     * vypnout a zkontrolovat, že web bez něj funguje. MEDIAGRAFIK Monitor
+     * vypnout a zkontrolovat, že web bez něj funguje. Náš plugin
      * nikdy: správa by o web přišla.
      *
      * @param array<string, mixed> $plugin řádek `site_plugins`
@@ -179,8 +180,8 @@ final class SiteActions
     }
 
     /**
-     * Verze z knihovny pluginů, které web umí použít — jen s MEDIAGRAFIK
-     * Monitorem 1.4.0+, starší plugin by si ZIP neuměl stáhnout.
+     * Verze z knihovny pluginů, které web umí použít — jen s naším
+     * pluginem 1.4.0+, starší plugin by si ZIP neuměl stáhnout.
      *
      * @param array<string, mixed>|null $snapshot
      * @param array<string, string>     $versions `PluginLibrary::versions()`
@@ -208,8 +209,8 @@ final class SiteActions
         $installed = (string) ($snapshot['plugin_version'] ?? '');
 
         if (version_compare($installed, PluginClient::LIBRARY_SINCE, '<')) {
-            return sprintf('Pluginy z knihovny umí web stáhnout až s MEDIAGRAFIK Monitorem %s (web má %s) — aktualizujte ho na záložce Pluginy.',
-                PluginClient::LIBRARY_SINCE, $installed !== '' ? $installed : 'neznámou verzi');
+            return sprintf('Pluginy z knihovny umí web stáhnout až s pluginem %s %s (web má %s) — aktualizujte ho na záložce Pluginy.',
+                Brand::currentPluginName(), PluginClient::LIBRARY_SINCE, $installed !== '' ? $installed : 'neznámou verzi');
         }
 
         return 'Web aktualizaci teď nenabízí — zkuste ji na záložce Pluginy webu.';
@@ -222,7 +223,7 @@ final class SiteActions
      * běží i v pluginu na webu, tady je kvůli tomu, aby to člověk viděl
      * předem.
      *
-     * Verzi MEDIAGRAFIK Monitoru tohle neřeší — tu hlídá `blocked()`.
+     * Verzi našeho pluginu tohle neřeší — tu hlídá `blocked()`.
      *
      * @param array<int, array<string, mixed>> $library  řádky `plugin_library`
      * @param array<int, array<string, mixed>> $plugins  řádky `site_plugins` webu
@@ -269,8 +270,8 @@ final class SiteActions
 
     /**
      * Jde u pluginu přepnout sledování aktualizací? Jen u toho, který
-     * aktualizaci hlásí (nebo už je nesledovaný), a nikdy u MEDIAGRAFIK
-     * Monitoru — správa by pak nenabídla jeho vlastní aktualizace.
+     * aktualizaci hlásí (nebo už je nesledovaný), a nikdy u našeho
+     * pluginu — správa by pak nenabídla jeho vlastní aktualizace.
      *
      * @param array<string, mixed> $plugin řádek `site_plugins`
      */
@@ -281,8 +282,8 @@ final class SiteActions
     }
 
     /**
-     * Jde plugin ze správy zapnout / vypnout? Všechny kromě MEDIAGRAFIK
-     * Monitoru — po jeho vypnutí by správa k webu ztratila přístup.
+     * Jde plugin ze správy zapnout / vypnout? Všechny kromě našeho
+     * pluginu — po jeho vypnutí by správa k webu ztratila přístup.
      *
      * @param array<string, mixed> $plugin řádek `site_plugins`
      */
@@ -294,6 +295,6 @@ final class SiteActions
     /** Je to náš plugin? Podle souboru, složka může mít jiné jméno. */
     public static function isMonitor(string $file): bool
     {
-        return basename($file) === PluginDistribution::SLUG . '.php';
+        return basename($file) === Brand::currentPluginSlug() . '.php';
     }
 }

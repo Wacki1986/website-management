@@ -1,16 +1,15 @@
-=== MEDIAGRAFIK Monitor ===
-Contributors: mediagrafik
+=== Správa webů – Monitor ===
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.9.1
+Stable tag: 1.10.0
 License: GPLv2 or later
 
-Napojení webu na Správu webů studia MEDIAGRAFIK.
+Napojení webu na Správu webů.
 
 == Description ==
 
-Plugin vystavuje REST endpointy `/wp-json/mediagrafik-monitor/v1/{ping,summary,security}`
+Plugin vystavuje REST endpointy `/wp-json/{slug}/v1/{ping,summary,security}`
 chráněné API klíčem v hlavičce `X-MG-Key`. Klíč vydává Správa webů; plugin ukládá jen jeho
 SHA-256 hash. Plugin nic neposílá, nemá cron ani e-maily — hub se ptá sám.
 
@@ -25,10 +24,14 @@ nebo Yoast SEO a základní SEO kontroly (viditelnost pro vyhledávače, mapa we
 == Installation ==
 
 1. Pluginy → Nahrát plugin → ZIP → Aktivovat.
-2. Po aktivaci se otevře Nastavení → MEDIAGRAFIK Monitor → vložit API klíč ze Správy webů (detail webu → Nastavení).
+2. Po aktivaci se otevře nastavení pluginu → vložit API klíč ze Správy webů (detail webu → Nastavení).
 3. Ve Správě webů kliknout na „Zkontrolovat teď".
 
 == Changelog ==
+
+= 1.10.0 =
+* Plugin nese značku správy, ze které je stažený: název, autora, složku a adresu správy doplní každá Správa webů při stažení ZIPu. Kód pluginu je pro všechny stejný.
+* Dvě kopie pluginu od různých správ na jednom webu web neshodí — druhá se nespustí a ohlásí to v administraci.
 
 = 1.9.1 =
 * Bezpečnostní plugin: pozná i placenou verzi Solid Security Pro (dnes Kadence Security Pro, dříve iThemes Security Pro). Pluginy se porovnávají podle složky, takže je nerozhodí přejmenování hlavního souboru, a ve Správě webů se ukáže jejich dnešní název.
@@ -63,7 +66,7 @@ nebo Yoast SEO a základní SEO kontroly (viditelnost pro vyhledávače, mapa we
 * Typy obsahu: kromě veřejných i vlastní typy s vlastní položkou v menu wp-admin (např. Reference, Kurzy registrované jako neveřejné).
 
 = 1.5.0 =
-* Aktivace a deaktivace pluginů ze Správy webů (MEDIAGRAFIK Monitor sám sebe vypnout nedovolí).
+* Aktivace a deaktivace pluginů ze Správy webů (sám sebe vypnout nedovolí).
 
 = 1.4.0 =
 * Aktualizace placených a vlastních pluginů z knihovny Správy webů (web se prokazuje otiskem API klíče, ZIP má podpis jen pro daný web).

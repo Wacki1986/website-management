@@ -39,10 +39,12 @@
 # SetEnvIf Request_URI "(^|/)sw\.js$"                       SPRAVA_BEZ_HESLA=1
 #
 # # Manifest, ikony a offline stránka — bez nich selže instalace na plochu
-# # a s ní i upozornění na telefon.
+# # a s ní i upozornění na telefon. `/znacka/` vydává loga a ikony
+# # z Nastavení → Studio (i logo studia v e-mailech s reporty).
 # SetEnvIf Request_URI "(^|/)assets/manifest\.webmanifest$" SPRAVA_BEZ_HESLA=1
 # SetEnvIf Request_URI "(^|/)assets/offline\.html$"         SPRAVA_BEZ_HESLA=1
 # SetEnvIf Request_URI "(^|/)assets/favicons/"              SPRAVA_BEZ_HESLA=1
+# SetEnvIf Request_URI "(^|/)znacka/"                       SPRAVA_BEZ_HESLA=1
 #
 # # Hostingový cron přes wget — chráněný vlastním tokenem v adrese.
 # SetEnvIf Request_URI "(^|/)system/monitor-cron$"          SPRAVA_BEZ_HESLA=1
@@ -50,11 +52,10 @@
 # # Sledovací obrázek v klientských reportech — stahuje ho poštovní klient
 # # klienta, heslo nemá kam vzít. Neznámý token vrací tentýž prázdný GIF.
 # SetEnvIf Request_URI "(^|/)r/[a-f0-9]{32}\.gif$"          SPRAVA_BEZ_HESLA=1
-# SetEnvIf Request_URI "(^|/)assets/img/logo-mediagrafik\.svg$" SPRAVA_BEZ_HESLA=1
 #
-# # Distribuce pluginu MEDIAGRAFIK Monitor — WordPress na webech klientů
-# # si sem sahá pro informace o aktualizaci a pro ZIP.
-# SetEnvIf Request_URI "(^|/)plugin/mediagrafik-monitor/"   SPRAVA_BEZ_HESLA=1
+# # Distribuce našeho pluginu — WordPress na webech klientů si sem sahá
+# # pro informace o aktualizaci a pro ZIP (`/plugin/{slug}/`).
+# SetEnvIf Request_URI "(^|/)plugin/"                       SPRAVA_BEZ_HESLA=1
 #
 # # Heslo, NEBO jedna z výjimek výš. `<Files>` by nestačilo: adresy jako
 # # /system/monitor-cron žádný soubor na disku nemají. Druhý řádek

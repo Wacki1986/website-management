@@ -88,7 +88,7 @@ $form = $this->form();
                     <div class="form__row">
                         <?= $form->text('new_name', 'Jméno', '', attributes: ['placeholder' => 'Petra Kolářová'], class: 'form__field--caps') ?>
                         <?= $form->text('new_username', 'Přihlašovací jméno', '', attributes: ['placeholder' => 'petra', 'class' => 'form__control--mono'], class: 'form__field--caps') ?>
-                        <?= $form->text('new_email', 'E-mail', '', type: 'email', attributes: ['placeholder' => 'petra@mediagrafik.cz'], class: 'form__field--caps') ?>
+                        <?= $form->text('new_email', 'E-mail', '', type: 'email', attributes: ['placeholder' => 'petra@vasedomena.cz'], class: 'form__field--caps') ?>
                         <?= $form->select('new_role', 'Role', $roles, 'technician', hint: 'Jen štítek v seznamu — všichni mohou vše.', class: 'form__field--caps') ?>
                     </div>
                     <div class="row"><button type="submit" class="btn btn--primary"><?= get_btn_icon('plus') ?>Pozvat uživatele</button></div>

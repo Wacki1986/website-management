@@ -25,11 +25,10 @@ MySQL, Apache s `.htaccess`, cPanel cron). Vývojové věci jsou v `README.md`.
    (po založení se sám smaže).
 6. Ověřit: `/` přesměruje na přihlášení přes HTTPS; `/config/env.php`,
    `/app/Core/Kernel.php`, `/storage/logs/` vrací 404; `/assets/css/app.css` 200;
-   `/plugin/mediagrafik-monitor/plugin-info.json` vrací JSON (po kroku 4).
-7. Nastavení → Odchozí pošta: SMTP účet studia (SPF/DKIM na doméně
-   odesílatele), „Poslat zkušební e-mail". Odesílatel a jeho jméno se
-   objeví v patičce klientských reportů; telefon do patičky reportu je
-   v `settings.report_phone` (zatím jen přes DB, v1 nemá pole v UI).
+   `/plugin/<slug>/plugin-info.json` vrací JSON (po kroku 4).
+7. Nastavení → Základní nastavení: firma, plugin (složka!), loga a ikona
+   (kapitola 10). Nastavení → Odchozí pošta: SMTP účet (SPF/DKIM na doméně
+   odesílatele), „Poslat zkušební e-mail".
 8. Nastavení → Monitoring: adresy pro alerty, frekvence, **vygenerovat token
    cronu** a zkopírovat řádek do cPanelu (kapitola 3).
 9. Nastavení → Alerty a prahy: zkontrolovat prahy (výchozí odpovídají návrhu).
@@ -43,10 +42,10 @@ výjimkami, bez kterých by přestaly fungovat:
 | Výjimka | Proč |
 | --- | --- |
 | `sw.js`, `assets/manifest.webmanifest`, `assets/offline.html`, `assets/favicons/` | instalace na plochu a upozornění na telefon |
+| `znacka/` | loga a ikony z Nastavení → Základní nastavení (přihlášení, manifest, logo v e-mailech s reporty) |
 | `system/monitor-cron` | hostingový cron (chráněný vlastním tokenem) |
 | `r/<token>.gif` | sledovací obrázek v reportech — stahuje ho poštovní klient klienta |
-| `assets/img/logo-mediagrafik.svg` | logo v hlavičce klientského reportu |
-| `plugin/mediagrafik-monitor/` | WordPress na webech klientů si sem sahá pro aktualizace pluginu |
+| `plugin/` | WordPress na webech klientů si sem sahá pro aktualizace pluginu (`plugin/<slug>/`) |
 
 Heslo vyrobí `php dev/tools/generate-htpasswd.php`. IP filtr místo hesla je
 neslučitelný s upozorněními na telefon z mobilní sítě.
@@ -104,19 +103,31 @@ spustit ručně tlačítkem „Spustit průchod teď"; z příkazové řádky
 Zámek `storage/monitor.lock` brání souběhu dvou průchodů. Pokud by zůstal
 viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
 
-## 4. Plugin MEDIAGRAFIK Monitor
+## 4. Plugin (Monitor)
 
-- Build: `pwsh dev/tools/build-plugin.ps1` → `www/storage/plugin/mediagrafik-monitor-<verze>.zip`
-  a `plugin-info.json`. Obojí se nahrává na server spolu s aplikací
-  (`storage/plugin/` je jediná část `storage/`, která se nahrává).
-- Nová verze pluginu = zvýšit `VERSION` v `wp-plugin/mediagrafik-monitor/mediagrafik-monitor.php`
-  a v `readme.txt`, znovu build, nahrát. WordPress na webech nabídne
-  aktualizaci do 12 hodin (transient) — plugin si čte
-  `https://<aplikace>/plugin/mediagrafik-monitor/plugin-info.json`.
-- Instalace na web: Pluginy → Nahrát plugin → ZIP → Aktivovat → Nastavení →
-  MEDIAGRAFIK Monitor → vložit API klíč z detailu webu (Nastavení → Připojení).
-  Klíč se ukazuje jen jednou po vygenerování.
-- Plugin nic neposílá sám: aplikace se ho ptá (`/wp-json/mediagrafik-monitor/v1/…`
+Plugin se jmenuje podle instance — „{firma} Monitor“, nebo jak ho
+pojmenuje Nastavení → Základní nastavení (kapitola 10). Níž „Monitor“.
+
+- Build: `powershell -ExecutionPolicy Bypass -File dev/tools/build-plugin.ps1`
+  → neutrální `www/storage/plugin/monitor-<verze>.zip` a `plugin-info.json`.
+  Obojí se nahrává na server spolu s aplikací (`storage/plugin/` je jediná
+  část `storage/`, která se nahrává). **Pozor:** s otevřeným VS Code to
+  SFTP watcher nahraje hned — build = vydání nové verze všem webům (plugin
+  má zapnuté automatické aktualizace). Na zkoušku balit jinam: `-OutDir <složka>`.
+- Název, autora, složku a adresu správy doplní instance až při stažení
+  ZIPu („razítko“, `PluginDistribution`), orazítkovaný ZIP si drží ve
+  `storage/plugin/cache/`. Balíčky z doby před razítkem
+  (`mediagrafik-monitor-<verze>.zip`) se vydají beze změny, ale jen
+  instanci s výchozím slugem.
+- Nová verze pluginu = zvýšit verzi v hlavičce `wp-plugin/monitor/monitor.php`,
+  v `MG_Monitor::VERSION` (`includes/class-mg-monitor.php`) a v `readme.txt`,
+  znovu build, nahrát. WordPress na webech nabídne aktualizaci do 12 hodin
+  (transient) — plugin si čte `https://<aplikace>/plugin/<slug>/plugin-info.json`.
+- Instalace na web: ZIP z detailu webu (Nastavení → Plugin na webu) →
+  Pluginy → Nahrát plugin → Aktivovat → nastavení pluginu → vložit API klíč
+  z detailu webu (Nastavení → Připojení). Klíč se ukazuje jen jednou po
+  vygenerování.
+- Plugin nic neposílá sám: aplikace se ho ptá (`/wp-json/<slug>/v1/…`
   s hlavičkou `X-MG-Key`). Když web REST API blokuje, plugin zkouší
   `?rest_route=`; když ani to neprojde, web má stav „Plugin neodpovídá".
 - **Aktualizace pluginů ze správy** (plugin 1.1.0+): detail webu → Pluginy →
@@ -131,7 +142,7 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   a v auditu. Weby s pluginem 1.0.0 mají tlačítko neaktivní, dokud si
   plugin samy neaktualizují (viz předchozí bod) — přechod 1.0.0 → 1.1.0 je
   potřeba jednou udělat ve wp-admin (nahrát ZIP, „Nahradit stávající").
-- Od 1.1.0 jde i MEDIAGRAFIK Monitor aktualizovat ze správy: jakmile je na
+- Od 1.1.0 jde i Monitor aktualizovat ze správy: jakmile je na
   serveru správy novější ZIP, záložka Pluginy ho nabídne hned (správa verzi
   zná z `plugin-info.json`), web si při aktualizaci novou verzi načte
   znovu a nečeká na svou 12hodinovou cache.
@@ -144,11 +155,11 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   neaktivního pluginu → potvrzení v okně nad tabulkou (bez JavaScriptu
   samostatná potvrzovací stránka). Web plugin smaže jako wp-admin
   včetně odinstalace (plugin tím obvykle smaže i svá data). Aktivní plugin
-  ani MEDIAGRAFIK Monitor smazat nejde.
+  ani Monitor smazat nejde.
 - **Deaktivace a aktivace pluginu** (plugin 1.5.0+): Pluginy → ikona
   vypínače v řádku. Aktivní plugin se tím dá odebrat ve dvou krocích —
   deaktivovat, zkontrolovat web, pak smazat ikonou koše; neaktivní plugin
-  jde stejnou ikonou znovu zapnout. MEDIAGRAFIK Monitor vypnout nejde.
+  jde stejnou ikonou znovu zapnout. Monitor vypnout nejde.
   Po kliknutí se ikona točí a řádek ztlumí, dokud web neodpoví.
 - **Nepovedená aktualizace** má u pluginu křížek a důvod v pruhu nad
   tabulkou i v Historii webu. Placené pluginy (Rank Math PRO, Elementor
@@ -188,7 +199,7 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
 - **Knihovna pluginů** (menu → Knihovna pluginů): placené a vlastní pluginy,
   které WordPress sám neaktualizuje. Nahrát ZIP od autora (jedna složka
   pluginu v kořeni, hlavička s `Version:`); novější verze nahradí starší,
-  nižší nahrát nejde. Weby s MEDIAGRAFIK Monitorem 1.4.0+ si ji nabídnou
+  nižší nahrát nejde. Weby s Monitorem 1.4.0+ si ji nabídnou
   k aktualizaci samy (do 12 hodin, ve správě hned na záložce Pluginy).
   ZIPy leží ve `storage/plugin-library/` (zálohovat, nenahrávat z počítače
   — `sftp.json` je má ve výjimkách) a ven jdou jen s podpisem pro konkrétní
@@ -214,9 +225,9 @@ viset po pádu PHP, další běh ho převezme (flock se uvolní s procesem).
   Monitor, plugin chce novější WordPress nebo PHP, nebo na webu už je
   stejně pojmenovaná složka. Po instalaci se načtou čerstvá data, do
   historie přibude „X nainstalován" a do auditu „Instalace pluginu".
-  MEDIAGRAFIK Monitor se takhle neinstaluje — bez něj správa na web
+  Monitor se takhle neinstaluje — bez něj správa na web
   nedosáhne.
-- **Nová verze MEDIAGRAFIK Monitoru na všechny weby:** po `build-plugin.ps1`
+- **Nová verze Monitoru na všechny weby:** po `build-plugin.ps1`
   a nahrání `storage/plugin/` na server má Monitor v Knihovně pluginů
   vlastní kartu nahoře — ikona „Aktualizovat všude" funguje stejně jako
   u pluginů z knihovny. Weby s Monitorem starším než 1.1.0 se ze správy
@@ -284,10 +295,10 @@ jde spouštět opakovaně.
   stáhnout `dompdf-<verze>.zip` z github.com/dompdf/dompdf/releases,
   složku `dompdf/` z archivu dát místo `www/app/vendor/dompdf`, smazat
   obsah `storage/pdf/` a stáhnout zkušební protokol.
-- Logo v protokolu je `assets/img/logo-mediagrafik-pdf-light.svg` (bílý
-  text na tmavé záhlaví) — kopie loga bez metadat a ořezové cesty, kterou
-  Dompdf kreslil jako černý obdélník; `logo-mediagrafik-pdf.svg` je táž
-  kopie s tmavým textem. Při změně loga je potřeba vyrobit nové kopie.
+- Logo v protokolu je **Logo studia na tmavém** z Nastavení → Základní nastavení
+  (světlá varianta na tmavé záhlaví); bez něj se tam napíše jméno studia.
+  SVG s ořezovou cestou nebo vloženými metadaty kreslí Dompdf jako černý
+  obdélník — takové logo uložit znovu jako prosté SVG, nebo nahrát PNG.
 - **Předvyplněná poznámka:** když web běží na PHP nebo databázi, které
   podpora končí do roka nebo už skončila, nový zápis servisu má v poznámce
   větu pro klienta s doporučením přechodu. Nehodí-li se, smaže se.
@@ -331,7 +342,7 @@ Globální vypnutí modul schová všude (záložka, sloupec, report, alerty), v
 u webů zůstanou uložené. Web s vypnutým modulem nic navíc nepočítá — hub mu
 v požadavku `summary` parametr `modules` nepošle.
 
-**Modul SEO** potřebuje MEDIAGRAFIK Monitor **1.6.0** (starší plugin data
+**Modul SEO** potřebuje Monitor **1.6.0** (starší plugin data
 nepošle, záložka SEO to řekne). Plugin čte, co si k publikovaným stránkám
 ukládá **Rank Math** nebo **Yoast SEO**: skóre stránek (průměr; dobré,
 průměrné, slabé podle barev pluginu), stránky bez klíčového slova, bez
@@ -361,7 +372,63 @@ nikdo neotevřel, je „bez hodnocení".
   „Zkontrolovat teď". Denní průměry leží v `seo_days` (trend na záložce,
   posun v reportu).
 
-## 10. Když něco nejde
+## 10. Značka a druhá instance
+
+Aplikace nemá natvrdo jméno žádné firmy. Kdo ji provozuje, se nastaví
+u každé instance zvlášť — jeden kód, víc nasazení (studio, vlastní weby
+na volné noze…). Všechno je v **Nastavení → Základní nastavení**:
+
+- **Firma** — název (podpis reportů přes `{studio}` v šabloně, popisek
+  v aplikaci Authenticator, autor pluginu, pozvánky kolegům; prázdný =
+  jméno odesílatele z Odchozí pošty), web (odkaz z pluginu a User-Agent
+  požadavků na weby `SpravaWebu/1.0 (+web)`, podle kterého je v logu webu
+  vidět, kdo se ptá), kontaktní e-mail a telefon do patičky reportů.
+- **Plugin na webech** — název (prázdný = „{firma} Monitor“; weby ho
+  dostanou s příští aktualizací pluginu, WordPress čte název z hlavičky
+  souboru) a **složka pluginu**: složka ve WordPressu a začátek adresy
+  REST API (`/wp-json/<složka>/v1`). Bez nastavení platí historická
+  `mediagrafik-monitor`.
+- **Loga** (SVG/PNG/JPG do 2 MB, nahrají se hned po výběru souboru):
+  logo aplikace pro světlý a tmavý motiv (lišta, přihlášení), logo firmy
+  do e-mailů a reportů (**PNG** — Gmail ani Outlook SVG nezobrazí) a logo
+  firmy na tmavém pro PDF protokol. Nenahrané logo aplikace = neutrální
+  „Správa webů“, nenahrané logo firmy = název textem.
+- **Ikona aplikace** — čtvercové PNG aspoň 512 px, ideálně znak na
+  průhledném pozadí; velikosti pro prohlížeč, iPhone a Android se vyrobí
+  samy (`IconSet`). Nainstalovaná aplikace na ploše si novou ikonu vezme
+  až po přeinstalaci.
+
+Soubory leží ve `storage/brand/` (zálohovat) a ven jdou routou `/znacka/…`
+(výjimka z Basic auth, kapitola 2).
+
+**Složka pluginu se po napojení prvního webu nemění.** Plugin s jinou
+složkou je pro WordPress jiný plugin a starý se sám nepřejmenuje — všechny
+napojené weby by se odpojily a na každý by se plugin musel nahrát znovu
+i s API klíčem. Proto se pole, jakmile na složku odpovídá aspoň jeden web,
+zamkne; změnit ho jde jen po zaškrtnutí „Rozumím, že se … odpojí“ a změna
+se zapíše do auditu. Dvě kopie pluginu od různých správ na jednom webu
+nepoběží — druhá se nespustí a ohlásí to v administraci.
+
+**Druhá instance krok za krokem:**
+
+1. Nová databáze a subdoména, nahrát obsah `www/` (kapitola 1) — bez
+   `storage/plugin-library/` a bez `storage/brand/` první instance.
+2. `config/env.php` ze vzoru: vlastní `app_url`, nový `app_key`
+   (`generate-tokens.php`), odesílatel pošty.
+3. `storage/plugin/` s balíčkem `monitor-<verze>.zip` a `plugin-info.json`
+   (stejné soubory jako u první instance — razítko si udělá sama).
+4. První účet, pak hned **Nastavení → Základní nastavení**: firma, loga,
+   ikona a **složka pluginu** (např. `sprava-monitor`) — dokud není napojený
+   žádný web, jde měnit volně. Pak Odchozí pošta a cron (kapitola 3).
+5. Weby: ZIP pluginu z detailu webu (Nastavení → Plugin na webu) — už
+   ponese název, složku a adresu této instance.
+
+**sprava.mediagrafik.cz po zavedení značky:** v Nastavení → Základní
+nastavení vyplnit název MEDIAGRAFIK a nahrát loga a ikonu
+z `dev/brand/mediagrafik/` (návod v README tamtéž). Složku pluginu
+neměnit — výchozí `mediagrafik-monitor` je jeho.
+
+## 11. Když něco nejde
 
 | Příznak | Kde hledat |
 | --- | --- |
