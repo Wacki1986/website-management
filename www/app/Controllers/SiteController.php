@@ -28,6 +28,7 @@ use App\Core\Sites\SiteActions;
 use App\Core\Sites\SiteIcons;
 use App\Core\Sites\SiteCells;
 use App\Core\Sites\SiteRepository;
+use App\Core\Sites\SiteSort;
 use App\Core\Sites\SiteStatus;
 use App\Core\Views\Pagination;
 
@@ -69,6 +70,11 @@ final class SiteController extends Controller
         $siteModules = $seoColumn ? $this->kernel->modules()->forSites(array_map(static fn (array $s): int => (int) $s['id'], $sites)) : [];
         $today = date('Y-m-d');
 
+        // Řazení podle sloupce (klik na hlavičku); SEO jen když je sloupec vidět.
+        $sortColumn = $request->string('razeni');
+        $sortColumn = isset(SiteSort::COLUMNS[$sortColumn]) && ($sortColumn !== 'seo' || $seoColumn) ? $sortColumn : '';
+        $sortDirection = $sortColumn !== '' && $request->string('smer') === SiteSort::DESC ? SiteSort::DESC : SiteSort::ASC;
+
         foreach ($sites as $site) {
             $state = SiteStatus::of($site);
             $counts['all']++;
@@ -77,21 +83,59 @@ final class SiteController extends Controller
                 $counts[$state['level']]++;
             }
 
+            $plan = $plans[(int) $site['id']] ?? null;
+            $report = $reportSettings[(int) $site['id']] ?? null;
+            $seoOn = in_array(Modules::SEO, $siteModules[(int) $site['id']] ?? [], true);
+
             $all[] = $site + [
                 'state' => $state,
                 'host' => SiteRepository::host((string) $site['url']),
                 'cells' => SiteCells::of($site, $percents[(int) $site['id']] ?? null),
-                'service' => ServiceSchedule::cell($plans[(int) $site['id']] ?? null, $today),
-                'report' => self::reportCell($reportSettings[(int) $site['id']] ?? null),
-                'seo' => self::seoCell($site, in_array(Modules::SEO, $siteModules[(int) $site['id']] ?? [], true)),
+                'service' => ServiceSchedule::cell($plan, $today),
+                'report' => self::reportCell($report),
+                'seo' => self::seoCell($site, $seoOn),
+                // Syrové hodnoty pro řazení podle sloupce (SiteSort::value()).
+                'uptime_percent' => $percents[(int) $site['id']] ?? null,
+                'service_next' => $plan !== null && (int) $plan['is_active'] === 1 ? $plan['next_date'] : null,
+                // Aktivní report bez termínu patří za ty s termínem.
+                'report_next' => $report !== null && (int) $report['is_active'] === 1 ? (string) ($report['next_send_at'] ?? '9999') : null,
+                'seo_sort' => self::seoSortValue($site, $seoOn),
             ];
         }
 
         $rows = $level === '' ? $all : array_values(array_filter($all, static fn (array $s): bool => $s['state']['level'] === $level));
 
-        // Řazení podle stavu: problémy nahoru, pak pozornost, pak v pořádku.
+        // Výchozí řazení podle stavu: problémy nahoru, pak pozornost, pak v pořádku.
         $order = ['problem' => 0, 'attention' => 1, 'unknown' => 2, 'ok' => 3];
         usort($rows, static fn (array $a, array $b): int => [$order[$a['state']['level']] ?? 9, $a['name']] <=> [$order[$b['state']['level']] ?? 9, $b['name']]);
+
+        if ($sortColumn !== '') {
+            $rows = SiteSort::sort($rows, $sortColumn, $sortDirection);
+        }
+
+        // Hlavičky sloupců jsou odkazy: zachovají filtry a posunou řazení
+        // o krok dál (vzestupně → sestupně → vypnuto).
+        $filters = ['q' => $q, 'klient' => $clientId, 'seskupit' => $grouped ? 1 : null, 'stav' => $level];
+        $columns = [];
+
+        foreach (SiteSort::COLUMNS as $key => $label) {
+            if ($key === 'seo' && !$seoColumn) {
+                continue;
+            }
+
+            [$nextColumn, $nextDirection] = SiteSort::next($key, $sortColumn, $sortDirection);
+            $columns[] = [
+                'label' => $label,
+                'url' => self::listUrl($filters + ['razeni' => $nextColumn, 'smer' => $nextDirection === SiteSort::DESC ? SiteSort::DESC : null]),
+                'direction' => $key === $sortColumn ? $sortDirection : '',
+                'title' => match ($nextDirection) {
+                    SiteSort::ASC => 'Seřadit vzestupně',
+                    SiteSort::DESC => 'Seřadit sestupně',
+                    default => 'Zrušit řazení',
+                },
+                'right' => in_array($key, ['uptime', 'aktualizace'], true),
+            ];
+        }
 
         // Seskupení podle klienta: hlavičky `.table__group` (návrh `weby-seskupeno.html`).
         $groups = [];
@@ -120,7 +164,32 @@ final class SiteController extends Controller
                 . ($problems > 0 ? ' · ' . get_count($problems, 's problémem', 's problémem', 's problémem') : ''),
             'shown' => count($rows),
             'seoColumn' => $seoColumn,
+            'columns' => $columns,
+            'sortColumn' => $sortColumn,
+            'sortDirection' => $sortColumn !== '' ? $sortDirection : '',
         ]);
+    }
+
+    /** Adresa výpisu Weby s parametry; prázdné hodnoty do adresy nepatří. @param array<string, mixed> $params */
+    private static function listUrl(array $params): string
+    {
+        $query = http_build_query(array_filter($params, static fn ($v): bool => $v !== null && $v !== '' && $v !== 0));
+
+        return get_url('weby') . ($query !== '' ? '?' . $query : '');
+    }
+
+    /** SEO pro řazení: průměrné skóre, skrytý web -1 (nejhorší), bez dat null. @param array<string, mixed> $site */
+    private static function seoSortValue(array $site, bool $on): ?int
+    {
+        if (!$on) {
+            return null;
+        }
+
+        if (($site['snap_seo_indexable'] ?? null) !== null && (int) $site['snap_seo_indexable'] === 0) {
+            return -1;
+        }
+
+        return ($site['snap_seo_average'] ?? null) !== null ? (int) $site['snap_seo_average'] : null;
     }
 
     /**
@@ -267,7 +336,7 @@ final class SiteController extends Controller
         // Klíč se ukáže celý jen jednou — hned na Nastavení webu.
         $_SESSION['fresh_api_key'][$id] = $key;
 
-        return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Web je přidaný. Zkopírujte API klíč do pluginu MEDIAGRAFIK Monitor na webu.');
+        return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Web je přidaný. Zkopírujte API klíč do pluginu ' . $this->kernel->brand()->pluginName() . ' na webu.');
     }
 
     // -----------------------------------------------------------------
@@ -643,7 +712,9 @@ final class SiteController extends Controller
             'projects' => $this->kernel->projects()->options() + [self::NEW_PROJECT => '+ oddělit do vlastního nového projektu'],
             'intervals' => SiteRepository::INTERVALS,
             'pluginVersion' => $this->kernel->pluginDistribution()->version(),
-            'pluginInfoUrl' => $this->kernel->appUrl('plugin/mediagrafik-monitor/plugin-info.json'),
+            'pluginZipPath' => $this->kernel->pluginDistribution()->version() !== null
+                ? 'plugin/' . $this->kernel->brand()->pluginSlug() . '/' . $this->kernel->brand()->pluginSlug() . '-' . $this->kernel->pluginDistribution()->version() . '.zip'
+                : '',
             'defaultLoginUser' => $this->kernel->settings()->get(SiteActions::LOGIN_USER_SETTING),
             // Moduly měří přes plugin — web mimo WordPress je nemá.
             'moduleChoices' => SiteRepository::isWordpress($site) ? $this->kernel->modules()->siteChoices((int) $id) : [],
@@ -720,7 +791,7 @@ final class SiteController extends Controller
         if ($newKey) {
             $this->kernel->audit()->record((int) $id, (string) $site['name'], AuditLog::ACTION_SITE_EDIT, true, 'Web přepnut na WordPress');
 
-            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Web je přepnutý na WordPress. Zkopírujte nový API klíč do pluginu MEDIAGRAFIK Monitor na webu.');
+            return $this->redirectWithFlash('weby/' . $id . '/nastaveni', 'Web je přepnutý na WordPress. Zkopírujte nový API klíč do pluginu ' . $this->kernel->brand()->pluginName() . ' na webu.');
         }
 
         if (!$urlChanged) {

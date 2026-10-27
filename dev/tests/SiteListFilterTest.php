@@ -9,9 +9,38 @@ declare(strict_types=1);
 
 use App\Core\Security\Secrets;
 use App\Core\Sites\SiteRepository;
+use App\Core\Sites\SiteSort;
 use App\Core\Sites\SiteStatus;
 
 return [
+    'řazení podle sloupce: verze jako čísla, prázdné na konci, klik střídá směr' => function (): void {
+        $row = static fn (string $name, array $extra = []): array => $extra + [
+            'name' => $name, 'platform' => 'wordpress', 'client_name' => null,
+            'state' => ['level' => 'ok', 'label' => 'V pořádku'], 'cells' => ['updates' => ['count' => 0]],
+            'uptime_percent' => null, 'service_next' => null, 'report_next' => null, 'seo_sort' => null,
+        ];
+        $rows = [
+            $row('Alfa', ['snap_php_version' => '8.10.0', 'cells' => ['updates' => ['count' => 3]], 'client_name' => 'Čapek']),
+            $row('Beta', ['snap_php_version' => '8.4.27', 'cells' => ['updates' => ['count' => 10]], 'client_name' => 'Cibulka']),
+            $row('Gama', ['platform' => 'shoptet', 'snap_php_version' => '7.4.0']),
+            $row('Delta', ['snap_php_version' => '8.4.27', 'client_name' => 'Dvořák']),
+        ];
+        $names = static fn (array $sorted): array => array_column($sorted, 'name');
+
+        // Jiný systém (Gama) nemá PHP → na konci v obou směrech; shoda podle názvu.
+        assertSame(['Beta', 'Delta', 'Alfa', 'Gama'], $names(SiteSort::sort($rows, 'php', SiteSort::ASC)));
+        assertSame(['Alfa', 'Beta', 'Delta', 'Gama'], $names(SiteSort::sort($rows, 'php', SiteSort::DESC)));
+        assertSame(['Beta', 'Alfa', 'Delta', 'Gama'], $names(SiteSort::sort($rows, 'aktualizace', SiteSort::DESC)));
+        // Bez klienta na konci (Gama).
+        assertSame('Gama', $names(SiteSort::sort($rows, 'klient', SiteSort::ASC))[3]);
+        assertSame($rows, SiteSort::sort($rows, 'neznamy', SiteSort::ASC));
+
+        assertSame(['php', 'asc'], SiteSort::next('php', '', ''));
+        assertSame(['php', 'desc'], SiteSort::next('php', 'php', 'asc'));
+        assertSame(['', ''], SiteSort::next('php', 'php', 'desc'));
+        assertSame(['wp', 'asc'], SiteSort::next('wp', 'php', 'desc'));
+    },
+
     'hledání podle názvu, adresy i klienta; filtr klienta; odebrané weby chybí' => function (): void {
         $db = freshTestDb();
         $sites = new SiteRepository($db, new Secrets(str_repeat('ab', 32)));

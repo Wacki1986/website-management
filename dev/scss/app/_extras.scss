@@ -811,6 +811,23 @@ form[aria-busy="true"] .row-actions .btn { pointer-events: none; }
   .table--sites { min-width: 1110px; }
 }
 
+// Řazení podle sloupce (výpis Weby): hlavička je odkaz, klik střídá
+// vzestupně → sestupně → vypnuto. Šipka jen u řazeného sloupce,
+// vzestupně míří nahoru.
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover,
+  &--asc,
+  &--desc { color: var(--color-text-primary); }
+
+  &--asc .icon { transform: rotate(180deg); }
+}
+
 // Dashboard „Vyžaduje řešení": sloupec Databáze široký jako ve výpisu
 // webů (oba kreslí `partials/site-cells.php`), „MariaDB 10.11" se jinak
 // ořízne. Přepisuje sadu z `components/_hero.scss`, mobil nechává.

@@ -2,6 +2,11 @@
 
 ## Připravuje se
 
+- **Výpis Weby: řazení podle sloupce.** Hlavičky Web, Klient, Stav,
+  Uptime, WP, PHP, Databáze, Aktualizace, SEO, Servis a Report jsou
+  odkazy — klik řadí vzestupně, další sestupně, třetí řazení vypne
+  (zpět výchozí pořadí podle stavu). Verze se řadí jako čísla, web bez
+  hodnoty je vždy na konci; řazení drží hledání, filtry i seskupení.
 - **Značka instance — aplikace bez natvrdo zapsaného MEDIAGRAFIK.**
   Tentýž kód teď může běžet ve víc nasazeních (studio, vlastní weby na
   volné noze). Nová záložka **Nastavení → Základní nastavení** (první

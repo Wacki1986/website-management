@@ -20,16 +20,21 @@
  * @var string              $meta
  * @var int                 $shown
  * @var bool                $seoColumn      sloupec SEO (modul SEO zapnutý globálně); řádky mají `seo` (tone, label, title)
+ * @var array<int, array{label: string, url: string, direction: string, title: string, right: bool}> $columns  hlavičky sloupců s řazením (`direction` '' | asc | desc)
+ * @var string              $sortColumn     '' = výchozí řazení podle stavu
+ * @var string              $sortDirection  '' | asc | desc
  * @var string              $csrfToken
  */
 $this->extend('layout/shell', ['title' => $title]);
 
-// Adresa filtru: zachová hledání a klienta, mění jen stav.
+// Adresa filtru: zachová hledání, klienta a řazení, mění jen stav.
 $filterUrl = static fn (array $override): string => get_url('weby') . '?' . http_build_query(array_filter(array_merge([
     'q' => $q,
     'klient' => $clientId,
     'seskupit' => $grouped ? 1 : null,
     'stav' => $level,
+    'razeni' => $sortColumn,
+    'smer' => $sortDirection === 'desc' ? 'desc' : null,
 ], $override), static fn ($v): bool => $v !== null && $v !== '' && $v !== 0));
 
 $segments = [
@@ -77,6 +82,8 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
             <?php if ($clientId !== null): ?><input type="hidden" name="klient" value="<?= (int) $clientId ?>"><?php endif; ?>
             <?php if ($grouped): ?><input type="hidden" name="seskupit" value="1"><?php endif; ?>
             <?php if ($level !== ''): ?><input type="hidden" name="stav" value="<?= $this->e($level) ?>"><?php endif; ?>
+            <?php if ($sortColumn !== ''): ?><input type="hidden" name="razeni" value="<?= $this->e($sortColumn) ?>"><?php endif; ?>
+            <?php if ($sortDirection === 'desc'): ?><input type="hidden" name="smer" value="desc"><?php endif; ?>
 
             <div class="segmented" data-live-region="segments">
                 <?php foreach ($segments as $segment): ?>
@@ -100,7 +107,14 @@ $renderRow = function (array $site) use ($csrfToken, $seoColumn): void {
         </form>
 
         <div class="table table--sites<?= $seoColumn ? ' table--sites-seo' : '' ?>" data-live-region="table">
-            <div class="table__head"><div>Web</div><div>Klient</div><div>Stav</div><div class="table__cell table__cell--right">Uptime</div><div>WP</div><div>PHP</div><div>Databáze</div><div class="table__cell table__cell--right">Aktualizace</div><?php if ($seoColumn): ?><div>SEO</div><?php endif; ?><div>Servis</div><div>Report</div><div></div></div>
+            <div class="table__head">
+                <?php foreach ($columns as $column): ?>
+                    <div<?= $column['right'] ? ' class="table__cell table__cell--right"' : '' ?>>
+                        <a class="table__sort<?= $column['direction'] !== '' ? ' table__sort--' . $column['direction'] : '' ?>" href="<?= $this->e($column['url']) ?>" title="<?= $this->e($column['title']) ?>"><?= $this->e($column['label']) ?><?= $column['direction'] !== '' ? get_icon('chevron-down', 'icon--sm') . '<span class="visually-hidden">' . ($column['direction'] === 'asc' ? ', řazeno vzestupně' : ', řazeno sestupně') . '</span>' : '' ?></a>
+                    </div>
+                <?php endforeach; ?>
+                <div></div>
+            </div>
 
             <?php if ($rows === []): ?>
                 <?php if ($counts['all'] === 0 && $q === '' && $clientId === null): ?>
