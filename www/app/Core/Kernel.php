@@ -8,6 +8,7 @@ use App\Controllers\AlertController;
 use App\Controllers\AuthController;
 use App\Controllers\BrandController;
 use App\Controllers\ClientController;
+use App\Controllers\ContactController;
 use App\Controllers\ProjectController;
 use App\Controllers\ProjectServiceController;
 use App\Controllers\CredentialController;
@@ -45,6 +46,7 @@ use App\Core\Brand\Brand;
 use App\Core\Brand\BrandAssets;
 use App\Core\Clients\Ares;
 use App\Core\Clients\ClientRepository;
+use App\Core\Clients\ContactRepository;
 use App\Core\Pdf\PdfRenderer;
 use App\Core\Projects\Credentials;
 use App\Core\Projects\MailDns;
@@ -154,6 +156,7 @@ final class Kernel
     private ?PushSubscriptions $pushSubscriptions = null;
     private ?PushNotifier $pushNotifier = null;
     private ?ClientRepository $clients = null;
+    private ?ContactRepository $contacts = null;
     private ?ProjectRepository $projects = null;
     private ?ProjectServices $projectServices = null;
     private ?SiteRepository $sites = null;
@@ -466,6 +469,12 @@ final class Kernel
     public function clients(): ClientRepository
     {
         return $this->clients ??= new ClientRepository($this->db());
+    }
+
+    /** Kontaktní osoby sdílené mezi klienty. */
+    public function contacts(): ContactRepository
+    {
+        return $this->contacts ??= new ContactRepository($this->db());
     }
 
     public function projects(): ProjectRepository
@@ -1314,6 +1323,13 @@ final class Kernel
 
         $router->add('GET', '/klienti', [ClientController::class, 'index'], name: 'clients');
         $router->add('GET', '/klienti/pridat', [ClientController::class, 'createForm'], name: 'clients.add');
+        // Kontaktní osoby před `/klienti/{id}` — jinak by „kontakty" vzal jako id klienta.
+        $router->add('GET', '/klienti/kontakty', [ContactController::class, 'index'], name: 'contacts');
+        $router->add('GET', '/klienti/kontakty/pridat', [ContactController::class, 'createForm'], name: 'contacts.add');
+        $router->add('POST', '/klienti/kontakty/pridat', [ContactController::class, 'store'], Router::AUTH_ONLY, 'contacts.store');
+        $router->add('GET', '/klienti/kontakty/{id}', [ContactController::class, 'editForm'], name: 'contacts.edit');
+        $router->add('POST', '/klienti/kontakty/{id}', [ContactController::class, 'update'], Router::AUTH_ONLY, 'contacts.update');
+        $router->add('POST', '/klienti/kontakty/{id}/smazat', [ContactController::class, 'delete'], Router::AUTH_ONLY, 'contacts.delete');
         $router->add('POST', '/klienti/pridat', [ClientController::class, 'store'], Router::AUTH_ONLY, 'clients.store');
         $router->add('GET', '/klienti/{id}', [ClientController::class, 'detail'], name: 'clients.detail');
         $router->add('GET', '/klienti/{id}/upravit', [ClientController::class, 'editForm'], name: 'clients.edit');

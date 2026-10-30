@@ -57,6 +57,10 @@ final class SiteRepository
     private const PROJECT_HOSTING = "(SELECT CONCAT_WS(' ', ps.provider, NULLIF(ps.plan, '')) FROM project_services ps
         WHERE ps.project_id = s.project_id AND ps.kind = 'hosting' ORDER BY ps.id LIMIT 1) AS project_hosting";
 
+    /** E-mail hlavní kontaktní osoby klienta webu (bez aliasu — ten dává dotaz). */
+    private const CLIENT_EMAIL = '(SELECT ct.email FROM contact_links cl JOIN contacts ct ON ct.id = cl.contact_id
+        WHERE cl.client_id = s.client_id AND cl.is_primary = 1 LIMIT 1)';
+
     public function __construct(
         private readonly Connection $db,
         private readonly Secrets $secrets,
@@ -142,7 +146,7 @@ final class SiteRepository
     public function find(int $id): ?array
     {
         return $this->db->selectOne(
-            'SELECT s.*, c.name AS client_name, c.email AS client_email, p.name AS project_name,
+            'SELECT s.*, c.name AS client_name, ' . self::CLIENT_EMAIL . ' AS client_email, p.name AS project_name,
                     ' . self::PROJECT_HOSTING . '
              FROM sites s LEFT JOIN clients c ON c.id = s.client_id LEFT JOIN projects p ON p.id = s.project_id
              WHERE s.id = :id',
@@ -154,7 +158,7 @@ final class SiteRepository
     public function findWithSnapshot(int $id): ?array
     {
         return $this->db->selectOne(
-            'SELECT s.*, c.name AS client_name, c.email AS client_email, p.name AS project_name,
+            'SELECT s.*, c.name AS client_name, ' . self::CLIENT_EMAIL . ' AS client_email, p.name AS project_name,
                     ' . self::PROJECT_HOSTING . ', ' . self::snapshotColumns() . '
              FROM sites s
              LEFT JOIN clients c ON c.id = s.client_id

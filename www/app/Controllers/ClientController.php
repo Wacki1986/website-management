@@ -14,7 +14,9 @@ use App\Core\Projects\ProjectServices;
 /**
  * Klienti (návrh `klienti.html`, `detail-klienta*.html`, `novy-klient*.html`).
  *
- * Klient = firma + hlavní kontaktní osoba + projekty (a jejich weby). Formulář nového
+ * Klient = firma + kontaktní osoby + projekty (a jejich weby). Osoby jsou
+ * sdílené mezi klienty (`ContactController`): ve formuláři jde vybrat
+ * osobu, která už jedná za jinou firmu, místo psaní znovu. Formulář nového
  * klienta i úprava jdou přes jednu metodu `readForm()`; tlačítko „Načíst
  * z ARESu" je obyčejný submit s `_action=ares`, takže funguje bez
  * JavaScriptu — formulář se vrátí předvyplněný.
@@ -52,7 +54,17 @@ final class ClientController extends Controller
             'counts' => $counts,
             'meta' => get_count($counts['all'], 'klient', 'klienti', 'klientů') . ' · '
                 . get_count($this->kernel->sites()->countActive(), 'web', 'weby', 'webů'),
+            'tabsHtml' => self::listTabs('firmy'),
         ]);
+    }
+
+    /** Záložky nad seznamem klientů a kontaktních osob — každá vlastní URL. */
+    public static function listTabs(string $active): string
+    {
+        return get_tabs([
+            ['key' => 'firmy', 'label' => 'Firmy', 'url' => get_url('klienti')],
+            ['key' => 'kontakty', 'label' => 'Kontaktní osoby', 'url' => get_url('klienti/kontakty')],
+        ], $active);
     }
 
     public function createForm(): Response
@@ -72,9 +84,8 @@ final class ClientController extends Controller
             return $this->formPage(null, $values, $errors, 422);
         }
 
-        $clients = $this->kernel->clients();
-        $id = $clients->create(self::clientColumns($values));
-        $clients->savePrimaryContact($id, self::contactColumns($values));
+        $id = $this->kernel->clients()->create(self::clientColumns($values));
+        $this->savePrimary($id, $values);
         $this->kernel->projects()->assignToClient($values['projects'], $id);
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_CLIENT, true, 'Založen klient ' . $values['name']);
 
@@ -91,8 +102,10 @@ final class ClientController extends Controller
     public function detail(string $id): Response
     {
         $client = $this->clientOr404((int) $id);
-        $contacts = $this->kernel->clients()->contacts((int) $id);
-        $primary = $contacts[0] ?? null;
+        $contacts = $this->kernel->contacts()->forClient((int) $id);
+        $primary = $contacts !== [] && (int) $contacts[0]['is_primary'] === 1 ? $contacts[0] : null;
+        $others = $primary !== null ? array_slice($contacts, 1) : $contacts;
+        $pick = ContactController::pickData($this->kernel, array_map(static fn (array $c): int => (int) $c['id'], $contacts));
 
         $sites = SiteController::careRows($this->kernel, $this->kernel->sites()->forClient((int) $id));
         $lastReports = $this->kernel->reports()->latestSentFor(array_map(static fn (array $s): int => (int) $s['id'], $sites));
@@ -136,7 +149,15 @@ final class ClientController extends Controller
             'title' => (string) $client['name'],
             'client' => $client,
             'primary' => $primary,
-            'contacts' => array_slice($contacts, 1),
+            'contacts' => array_map(static fn (array $c): array => $c + [
+                'name' => ContactController::fullName($c),
+                'url' => get_url('klienti/kontakty/' . (int) $c['id']),
+                'othersLabel' => $c['others'] !== [] ? 'také u ' . implode(', ', array_column($c['others'], 'name')) : '',
+            ], $others),
+            'primaryUrl' => $primary !== null ? get_url('klienti/kontakty/' . (int) $primary['id']) : '',
+            'primaryOthers' => $primary !== null ? array_map(static fn (array $o): array => $o + ['url' => get_url('klienti/' . $o['client_id'])], $primary['others']) : [],
+            'pickOptions' => $pick['options'],
+            'pickJson' => $pick['json'],
             'projects' => $projects,
             'sites' => $sites,
             'lastReport' => $lastReport !== null ? get_czech_date((string) $lastReport['sent_at']) . ' · ' . (string) $lastReport['period_label'] : '—',
@@ -154,7 +175,7 @@ final class ClientController extends Controller
     public function editForm(string $id): Response
     {
         $client = $this->clientOr404((int) $id);
-        $primary = $this->kernel->clients()->primaryContact((int) $id) ?? [];
+        $primary = $this->kernel->contacts()->primaryFor((int) $id) ?? [];
 
         $values = self::emptyValues();
 
@@ -165,6 +186,8 @@ final class ClientController extends Controller
         foreach (['first_name', 'last_name', 'role', 'email', 'phone'] as $key) {
             $values[$key] = (string) ($primary[$key] ?? '');
         }
+
+        $values['contact_id'] = (string) ($primary['id'] ?? '');
 
         return $this->formPage($client, $values, []);
     }
@@ -182,12 +205,18 @@ final class ClientController extends Controller
             return $this->formPage($client, $values, $errors, 422);
         }
 
-        $clients = $this->kernel->clients();
-        $clients->update((int) $id, self::clientColumns($values));
-        $clients->savePrimaryContact((int) $id, self::contactColumns($values));
+        $previous = $this->kernel->contacts()->primaryFor((int) $id);
+        $this->kernel->clients()->update((int) $id, self::clientColumns($values));
+        $contactId = $this->savePrimary((int) $id, $values);
         $this->kernel->audit()->record(null, '', AuditLog::ACTION_CLIENT, true, 'Upraven klient ' . $values['name']);
 
-        return $this->redirectWithFlash('klienti/' . $id, 'Údaje klienta jsou uložené.');
+        $message = 'Údaje klienta jsou uložené.';
+
+        if ($previous !== null && (int) $previous['id'] !== $contactId) {
+            $message .= ' ' . ContactController::fullName($previous) . ' zůstává mezi dalšími kontakty.';
+        }
+
+        return $this->redirectWithFlash('klienti/' . $id, $message);
     }
 
     /** Archivace: weby zůstanou v monitoringu bez klienta. */
@@ -210,37 +239,48 @@ final class ClientController extends Controller
         return $this->redirectWithFlash('klienti/' . $id, $projectIds === [] ? 'Nic nevybráno.' : 'Projekty jsou přiřazené.');
     }
 
+    /**
+     * Další kontakt klienta: buď vybraná osoba z kontaktů (`contact_id`),
+     * nebo nová z vyplněných polí. Nová osoba se stejným jménem a e-mailem,
+     * jaká už v kontaktech je, se nezaloží podruhé — připojí se ta stávající.
+     */
     public function addContact(string $id): Response
     {
         $this->clientOr404((int) $id);
         $request = $this->request();
-        $contact = [
-            'first_name' => mb_substr($request->string('first_name'), 0, 100),
-            'last_name' => mb_substr($request->string('last_name'), 0, 100),
-            'role' => mb_substr($request->string('role'), 0, 100),
-            'email' => mb_strtolower(mb_substr($request->string('email'), 0, 190)),
-            'phone' => mb_substr($request->string('phone'), 0, 50),
-        ];
+        $contacts = $this->kernel->contacts();
+        $role = mb_substr($request->string('role'), 0, 100);
+        $contactId = (int) ($request->int('contact_id') ?? 0);
 
-        if ($contact['last_name'] === '' && $contact['email'] === '') {
-            return $this->redirectWithFlash('klienti/' . $id, 'Kontakt potřebuje aspoň příjmení nebo e-mail.', 'error');
+        if ($contactId > 0) {
+            if ($contacts->find($contactId) === null) {
+                return $this->redirectWithFlash('klienti/' . $id, 'Vybraná osoba v kontaktech není.', 'error');
+            }
+        } else {
+            $person = ContactController::readPerson($request);
+            $errors = ContactController::personErrors($person, false);
+
+            if ($errors !== []) {
+                return $this->redirectWithFlash('klienti/' . $id, (string) reset($errors), 'error');
+            }
+
+            $contactId = $contacts->findOrCreate($person);
         }
 
-        if ($contact['email'] !== '' && filter_var($contact['email'], FILTER_VALIDATE_EMAIL) === false) {
-            return $this->redirectWithFlash('klienti/' . $id, 'E-mail kontaktu nemá platný tvar.', 'error');
-        }
-
-        $this->kernel->clients()->addContact((int) $id, $contact);
+        $contacts->link((int) $id, $contactId, $role);
 
         return $this->redirectWithFlash('klienti/' . $id, 'Kontakt je přidaný.');
     }
 
+    /** Odpojí osobu od klienta — v kontaktech zůstane pro ostatní klienty. */
     public function removeContact(string $id, string $contactId): Response
     {
         $this->clientOr404((int) $id);
-        $this->kernel->clients()->removeContact((int) $id, (int) $contactId);
+        $removed = $this->kernel->contacts()->unlink((int) $id, (int) $contactId);
 
-        return $this->redirectWithFlash('klienti/' . $id, 'Kontakt je odebraný.');
+        return $removed
+            ? $this->redirectWithFlash('klienti/' . $id, 'Kontakt je od klienta odebraný. V kontaktních osobách zůstává.')
+            : $this->redirectWithFlash('klienti/' . $id, 'Hlavní kontakt nejde odebrat — nejdřív v Upravit údaje vyberte jinou osobu.', 'error');
     }
 
     // -----------------------------------------------------------------
@@ -252,7 +292,7 @@ final class ClientController extends Controller
     {
         return [
             'name' => '', 'company_id' => '', 'vat_id' => '', 'address' => '', 'billing_note' => '', 'note' => '', 'since' => '',
-            'first_name' => '', 'last_name' => '', 'role' => '', 'email' => '', 'phone' => '',
+            'contact_id' => '', 'first_name' => '', 'last_name' => '', 'role' => '', 'email' => '', 'phone' => '',
             'projects' => [],
         ];
     }
@@ -268,7 +308,7 @@ final class ClientController extends Controller
         $values = self::emptyValues();
 
         foreach (array_keys($values) as $key) {
-            if ($key === 'projects') {
+            if ($key === 'projects' || $key === 'contact_id') {
                 continue;
             }
 
@@ -276,7 +316,9 @@ final class ClientController extends Controller
         }
 
         $values['company_id'] = Ares::normalizeIco($values['company_id']);
-        $values['email'] = mb_strtolower($values['email']);
+        $values['contact_id'] = (string) ($request->int('contact_id') ?? '');
+        $values['role'] = mb_substr($values['role'], 0, 100);
+        $values = ContactController::readPerson($request) + $values;
         $values['projects'] = array_values(array_unique(array_map('intval', (array) $request->input('projects', []))));
 
         $errors = [];
@@ -285,15 +327,7 @@ final class ClientController extends Controller
             $errors['name'] = 'Bez názvu firmy klienta nezaložíme.';
         }
 
-        if ($values['last_name'] === '') {
-            $errors['last_name'] = 'Doplňte příjmení kontaktní osoby.';
-        }
-
-        if ($values['email'] === '') {
-            $errors['email'] = 'E-mail je povinný — chodí na něj reporty.';
-        } elseif (filter_var($values['email'], FILTER_VALIDATE_EMAIL) === false) {
-            $errors['email'] = 'E-mail nemá platný tvar.';
-        }
+        $errors += ContactController::personErrors(self::personColumns($values), true);
 
         if ($values['since'] !== '' && \DateTime::createFromFormat('Y-m-d', $values['since']) === false) {
             $errors['since'] = 'Datum zadejte ve tvaru RRRR-MM-DD.';
@@ -344,16 +378,41 @@ final class ClientController extends Controller
         ];
     }
 
-    /** @param array<string, mixed> $values @return array{first_name: string, last_name: string, role: string, email: string, phone: string} */
-    private static function contactColumns(array $values): array
+    /** @param array<string, mixed> $values @return array{first_name: string, last_name: string, email: string, phone: string} */
+    private static function personColumns(array $values): array
     {
         return [
-            'first_name' => $values['first_name'],
-            'last_name' => $values['last_name'],
-            'role' => $values['role'],
-            'email' => $values['email'],
-            'phone' => $values['phone'],
+            'first_name' => (string) $values['first_name'],
+            'last_name' => (string) $values['last_name'],
+            'email' => (string) $values['email'],
+            'phone' => (string) $values['phone'],
         ];
+    }
+
+    /**
+     * Hlavní kontakt z formuláře klienta. Vybraná osoba (`contact_id`) se
+     * přepíše tím, co je v polích — změna se projeví u všech jejích klientů
+     * (formulář na to upozorní). Bez výběru se založí nová osoba, nebo
+     * připojí stávající se stejným jménem a e-mailem.
+     *
+     * @param array<string, mixed> $values
+     * @return int id osoby
+     */
+    private function savePrimary(int $clientId, array $values): int
+    {
+        $contacts = $this->kernel->contacts();
+        $person = self::personColumns($values);
+        $contactId = (int) $values['contact_id'];
+
+        if ($contactId > 0 && $contacts->find($contactId) !== null) {
+            $contacts->update($contactId, $person);
+        } else {
+            $contactId = $contacts->findOrCreate($person);
+        }
+
+        $contacts->setPrimary($clientId, $contactId, (string) $values['role']);
+
+        return $contactId;
     }
 
     /**
@@ -371,8 +430,12 @@ final class ClientController extends Controller
             ['label' => 'Přiřazený projekt', 'done' => $values['projects'] !== [] || ($client !== null && $this->kernel->projects()->forClient((int) $client['id']) !== [])],
         ];
 
+        $pick = ContactController::pickData($this->kernel);
+
         return $this->view('clients/form', [
             'title' => $client === null ? 'Přidání nového klienta' : 'Úprava klienta',
+            'pickOptions' => $pick['options'],
+            'pickJson' => $pick['json'],
             'client' => $client,
             'values' => $values,
             'errors' => $errors,

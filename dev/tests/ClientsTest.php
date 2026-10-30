@@ -9,31 +9,37 @@ declare(strict_types=1);
 
 use App\Core\Clients\Ares;
 use App\Core\Clients\ClientRepository;
+use App\Core\Clients\ContactRepository;
 use App\Core\Security\Secrets;
 use App\Core\Sites\SiteRepository;
 
 return [
-    'hlavní kontakt se promítne do řádku klienta a jde přepsat' => function (): void {
+    'hlavní kontakt: jeden na klienta, seznam ho ukazuje a nejde odebrat' => function (): void {
         $db = freshTestDb();
         $clients = new ClientRepository($db);
+        $contacts = new ContactRepository($db);
         $id = $clients->create(['name' => 'Kavárna Dobrá s.r.o.', 'company_id' => '12345678']);
 
-        $clients->savePrimaryContact($id, ['first_name' => 'Markéta', 'last_name' => 'Dobrá', 'role' => 'majitelka', 'email' => 'info@kavarnadobra.cz', 'phone' => '+420 731 442 108']);
-        assertSame('info@kavarnadobra.cz', $clients->find($id)['email']);
-        assertSame(1, count($clients->contacts($id)));
+        $marketa = $contacts->create(['first_name' => 'Markéta', 'last_name' => 'Dobrá', 'email' => 'info@kavarnadobra.cz', 'phone' => '+420 731 442 108']);
+        $contacts->setPrimary($id, $marketa, 'majitelka');
+        assertSame('info@kavarnadobra.cz', $clients->all()[0]['contact_email']);
+        assertSame('majitelka', $clients->all()[0]['contact_role']);
+        assertSame(1, count($contacts->forClient($id)));
 
-        $clients->savePrimaryContact($id, ['first_name' => 'Markéta', 'last_name' => 'Dobrá', 'role' => 'majitelka', 'email' => 'marketa@kavarnadobra.cz', 'phone' => '']);
-        assertSame('marketa@kavarnadobra.cz', $clients->find($id)['email']);
-        assertSame(1, count($clients->contacts($id)), 'Přepis nesmí založit druhý hlavní kontakt');
+        $contacts->setPrimary($id, $marketa, 'jednatelka');
+        assertSame(1, count($contacts->forClient($id)), 'Opakované nastavení nesmí založit druhou vazbu');
+        assertSame('jednatelka', $contacts->primaryFor($id)['role']);
 
-        $contactId = $clients->addContact($id, ['first_name' => 'Jan', 'last_name' => 'Účetní', 'role' => 'účetní', 'email' => 'ucto@kavarnadobra.cz', 'phone' => '']);
-        assertSame(2, count($clients->contacts($id)));
-        assertSame('Markéta', $clients->contacts($id)[0]['first_name'], 'Hlavní kontakt je první');
+        $jan = $contacts->create(['first_name' => 'Jan', 'last_name' => 'Účetní', 'email' => 'ucto@kavarnadobra.cz', 'phone' => '']);
+        $contacts->link($id, $jan, 'účetní');
+        assertSame(2, count($contacts->forClient($id)));
+        assertSame('Markéta', $contacts->forClient($id)[0]['first_name'], 'Hlavní kontakt je první');
 
-        $clients->removeContact($id, $contactId);
-        assertSame(1, count($clients->contacts($id)));
-        $clients->removeContact($id, (int) $clients->contacts($id)[0]['id']);
-        assertSame(1, count($clients->contacts($id)), 'Hlavní kontakt se nemaže');
+        assertTrue($contacts->unlink($id, $jan));
+        assertSame(1, count($contacts->forClient($id)));
+        assertTrue($contacts->find($jan) !== null, 'Odebraná osoba v kontaktech zůstává');
+        assertFalse($contacts->unlink($id, $marketa), 'Hlavní kontakt se neodebírá');
+        assertSame(1, count($contacts->forClient($id)));
     },
 
     'seznam počítá weby, filtruje víc webů a archivace weby odpojí' => function (): void {

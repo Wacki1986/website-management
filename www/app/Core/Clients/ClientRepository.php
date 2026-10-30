@@ -7,12 +7,13 @@ namespace App\Core\Clients;
 use App\Core\Db\Connection;
 
 /**
- * Klienti (firmy) a jejich kontaktní osoby.
+ * Klienti (firmy).
  *
  * Klient je jen kontakt: frekvence reportů, servis i prahy alertů se
- * nastavují u konkrétního webu (návrh `novy-klient.html`). Hlavní kontakt
- * se drží i v řádku klienta (`email`, `phone`), aby seznam nepotřeboval
- * join na každý řádek.
+ * nastavují u konkrétního webu (návrh `novy-klient.html`). Kontaktní osoby
+ * jsou sdílené mezi klienty a žijí v `ContactRepository`; sloupce
+ * `clients.email`/`phone` jsou pozůstatek staré kopie hlavního kontaktu
+ * a nečtou se.
  */
 final class ClientRepository
 {
@@ -38,7 +39,10 @@ final class ClientRepository
         $params = [];
 
         if (($filter['q'] ?? '') !== '') {
-            $conditions[] = '(c.name LIKE :q1 OR c.email LIKE :q2 OR p.first_name LIKE :q3 OR p.last_name LIKE :q4)';
+            // Hledá se ve všech osobách klienta, nejen v hlavní.
+            $conditions[] = '(c.name LIKE :q1 OR EXISTS (
+                SELECT 1 FROM contact_links l2 JOIN contacts p2 ON p2.id = l2.contact_id
+                WHERE l2.client_id = c.id AND (p2.email LIKE :q2 OR p2.first_name LIKE :q3 OR p2.last_name LIKE :q4)))';
             $params['q1'] = $params['q2'] = $params['q3'] = $params['q4'] = '%' . $filter['q'] . '%';
         }
 
@@ -50,10 +54,11 @@ final class ClientRepository
         };
 
         return $this->db->select(
-            "SELECT c.*, p.first_name, p.last_name, p.role AS contact_role,
+            "SELECT c.*, p.first_name, p.last_name, p.email AS contact_email, p.phone AS contact_phone, l.role AS contact_role,
                     (SELECT COUNT(*) FROM sites s WHERE s.client_id = c.id AND s.removed_at IS NULL) AS site_count
              FROM clients c
-             LEFT JOIN client_contacts p ON p.client_id = c.id AND p.is_primary = 1
+             LEFT JOIN contact_links l ON l.client_id = c.id AND l.is_primary = 1
+             LEFT JOIN contacts p ON p.id = l.contact_id
              WHERE " . implode(' AND ', $conditions) . '
              GROUP BY c.id' . $having . '
              ORDER BY c.name',
@@ -98,72 +103,5 @@ final class ClientRepository
         $this->db->execute('UPDATE projects SET client_id = NULL WHERE client_id = :id', ['id' => $id]);
         $this->db->execute('UPDATE sites SET client_id = NULL WHERE client_id = :id', ['id' => $id]);
         $this->update($id, ['archived_at' => date('Y-m-d H:i:s')]);
-    }
-
-    // -----------------------------------------------------------------
-    // Kontakty
-    // -----------------------------------------------------------------
-
-    /** @return array<int, array<string, mixed>> hlavní kontakt první */
-    public function contacts(int $clientId): array
-    {
-        return $this->db->select(
-            'SELECT * FROM client_contacts WHERE client_id = :client_id ORDER BY is_primary DESC, last_name, first_name',
-            ['client_id' => $clientId],
-        );
-    }
-
-    /** @return array<string, mixed>|null */
-    public function primaryContact(int $clientId): ?array
-    {
-        return $this->db->selectOne(
-            'SELECT * FROM client_contacts WHERE client_id = :client_id ORDER BY is_primary DESC, id LIMIT 1',
-            ['client_id' => $clientId],
-        );
-    }
-
-    /**
-     * Uložení hlavního kontaktu — vytvoří, nebo přepíše ten stávající —
-     * a promítne e-mail s telefonem do řádku klienta.
-     *
-     * @param array{first_name: string, last_name: string, role: string, email: string, phone: string} $contact
-     */
-    public function savePrimaryContact(int $clientId, array $contact): void
-    {
-        $existing = $this->db->selectOne(
-            'SELECT id FROM client_contacts WHERE client_id = :client_id AND is_primary = 1',
-            ['client_id' => $clientId],
-        );
-
-        if ($existing !== null) {
-            $this->db->update('client_contacts', $contact, ['id' => (int) $existing['id']]);
-        } else {
-            $this->db->insert('client_contacts', $contact + [
-                'client_id' => $clientId,
-                'is_primary' => 1,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-        }
-
-        $this->update($clientId, ['email' => $contact['email'], 'phone' => $contact['phone']]);
-    }
-
-    /** @param array<string, mixed> $contact */
-    public function addContact(int $clientId, array $contact): int
-    {
-        return $this->db->insert('client_contacts', $contact + [
-            'client_id' => $clientId,
-            'is_primary' => 0,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-    }
-
-    public function removeContact(int $clientId, int $contactId): void
-    {
-        // Hlavní kontakt se nemaže — bez něj by klient neměl komu psát.
-        $this->db->execute(
-            'DELETE FROM client_contacts WHERE id = :id AND client_id = :client_id AND is_primary = 0',
-            ['id' => $contactId, 'client_id' => $clientId],
-        );
     }
 }

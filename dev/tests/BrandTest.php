@@ -336,7 +336,7 @@ return [
         $siteId = $kernel->sites()->create(['name' => 'Kavárna', 'url' => 'https://kavarnadobra.cz', 'api_key' => 'x', 'api_status' => 'no_plugin', 'api_failures' => 3]);
 
         $pages = [
-            '/', '/weby', '/weby/pridat', '/knihovna', '/projekty', '/klienti', '/alerty', '/reporty',
+            '/', '/weby', '/weby/pridat', '/knihovna', '/projekty', '/klienti', '/klienti/kontakty', '/klienti/kontakty/pridat', '/alerty', '/reporty',
             '/weby/' . $siteId, '/weby/' . $siteId . '/pluginy', '/weby/' . $siteId . '/obsah', '/weby/' . $siteId . '/zabezpeceni',
             '/weby/' . $siteId . '/servis', '/weby/' . $siteId . '/reporty', '/weby/' . $siteId . '/nastaveni', '/weby/' . $siteId . '/reporty/nahled',
             '/nastaveni/monitoring', '/nastaveni/alerty', '/nastaveni/moduly', '/nastaveni/servis', '/nastaveni/reporty',

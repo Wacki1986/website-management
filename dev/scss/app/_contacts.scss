@@ -1,0 +1,65 @@
+// app/_contacts.scss — kontaktní osoby sdílené mezi klienty (záložka
+// Klienti → Kontaktní osoby, stránka osoby, Další kontakty v detailu
+// klienta). Návrh tyhle obrazovky nemá; skládají se z tabulek a karet
+// design systému jako Klienti.
+
+// Seznam osob: osoba, klienti (pod sebou s rolí), telefon, e-mail, akce.
+.table--contacts { --table-columns: minmax(0, 1.2fr) minmax(0, 1.5fr) 150px minmax(0, 1.3fr) 92px; }
+
+@media (min-width: 769px) {
+  .table--contacts { min-width: 900px; }
+}
+
+.contact-clients {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: var(--font-size-label);
+}
+
+// Další kontakty v detailu klienta: stejné sloupce, akce ikonami vpravo.
+.table--client-contacts { --table-columns: minmax(0, 1.4fr) minmax(0, 1fr) 150px minmax(0, 1.2fr) 92px; }
+
+// Na telefonu: nahoře osoba a akce vedle sebe, pod nimi klienti (role),
+// telefon a e-mail přes celou šířku — kvůli nim se tam člověk dívá.
+@media (max-width: 768px) {
+  .table--contacts,
+  .table--client-contacts {
+    --table-columns: minmax(0, 1fr) auto;
+
+    .table__row > .table__cell { grid-column: 1 / -1; order: 2; }
+    .table__row > .table__cell:first-child { grid-column: 1; order: 0; }
+    .table__row > .table__cell:last-child { grid-column: 2; order: 1; }
+  }
+}
+
+// Klienti na stránce osoby: klient, role (pole), hlavní / další.
+.table--contact-clients { --table-columns: minmax(0, 1.3fr) minmax(0, 1fr) 110px; }
+
+@media (max-width: 768px) {
+  .table--contact-clients { --table-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+// Upozornění, že vybraná osoba je i u jiných klientů — úprava jejích údajů
+// se projeví i tam. Výrazné, ale ne poplašné: nic se nerozbije.
+.contact-shared {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--border-radius-medium);
+  background: var(--color-status-warning-soft);
+  color: var(--color-status-warning-text);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-relaxed);
+}
+
+// Řádek pod údaji klienta: u koho dalšího hlavní osoba je + odkaz na ni.
+.contact-shared--plain {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  color: var(--color-text-secondary);
+
+  .icon { margin-top: 2px; flex-shrink: 0; }
+}

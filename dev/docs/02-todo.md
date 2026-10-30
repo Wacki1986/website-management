@@ -3,6 +3,14 @@
 Věci, které se dělat budou, ale teď ne. Nahoře to, co je nejblíž.
 Hotové položky se odsud mažou (záznam zůstává v CHANGELOGu).
 
+## Kontaktní osoby — dočištění
+
+Kontakty jsou sdílené mezi klienty (`contacts` + `contact_links`, CHANGELOG
+„Kontaktní osoby sdílené mezi klienty"). Až se převod na produkci osvědčí,
+samostatnou migrací smazat starou tabulku `client_contacts` a sloupce
+`clients.email` / `clients.phone` (kopie hlavního kontaktu, aplikace je
+už nečte).
+
 ## Projekty — dočištění po 0.9.0
 
 Projekty jsou hotové (CHANGELOG 0.9.0). Po nasazení a pár týdnech

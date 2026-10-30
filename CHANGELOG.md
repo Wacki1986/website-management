@@ -2,6 +2,17 @@
 
 ## Připravuje se
 
+- **Kontaktní osoby sdílené mezi klienty.** Osoba je v aplikaci jen
+  jednou a ke klientům se připojuje — kdo jedná za dvě firmy, nemá dva
+  záznamy a nový telefon nebo e-mail stačí přepsat na jednom místě.
+  Role (jednatel, účetní…) zůstává u každé firmy zvlášť. Nová záložka
+  **Klienti → Kontaktní osoby** (seznam s hledáním i podle firmy, stránka
+  osoby s rolemi u jejích klientů, přidání a smazání osoby). Ve formuláři
+  klienta i v Dalších kontaktech jde vybrat osobu z kontaktů; formulář
+  upozorní, u koho dalšího osoba je. Odebrání od klienta osobu jen odpojí,
+  hlavní kontakt klienta nejde smazat. Migrace převede stávající kontakty
+  a osoby se stejným jménem i e-mailem sloučí (`contacts`, `contact_links`;
+  stará `client_contacts` zůstává jako záloha).
 - **Barva aplikace.** V Nastavení → Základní nastavení jde zvolit barvu
   tlačítek, záložek, aktivní položky menu a odkazů: modrá (výchozí),
   zelená, tyrkysová, fialová, růžová nebo žlutá — každá i pro tmavý motiv.

@@ -4,8 +4,12 @@
  *
  * @var \App\Core\View\View $this
  * @var array               $client
- * @var array|null          $primary   hlavní kontakt
- * @var array<int, array>   $contacts  další kontakty
+ * @var array|null          $primary   hlavní kontaktní osoba (s `role`)
+ * @var string              $primaryUrl stránka hlavní osoby ('' = klient ji nemá)
+ * @var array<int, array{name: string, url: string}> $primaryOthers další klienti hlavní osoby
+ * @var array<int, array>   $contacts  další kontakty s `name`, `url`, `role`, `othersLabel` („také u …")
+ * @var array<int, string>  $pickOptions osoby z kontaktů, které u klienta ještě nejsou
+ * @var string              $pickJson  údaje osob pro `contact-pick.js`
  * @var array<int, array<string, mixed>> $projects projekty klienta se `state` a `siteCountLabel`
  * @var array<int, array<string, mixed>> $sites  weby se `state`, `host`, `service` a `report`
  * @var string              $lastReport
@@ -42,8 +46,8 @@ $field = function (string $label, string $value, bool $optional = false, string 
             </div>
         </div>
         <div class="page-header__actions">
-            <?php if ((string) $client['email'] !== ''): ?>
-                <a class="btn btn--secondary" href="mailto:<?= $this->e((string) $client['email']) ?>"><?= get_btn_icon('mail') ?>Napsat e-mail</a>
+            <?php if ((string) ($primary['email'] ?? '') !== ''): ?>
+                <a class="btn btn--secondary" href="mailto:<?= $this->e((string) $primary['email']) ?>"><?= get_btn_icon('mail') ?>Napsat e-mail</a>
             <?php endif; ?>
             <a class="btn btn--primary" href="<?= get_url('klienti/' . (int) $client['id'] . '/upravit') ?>">Upravit údaje</a>
         </div>
@@ -71,6 +75,20 @@ $field = function (string $label, string $value, bool $optional = false, string 
                         <?php $field('Adresa', (string) $client['address'], false, '2'); ?>
                         <?php $field('Fakturace', (string) $client['billing_note'], true, '2'); ?>
                     </div>
+                    <?php if ($primaryUrl !== ''): ?>
+                        <div class="contact-shared contact-shared--plain">
+                            <?= get_icon('users', 'icon--sm icon--subtle') ?>
+                            <span>
+                                <?php if ($primaryOthers !== []): ?>
+                                    Kontaktní osoba je i u:
+                                    <?php foreach ($primaryOthers as $i => $other): ?><?= $i > 0 ? ', ' : '' ?><a href="<?= $other['url'] ?>"><?= $this->e($other['name']) ?></a><?php endforeach; ?>
+                                <?php else: ?>
+                                    Kontaktní osoba je jen u tohoto klienta
+                                <?php endif; ?>
+                                · <a href="<?= $primaryUrl ?>">Upravit osobu</a>
+                            </span>
+                        </div>
+                    <?php endif; ?>
                     <div class="form__field">
                         <span class="form__label form__label--caps">Interní poznámka<span class="form__label-optional"> · nevidí ji klient</span></span>
                         <div class="text-secondary" style="padding:6px 0"><?= (string) $client['note'] !== '' ? get_rich_text((string) $client['note']) : '—' ?></div>
@@ -81,18 +99,25 @@ $field = function (string $label, string $value, bool $optional = false, string 
             <section class="card">
                     <?php render_card_head('Další kontakty', 'Komu ještě volat a psát') ?>
                     <?php if ($contacts !== []): ?>
-                        <div class="table" style="--table-columns:minmax(0,1.4fr) minmax(0,1fr) 150px minmax(0,1.2fr) 40px">
+                        <div class="table table--client-contacts">
+                            <div class="table__head"><div>Osoba</div><div>Role</div><div>Telefon</div><div>E-mail</div><div class="table__cell--right">Akce</div></div>
                             <?php foreach ($contacts as $contact): ?>
                                 <div class="table__row">
-                                    <div class="table__cell table__primary u-truncate"><?= $this->e(trim($contact['first_name'] . ' ' . $contact['last_name'])) ?></div>
+                                    <div class="table__cell" style="min-width:0">
+                                        <div class="table__primary u-truncate"><?= $this->e($contact['name']) ?></div>
+                                        <?php if ($contact['othersLabel'] !== ''): ?><div class="table__secondary u-truncate" style="margin-top:0"><?= $this->e($contact['othersLabel']) ?></div><?php endif; ?>
+                                    </div>
                                     <div class="table__cell text-subtle u-truncate"><?= $this->e((string) $contact['role']) ?></div>
                                     <div class="table__cell table__cell--mono u-truncate"><?= $this->e((string) $contact['phone']) ?></div>
                                     <div class="table__cell text-secondary u-truncate" style="font-size:var(--font-size-label)"><?= $this->e((string) $contact['email']) ?></div>
                                     <div class="table__cell table__cell--right">
-                                        <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/kontakt/' . (int) $contact['id'] . '/smazat') ?>">
-                                            <?php render_csrf($csrfToken) ?>
-                                            <button type="submit" class="btn--menu" title="Odebrat kontakt"><?= get_icon('trash', 'icon--sm icon--subtle') ?></button>
-                                        </form>
+                                        <div class="row-actions">
+                                            <a class="btn btn--ghost btn--icon" href="<?= $contact['url'] ?>" title="Upravit osobu" aria-label="Upravit <?= $this->e($contact['name']) ?>"><?= get_icon('edit', 'icon--sm') ?></a>
+                                            <form class="row-actions__form" method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/kontakt/' . (int) $contact['id'] . '/smazat') ?>">
+                                                <?php render_csrf($csrfToken) ?>
+                                                <button type="submit" class="btn btn--ghost btn--icon" title="Odebrat od klienta (v kontaktech zůstane)" aria-label="Odebrat <?= $this->e($contact['name']) ?> od klienta"><?= get_icon('close', 'icon--sm') ?></button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -101,12 +126,19 @@ $field = function (string $label, string $value, bool $optional = false, string 
                     <form method="post" action="<?= get_url('klienti/' . (int) $client['id'] . '/kontakt') ?>" class="card__body form contact-add">
                         <?php render_csrf($csrfToken) ?>
                         <span class="caps">Přidat kontakt</span>
+                        <?php if ($pickOptions !== []): ?>
+                            <div class="form__row">
+                                <?= $contactForm->select('contact_id', 'Osoba z kontaktů', $pickOptions, '', 'Nová osoba — vyplňte údaje níže', class: 'form__field--caps', span: 12,
+                                    attributes: ['data-contact-pick' => 'link', 'data-contacts' => $pickJson, 'data-contact-client' => (string) (int) $client['id']]) ?>
+                            </div>
+                            <p class="contact-shared" data-contact-shared hidden></p>
+                        <?php endif; ?>
                         <div class="form__row">
-                            <?= $contactForm->text('first_name', 'Jméno', class: 'form__field--caps', attributes: ['placeholder' => 'Markéta']) ?>
-                            <?= $contactForm->text('last_name', 'Příjmení', class: 'form__field--caps', attributes: ['placeholder' => 'Dobrá']) ?>
+                            <?= $contactForm->text('first_name', 'Jméno', class: 'form__field--caps contact-person-field', attributes: ['placeholder' => 'Markéta']) ?>
+                            <?= $contactForm->text('last_name', 'Příjmení', class: 'form__field--caps contact-person-field', attributes: ['placeholder' => 'Dobrá']) ?>
                             <?= $contactForm->text('role', 'Role', class: 'form__field--caps', attributes: ['placeholder' => 'účetní, správce IT…'], keyLabel: '· nepovinné') ?>
-                            <?= $contactForm->text('phone', 'Telefon', type: 'tel', class: 'form__field--caps', attributes: ['placeholder' => '+420 …', 'class' => 'form__control--mono'], measure: 'none') ?>
-                            <?= $contactForm->text('email', 'E-mail', type: 'email', class: 'form__field--caps', attributes: ['placeholder' => 'jmeno@firma.cz'], measure: 'none') ?>
+                            <?= $contactForm->text('phone', 'Telefon', type: 'tel', class: 'form__field--caps contact-person-field', attributes: ['placeholder' => '+420 …', 'class' => 'form__control--mono'], measure: 'none') ?>
+                            <?= $contactForm->text('email', 'E-mail', type: 'email', class: 'form__field--caps contact-person-field', attributes: ['placeholder' => 'jmeno@firma.cz'], measure: 'none') ?>
                             <div class="form__field contact-add__submit">
                                 <button type="submit" class="btn btn--secondary"><?= get_btn_icon('plus') ?>Přidat kontakt</button>
                             </div>

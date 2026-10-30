@@ -40,6 +40,7 @@ const modules = [
     ['./modules/file-upload.js', 'initFileUpload'],
     ['./modules/unlock-field.js', 'initUnlockField'],
     ['./modules/accent-preview.js', 'initAccentPreview'],
+    ['./modules/contact-pick.js', 'initContactPick'],
 ];
 
 const loaded = await Promise.allSettled(modules.map(([path]) => import(path)));

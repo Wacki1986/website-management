@@ -11,13 +11,14 @@
  * @var string              $filter   '' | multi | person
  * @var array{all: int, multi: int, person: int} $counts
  * @var string              $meta
+ * @var string              $tabsHtml  záložky Firmy / Kontaktní osoby
  */
 $this->extend('layout/shell', ['title' => $title]);
 
 $filterUrl = static fn (string $key): string => get_url('klienti') . '?' . http_build_query(array_filter(['q' => $q, 'filtr' => $key]));
 ?>
 <?php render_page_head('Klienti', $this->e($meta),
-    '<a class="btn btn--primary" href="' . get_url('klienti/pridat') . '">' . get_btn_icon('plus') . 'Přidat klienta</a>') ?>
+    '<a class="btn btn--primary" href="' . get_url('klienti/pridat') . '">' . get_btn_icon('plus') . 'Přidat klienta</a>', $tabsHtml) ?>
 
 <div class="app__content">
     <section class="card card--scroll-x">
@@ -54,8 +55,8 @@ $filterUrl = static fn (string $key): string => get_url('klienti') . '?' . http_
                             <div class="u-truncate text-secondary"><?= $this->e($client['contactName'] !== '' ? $client['contactName'] : '—') ?></div>
                             <?php if ((string) ($client['contact_role'] ?? '') !== ''): ?><div class="table__secondary u-truncate"><?= $this->e((string) $client['contact_role']) ?></div><?php endif; ?>
                         </div>
-                        <div class="table__cell table__cell--mono u-truncate"><?= $this->e((string) $client['phone'] !== '' ? (string) $client['phone'] : '—') ?></div>
-                        <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)"><?= $this->e((string) $client['email'] !== '' ? (string) $client['email'] : '—') ?></div>
+                        <div class="table__cell table__cell--mono u-truncate"><?= $this->e((string) $client['contact_phone'] !== '' ? (string) $client['contact_phone'] : '—') ?></div>
+                        <div class="table__cell u-truncate text-secondary" style="font-size:var(--font-size-label)"><?= $this->e((string) $client['contact_email'] !== '' ? (string) $client['contact_email'] : '—') ?></div>
                         <div class="table__cell table__cell--right text-secondary" style="font-size:var(--font-size-label)"><?= $this->e($client['siteCountLabel']) ?></div>
                         <div class="table__cell table__cell--right"><?= get_icon('chevron-right', 'icon--sm icon--subtle') ?></div>
                     </a>

@@ -15,6 +15,8 @@
  * @var array<int, array{label: string, done: bool}> $tasks
  * @var string               $previewName
  * @var string               $previewContact
+ * @var array<int, string>   $pickOptions osoby z kontaktů do výběru (id => „Příjmení Jméno · e-mail")
+ * @var string               $pickJson    údaje osob pro `contact-pick.js`
  * @var string               $csrfToken
  */
 $this->extend('layout/shell', ['title' => $title]);
@@ -76,6 +78,14 @@ $back = $client === null ? get_url('klienti') : get_url('klienti/' . (int) $clie
                         <div class="card__title">Kontaktní osoba</div>
                         <div class="card__note">Komu voláme a píšeme. Reporty se nastavují až u jednotlivých webů.</div>
                     </div>
+                    <?php if ($pickOptions !== []): ?>
+                        <div class="form__row">
+                            <?= $form->select('contact_id', 'Osoba z kontaktů', $pickOptions, (string) $values['contact_id'], 'Nová osoba — vyplňte údaje níže', class: 'form__field--caps', span: 12,
+                                attributes: ['data-contact-pick' => 'edit', 'data-contacts' => $pickJson, 'data-contact-client' => $client !== null ? (string) (int) $client['id'] : ''],
+                                hint: 'Jedná osoba i za jinou firmu? Vyberte ji — nebude zapsaná dvakrát.') ?>
+                        </div>
+                        <p class="contact-shared" data-contact-shared hidden></p>
+                    <?php endif; ?>
                     <div class="form__row">
                         <?= $form->text('first_name', 'Jméno', (string) $values['first_name'], class: 'form__field--caps', attributes: ['placeholder' => 'Markéta']) ?>
                         <?= $form->text('last_name', 'Příjmení', (string) $values['last_name'], class: 'form__field--caps', attributes: ['placeholder' => 'Dobrá']) ?>
