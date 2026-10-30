@@ -39,6 +39,7 @@ const modules = [
     ['./modules/live-search.js', 'initLiveSearch'],
     ['./modules/file-upload.js', 'initFileUpload'],
     ['./modules/unlock-field.js', 'initUnlockField'],
+    ['./modules/accent-preview.js', 'initAccentPreview'],
 ];
 
 const loaded = await Promise.allSettled(modules.map(([path]) => import(path)));

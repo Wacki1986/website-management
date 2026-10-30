@@ -980,6 +980,8 @@ final class Kernel
         // i do vět pro jiné pomocníky, ti si escapují sami (helpers/brand.php).
         $view->share('studioName', $this->brand()->name());
         $view->share('pluginName', $this->brand()->pluginName());
+        // Barva aplikace instance (Základní nastavení) — `<html data-accent>`.
+        $view->share('accent', $this->brand()->accent());
         $view->share('currentUser', $this->auth()->current());
         $view->share('csrfToken', session_status() === PHP_SESSION_ACTIVE ? $this->csrf()->token() : '');
         $view->share('flashes', $this->takeFlashes());
@@ -1374,6 +1376,7 @@ final class Kernel
         $router->add('GET', '/nastaveni/zakladni', [SettingsController::class, 'general'], name: 'settings.general.show');
         $router->add('POST', '/nastaveni/zakladni', [SettingsController::class, 'saveGeneral'], Router::AUTH_ONLY, 'settings.general');
         $router->add('POST', '/nastaveni/zakladni/plugin', [SettingsController::class, 'savePlugin'], Router::AUTH_ONLY, 'settings.general.plugin');
+        $router->add('POST', '/nastaveni/zakladni/barva', [SettingsController::class, 'saveAccent'], Router::AUTH_ONLY, 'settings.general.accent');
         $router->add('POST', '/nastaveni/zakladni/soubor/{slot}', [SettingsController::class, 'uploadBrandFile'], Router::AUTH_ONLY, 'settings.general.upload');
         $router->add('POST', '/nastaveni/zakladni/soubor/{slot}/smazat', [SettingsController::class, 'removeBrandFile'], Router::AUTH_ONLY, 'settings.general.remove');
 

@@ -1,0 +1,75 @@
+// app/_accents.scss — barva aplikace (Nastavení → Základní nastavení).
+//
+// Každá instance si může zvolit vlastní barvu, ať jde na první pohled
+// poznat, ve které správě člověk je. Barva se volí atributem
+// `<html data-accent="…">` (Kernel ho vypisuje do obou layoutů) a mění jen
+// tokeny značky z `abstracts/_tokens.scss`: tlačítka, aktivní položku menu,
+// záložky, odkazy, zaškrtávátka a rámeček fokusu. Stavové barvy (ok,
+// varování, chyba) zůstávají — stav se nikdy nesděluje barvou značky.
+//
+// Modrá je výchozí design a žádný přepis nemá. Pro tmavý motiv jsou
+// vlastní hodnoty: selektor `[data-theme="dark"][data-accent]` má vyšší
+// váhu než světlá varianta, takže v tmavém motivu vyhraje vždy on.
+// Seznam barev musí sedět s `Brand::ACCENTS`.
+
+@use "sass:map";
+
+// brand = text a ikony v barvě značky (záložky, odkazy), solid = plná
+// plocha (aktivní menu), from/to = přechod na tlačítku, text = písmo na
+// barevné ploše. Žlutá má tmavé písmo — bílé by na ní nebylo čitelné.
+$accents: (
+  "green": (
+    light: (brand: #15803d, hover: #166534, solid: #15803d, from: #22a052, to: #15803d, text: #ffffff),
+    dark: (brand: #4ade80, hover: #22c55e, solid: #16a34a, from: #1fa855, to: #15803d, text: #ffffff),
+  ),
+  "teal": (
+    light: (brand: #0e7490, hover: #155e75, solid: #0e7490, from: #1a8fae, to: #0e7490, text: #ffffff),
+    dark: (brand: #22d3ee, hover: #06b6d4, solid: #0891b2, from: #0aa2c4, to: #0e7490, text: #ffffff),
+  ),
+  "purple": (
+    light: (brand: #7c3aed, hover: #6d28d9, solid: #7c3aed, from: #8b5cf6, to: #7c3aed, text: #ffffff),
+    dark: (brand: #a78bfa, hover: #8b5cf6, solid: #7c3aed, from: #8b5cf6, to: #6d28d9, text: #ffffff),
+  ),
+  "pink": (
+    light: (brand: #db2777, hover: #be185d, solid: #db2777, from: #ec4899, to: #db2777, text: #ffffff),
+    dark: (brand: #f472b6, hover: #ec4899, solid: #db2777, from: #e5458f, to: #be185d, text: #ffffff),
+  ),
+  "yellow": (
+    light: (brand: #a16207, hover: #854d0e, solid: #eab308, from: #facc15, to: #eab308, text: #1c1917),
+    dark: (brand: #facc15, hover: #eab308, solid: #eab308, from: #facc15, to: #ca8a04, text: #1c1917),
+  ),
+);
+
+@mixin accent-tokens($t, $soft, $border) {
+  --color-brand: #{map.get($t, brand)};
+  --color-brand-hover: #{map.get($t, hover)};
+  --color-brand-solid: #{map.get($t, solid)};
+  --color-brand-soft: #{rgba(map.get($t, brand), $soft)};
+  --color-brand-border: #{rgba(map.get($t, brand), $border)};
+  --color-brand-contrast: #{map.get($t, text)};
+  --color-on-brand-text: #{map.get($t, text)};
+  --gradient-brand-button: linear-gradient(145deg, #{map.get($t, from)}, #{map.get($t, to)});
+}
+
+@each $name, $modes in $accents {
+  [data-accent="#{$name}"] {
+    @include accent-tokens(map.get($modes, light), 0.1, 0.22);
+    --shadow-brand-button: 0 8px 20px #{rgba(map.get($modes, light, solid), 0.32)};
+    --shadow-brand-soft: 0 6px 18px #{rgba(map.get($modes, light, solid), 0.28)};
+  }
+
+  // Stín tlačítek v tmavém motivu je neutrální (tokeny) — nepřepisuje se.
+  [data-theme="dark"][data-accent="#{$name}"] {
+    @include accent-tokens(map.get($modes, dark), 0.16, 0.32);
+  }
+}
+
+// Volba barvy v Základním nastavení: kolečko s barvou vedle názvu.
+.accent-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}

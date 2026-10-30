@@ -139,6 +139,34 @@ return [
         Urls::reset();
     },
 
+    'barva aplikace: uloží se do databáze a propíše do <html data-accent>' => function (): void {
+        [$kernel, $token] = loggedInKernel();
+
+        assertSame('blue', $kernel->brand()->accent());
+        assertContainsString('data-accent="blue"', kernelRequest($kernel, 'GET', '/')->body());
+
+        kernelRequest($kernel, 'POST', '/nastaveni/zakladni/barva', ['_token' => $token, 'accent' => 'green']);
+        assertSame('green', $kernel->brand()->accent());
+        assertContainsString('data-accent="green"', kernelRequest($kernel, 'GET', '/')->body());
+        assertContainsString('value="green" checked', kernelRequest($kernel, 'GET', '/nastaveni/zakladni')->body());
+
+        // Neznámá barva se neuloží — do atributu by šlo cokoli.
+        kernelRequest($kernel, 'POST', '/nastaveni/zakladni/barva', ['_token' => $token, 'accent' => '"><script>']);
+        assertSame('green', $kernel->brand()->accent());
+
+        // Každá barva z nabídky má styly (app/_accents.scss); modrá je výchozí design.
+        $css = (string) file_get_contents(PROJECT_ROOT . '/dev/scss/app/_accents.scss');
+
+        foreach (array_keys(Brand::ACCENTS) as $code) {
+            if ($code !== Brand::DEFAULT_ACCENT) {
+                assertContainsString('"' . $code . '": (', $css, 'barva ' . $code . ' nemá styly');
+            }
+        }
+
+        Brand::bind(null);
+        Urls::reset();
+    },
+
     'loga: výchozí přes assets, nahrané přes /znacka/ s otiskem; SVG se sandboxem' => function (): void {
         [$kernel] = loggedInKernel();
         $assets = $kernel->brand()->assets();
@@ -293,6 +321,13 @@ return [
 
         $own = new PluginDistribution($dir, 'https://a.test', new Brand(null, ['slug' => 'moje-sprava'], $assets));
         assertSame(null, $own->zipPath('moje-sprava-1.9.1.zip'));
+
+        // Nová instance se zkopírovaným úložištěm MG: verzi nemá z čeho vydat,
+        // takže ji nenabízí (dřív ukázala odkaz ke stažení, který vrátil 404).
+        file_put_contents($dir . '/plugin-info.json', json_encode(['version' => '1.9.1']));
+        assertSame('1.9.1', $default->version());
+        assertSame(null, $own->info());
+        assertSame(null, $own->version());
     },
 
     'nikde MEDIAGRAFIK: hlavní stránky instance s jiným studiem' => function (): void {

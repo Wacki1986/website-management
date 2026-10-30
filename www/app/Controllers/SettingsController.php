@@ -486,6 +486,8 @@ final class SettingsController extends Controller
             'pluginNamespace' => $brand->pluginNamespace(),
             'slugLocked' => $connected > 0,
             'connectedLabel' => get_count($connected, 'napojený web', 'napojené weby', 'napojených webů'),
+            'accents' => Brand::ACCENTS,
+            'accentValue' => $brand->accent(),
             'logos' => $logos,
             'hasIcon' => $assets->hasIcon(),
             'iconMinSize' => BrandAssets::ICON_MIN_SIZE,
@@ -556,6 +558,24 @@ final class SettingsController extends Controller
         return $connected > 0
             ? $this->redirectWithFlash('nastaveni/zakladni', 'Složka pluginu je teď „' . $slug . '“. ' . get_count($connected, 'web se odpojil', 'weby se odpojily', 'webů se odpojilo') . ' — na každý je potřeba nahrát plugin znovu (ZIP v Nastavení webu) a vložit API klíč.', 'warning')
             : $this->redirectWithFlash('nastaveni/zakladni', 'Složka pluginu je teď „' . $slug . '“.');
+    }
+
+    /**
+     * Barva aplikace — tlačítka, záložky, aktivní menu. Ukládá se do
+     * databáze, takže ji kopírování souborů mezi instancemi nepřepíše.
+     */
+    public function saveAccent(): Response
+    {
+        $accent = $this->request()->string('accent');
+
+        if (!isset(Brand::ACCENTS[$accent])) {
+            return $this->redirectWithFlash('nastaveni/zakladni', 'Neznámá barva.', 'error');
+        }
+
+        $this->kernel->brand()->saveAccent($accent);
+        $this->kernel->audit()->record(null, '', AuditLog::ACTION_SETTINGS, true, 'Barva aplikace: ' . Brand::ACCENTS[$accent]['label']);
+
+        return $this->redirectWithFlash('nastaveni/zakladni', 'Barva aplikace je teď ' . mb_strtolower(Brand::ACCENTS[$accent]['label']) . '.');
     }
 
     /** Nahrání loga do slotu, nebo ikony (`icon`). */

@@ -383,6 +383,10 @@ na volné noze…). Všechno je v **Nastavení → Základní nastavení**:
   jméno odesílatele z Odchozí pošty), web (odkaz z pluginu a User-Agent
   požadavků na weby `SpravaWebu/1.0 (+web)`, podle kterého je v logu webu
   vidět, kdo se ptá), kontaktní e-mail a telefon do patičky reportů.
+- **Barva aplikace** — modrá (výchozí), zelená, tyrkysová, fialová, růžová
+  nebo žlutá: tlačítka, záložky, aktivní položka menu, odkazy. Ať je na první
+  pohled poznat, ve které správě člověk je. Je v databázi, kopírování souborů
+  mezi instancemi ji nepřepíše (styly `dev/scss/app/_accents.scss`).
 - **Plugin na webech** — název (prázdný = „{firma} Monitor“; weby ho
   dostanou s příští aktualizací pluginu, WordPress čte název z hlavičky
   souboru) a **složka pluginu**: složka ve WordPressu a začátek adresy

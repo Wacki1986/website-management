@@ -204,6 +204,10 @@ return [
             @mkdir($dir, 0775, true);
             $monitor = 'name="plugin" value="mediagrafik-monitor/mediagrafik-monitor.php"';
 
+            // Verze se nabízí, jen když je z čeho ji vydat (PluginDistribution::hasPackage).
+            file_put_contents($dir . '/mediagrafik-monitor-1.1.0.zip', 'zip');
+            file_put_contents($dir . '/mediagrafik-monitor-1.2.0.zip', 'zip');
+
             try {
                 // Správa rozdává stejnou verzi, jakou web má — nic k aktualizaci.
                 file_put_contents($dir . '/plugin-info.json', json_encode(['version' => '1.1.0']));
@@ -216,6 +220,8 @@ return [
                 assertContainsString('1.2.0', $html);
             } finally {
                 @unlink($dir . '/plugin-info.json');
+                @unlink($dir . '/mediagrafik-monitor-1.1.0.zip');
+                @unlink($dir . '/mediagrafik-monitor-1.2.0.zip');
             }
 
             Urls::reset();

@@ -18,6 +18,8 @@
  * @var string              $pluginNamespace   REST namespace pluginu
  * @var bool                $slugLocked        na složku už odpovídá aspoň jeden web
  * @var string              $connectedLabel    „3 napojené weby"
+ * @var array<string, array{label: string, swatch: string}> $accents  barvy aplikace (Brand::ACCENTS)
+ * @var string              $accentValue  zvolená barva
  * @var array<int, array{slot: string, label: string, hint: string, uploaded: bool, hasPreview: bool, dark: bool}> $logos
  * @var bool                $hasIcon      nahraná vlastní ikona
  * @var int                 $iconMinSize  nejmenší strana ikony v px
@@ -55,6 +57,27 @@ $form = $this->form();
                     </div>
 
                     <div class="row"><button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Uložit</button></div>
+                </form>
+            </section>
+
+            <section class="card card--padded">
+                <form method="post" action="<?= get_url('nastaveni/zakladni/barva') ?>" class="form" data-accent-picker>
+                    <?php render_csrf($csrfToken) ?>
+                    <div>
+                        <div class="card__title">Barva aplikace</div>
+                        <div class="card__note">Tlačítka, záložky a aktivní položka menu — ať je na první pohled poznat, ve které správě jste. Po kliknutí se barva hned ukáže, uloží se tlačítkem.</div>
+                    </div>
+
+                    <div class="choice">
+                        <?php foreach ($accents as $code => $option): ?>
+                            <label class="choice__item">
+                                <input type="radio" name="accent" value="<?= $this->e($code) ?>"<?= $code === $accentValue ? ' checked' : '' ?> class="visually-hidden">
+                                <span class="choice__title"><span class="accent-swatch" style="background:<?= $this->e($option['swatch']) ?>"></span><?= $this->e($option['label']) ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="row"><button type="submit" class="btn btn--primary"><?= get_btn_icon('check') ?>Uložit barvu</button></div>
                 </form>
             </section>
 

@@ -68,6 +68,13 @@ final class PluginDistribution
             return null;
         }
 
+        // Verze, kterou tahle instance nemá z čeho vydat (v úložišti je jen
+        // starý balíček s cizí složkou), se nenabízí — WordPress by dostal
+        // nabídku aktualizace a správa odkaz ke stažení, který končí 404.
+        if (!$this->hasPackage((string) $decoded['version'])) {
+            return null;
+        }
+
         $stamp = $this->stampValues();
         $decoded['name'] = $stamp['name'];
         $decoded['author'] = $stamp['author'];
@@ -102,13 +109,32 @@ final class PluginDistribution
         }
 
         $version = $matches[1];
-        $base = $this->storageDir . '/' . self::BASE_NAME . '-' . $version . '.zip';
+        $base = $this->basePath($version);
 
         if (is_file($base)) {
             return $this->stamped($base, $version);
         }
 
-        // Balíček z doby před razítkem — jen pro instanci se stejným slugem.
+        return $this->legacyPath($version);
+    }
+
+    /**
+     * Má instance z čeho vydat danou verzi? Neutrální balíček z buildu,
+     * nebo starý balíček z doby před razítkem — ten jen se stejnou složkou.
+     */
+    public function hasPackage(string $version): bool
+    {
+        return is_file($this->basePath($version)) || $this->legacyPath($version) !== null;
+    }
+
+    private function basePath(string $version): string
+    {
+        return $this->storageDir . '/' . self::BASE_NAME . '-' . $version . '.zip';
+    }
+
+    /** Balíček z doby před razítkem — jen pro instanci se stejným slugem. */
+    private function legacyPath(string $version): ?string
+    {
         $legacy = $this->storageDir . '/' . Brand::DEFAULT_PLUGIN_SLUG . '-' . $version . '.zip';
 
         return $this->slug() === Brand::DEFAULT_PLUGIN_SLUG && is_file($legacy) ? $legacy : null;

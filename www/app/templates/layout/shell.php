@@ -13,6 +13,7 @@
  * @var string              $content
  * @var string              $title
  * @var string              $appName
+ * @var string              $accent  barva aplikace (Základní nastavení, app/_accents.scss)
  * @var array|null          $currentUser
  * @var array               $flashes
  * @var string              $csrfToken
@@ -48,7 +49,7 @@ $monitorNote = is_array($monitor)
     : 'Cron zatím neběžel · ' . get_count((int) ($siteCount ?? 0), 'web', 'weby', 'webů');
 ?>
 <!doctype html>
-<html lang="cs"<?= $theme !== 'auto' ? ' data-theme="' . $this->e($theme) . '"' : '' ?>>
+<html lang="cs" data-accent="<?= $this->e($accent ?? 'blue') ?>"<?= $theme !== 'auto' ? ' data-theme="' . $this->e($theme) . '"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

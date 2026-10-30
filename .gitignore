@@ -25,6 +25,9 @@
 # Jediný generovaný soubor. JS a ikony leží ve www/assets rovnou.
 /www/assets/css/
 
+# Balíček pluginu postavený na ruční nahrání (build-plugin.ps1 -OutDir dev/build/plugin)
+/dev/build/
+
 # Závislosti
 /vendor/
 /node_modules/

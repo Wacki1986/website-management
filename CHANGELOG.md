@@ -2,6 +2,17 @@
 
 ## Připravuje se
 
+- **Barva aplikace.** V Nastavení → Základní nastavení jde zvolit barvu
+  tlačítek, záložek, aktivní položky menu a odkazů: modrá (výchozí),
+  zelená, tyrkysová, fialová, růžová nebo žlutá — každá i pro tmavý motiv.
+  Kliknutím se barva hned ukáže, uloží se tlačítkem. Je v databázi, takže
+  ji kopírování souborů mezi instancemi nepřepíše; obě správy se tak dají
+  na první pohled rozlišit. Stavové barvy (v pořádku, varování, chyba)
+  zůstávají stejné.
+- **Oprava: odkaz ke stažení pluginu vracel 404** v instanci s vlastní
+  složkou pluginu a zkopírovaným úložištěm, kde jsou jen staré balíčky
+  `mediagrafik-monitor-*.zip`. Správa teď verzi, kterou nemá z čeho vydat,
+  vůbec nenabízí (ani webům k aktualizaci).
 - **Výpis Weby: řazení podle sloupce.** Hlavičky Web, Klient, Stav,
   Uptime, WP, PHP, Databáze, Aktualizace, SEO, Servis a Report jsou
   odkazy — klik řadí vzestupně, další sestupně, třetí řazení vypne

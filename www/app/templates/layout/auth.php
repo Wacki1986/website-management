@@ -9,12 +9,13 @@
  * @var string              $content
  * @var string              $title
  * @var string              $appName
+ * @var string              $accent  barva aplikace (Základní nastavení, app/_accents.scss)
  * @var array               $flashes
  * @var string              $csrfToken
  */
 ?>
 <!doctype html>
-<html lang="cs">
+<html lang="cs" data-accent="<?= $this->e($accent ?? 'blue') ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

@@ -206,6 +206,8 @@ return [
             assertFalse(str_contains(kernelRequest($kernel, 'GET', '/knihovna')->body(), 'library-update-mediagrafik-monitor'));
 
             file_put_contents($dir . '/plugin-info.json', json_encode(['name' => 'MEDIAGRAFIK Monitor', 'version' => '1.6.0', 'last_updated' => $now]));
+            // Verze se nabízí, jen když je z čeho ji vydat (PluginDistribution::hasPackage).
+            file_put_contents($dir . '/mediagrafik-monitor-1.6.0.zip', 'zip');
 
             // Penam má Monitor ve standardní složce, Kavárna ze ZIPu s verzí v názvu, Alfa už aktuální.
             foreach (['Penam' => ['mediagrafik-monitor', '1.5.5'], 'Kavárna' => ['mediagrafik-monitor-1.5.0', '1.5.0'], 'Alfa' => ['mediagrafik-monitor', '1.6.0']] as $name => [$folder, $version]) {
@@ -226,6 +228,7 @@ return [
             assertFalse(str_contains($page, '/knihovna/mediagrafik-monitor/smazat'), 'Monitor z knihovny odebrat nejde');
         } finally {
             @unlink($dir . '/plugin-info.json');
+            @unlink($dir . '/mediagrafik-monitor-1.6.0.zip');
         }
 
         Urls::reset();

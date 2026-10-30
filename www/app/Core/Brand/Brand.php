@@ -52,6 +52,25 @@ final class Brand
     /** Klíč složky pluginu v `settings` — ukládá se zvlášť, viz `savePluginSlug()`. */
     public const SLUG_SETTING = 'plugin_slug';
 
+    /**
+     * Barva aplikace — ať jde na první pohled poznat, ve které správě
+     * člověk je. Kód => popisek a barva kolečka ve volbě. Styly jsou
+     * v `dev/scss/app/_accents.scss` (`<html data-accent>`), seznam musí
+     * sedět s tamní mapou. Modrá je výchozí design.
+     */
+    public const ACCENTS = [
+        'blue' => ['label' => 'Modrá', 'swatch' => '#3858e9'],
+        'green' => ['label' => 'Zelená', 'swatch' => '#15803d'],
+        'teal' => ['label' => 'Tyrkysová', 'swatch' => '#0e7490'],
+        'purple' => ['label' => 'Fialová', 'swatch' => '#7c3aed'],
+        'pink' => ['label' => 'Růžová', 'swatch' => '#db2777'],
+        'yellow' => ['label' => 'Žlutá', 'swatch' => '#eab308'],
+    ];
+
+    public const DEFAULT_ACCENT = 'blue';
+
+    public const ACCENT_SETTING = 'brand_accent';
+
     /** Pro `get_brand()` v šablonách — viz `bind()`. */
     private static ?Closure $current = null;
 
@@ -208,6 +227,25 @@ final class Brand
         }
 
         return self::DEFAULT_PLUGIN_SLUG;
+    }
+
+    /** Zvolená barva aplikace (kód z `ACCENTS`), bez databáze výchozí. */
+    public function accent(): string
+    {
+        try {
+            $accent = $this->settings?->get(self::ACCENT_SETTING) ?? '';
+        } catch (Throwable) {
+            $accent = '';
+        }
+
+        return isset(self::ACCENTS[$accent]) ? $accent : self::DEFAULT_ACCENT;
+    }
+
+    public function saveAccent(string $accent): void
+    {
+        if ($this->settings !== null && isset(self::ACCENTS[$accent])) {
+            $this->settings->set(self::ACCENT_SETTING, $accent);
+        }
     }
 
     /** Slug = jméno složky a kus adresy: malá písmena, číslice, pomlčky, 3–40 znaků. */
