@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Audit\AuditLog;
+use App\Core\Clients\Phone;
 use App\Core\Http\Controller;
 use App\Core\Http\HttpException;
 use App\Core\Http\Request;
@@ -173,7 +174,7 @@ final class ContactController extends Controller
             'first_name' => mb_substr($request->string('first_name'), 0, 100),
             'last_name' => mb_substr($request->string('last_name'), 0, 100),
             'email' => mb_strtolower(mb_substr($request->string('email'), 0, 190)),
-            'phone' => mb_substr($request->string('phone'), 0, 50),
+            'phone' => Phone::normalize(mb_substr($request->string('phone'), 0, 50)),
         ];
     }
 
@@ -206,10 +207,10 @@ final class ContactController extends Controller
     }
 
     /**
-     * Nabídka osob do výběru (`select[data-contact-pick]`, `contact-pick.js`):
-     * popisky „Příjmení Jméno · e-mail" (podle příjmení se v seznamu hledá
-     * psaním) a JSON s údaji, kterými skript vyplní pole a ukáže, u koho
-     * dalšího osoba je.
+     * Nabídka osob pro výběr s hledáním (partial `contact-pick`,
+     * `contact-pick.js`): popisky „Jméno Příjmení · e-mail" a JSON s údaji,
+     * podle kterých skript hledá (jméno, e-mail, telefon, firmy), vyplní pole
+     * a ukáže, u koho dalšího osoba je. Pořadí podle příjmení.
      *
      * @param array<int, int> $exclude id osob, které do nabídky nepatří (už u klienta jsou)
      * @return array{options: array<int, string>, json: string}
@@ -217,7 +218,9 @@ final class ContactController extends Controller
     public static function pickData(Kernel $kernel, array $exclude = []): array
     {
         $options = [];
-        $data = [];
+        // Seznam, ne objekt podle id: JSON objekt s číselnými klíči by
+        // prohlížeč seřadil podle id a nabídka by ztratila pořadí podle příjmení.
+        $list = [];
 
         foreach ($kernel->contacts()->all() as $contact) {
             $id = (int) $contact['id'];
@@ -226,9 +229,11 @@ final class ContactController extends Controller
                 continue;
             }
 
-            $name = trim($contact['last_name'] . ' ' . $contact['first_name']);
-            $options[$id] = implode(' · ', array_filter([$name, (string) $contact['email']]));
-            $data[$id] = [
+            $options[$id] = implode(' · ', array_filter([self::fullName($contact), (string) $contact['email']]));
+            $list[] = [
+                'id' => (string) $id,
+                'name' => self::fullName($contact),
+                'label' => $options[$id],
                 'first_name' => (string) $contact['first_name'],
                 'last_name' => (string) $contact['last_name'],
                 'email' => (string) $contact['email'],
@@ -237,7 +242,7 @@ final class ContactController extends Controller
             ];
         }
 
-        return ['options' => $options, 'json' => (string) json_encode((object) $data, JSON_UNESCAPED_UNICODE)];
+        return ['options' => $options, 'json' => (string) json_encode($list, JSON_UNESCAPED_UNICODE)];
     }
 
     /** @param array<string, mixed> $contact */

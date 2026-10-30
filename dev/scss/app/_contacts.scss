@@ -63,3 +63,65 @@
 
   .icon { margin-top: 2px; flex-shrink: 0; }
 }
+
+// Výběr osoby s hledáním (partial `contact-pick`, `contact-pick.js`):
+// textové pole, křížek pro zrušení výběru a plovoucí nabídka pod polem.
+.contact-pick { position: relative; }
+
+.contact-pick__input { padding-right: 44px; }
+
+.contact-pick__clear {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+}
+
+.contact-pick__list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 340px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--color-surface-card-solid);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-popover);
+}
+
+.contact-pick__option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-medium);
+  cursor: pointer;
+
+  &:hover,
+  &[aria-selected="true"] { background: var(--color-surface-hover); }
+}
+
+.contact-pick__name { font-weight: var(--font-weight-semibold); }
+
+.contact-pick__meta {
+  overflow: hidden;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.contact-pick__info {
+  padding: 8px 12px;
+  font-size: var(--font-size-label);
+  color: var(--color-text-subtle);
+}
+
+// Karta ořezává obsah (`overflow: hidden` kvůli zaobleným rohům) — dokud je
+// nabídka otevřená, smí přes okraj karty.
+.card:has(.contact-pick__list:not([hidden])) { overflow: visible; }

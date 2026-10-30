@@ -13,6 +13,14 @@
   hlavní kontakt klienta nejde smazat. Migrace převede stávající kontakty
   a osoby se stejným jménem i e-mailem sloučí (`contacts`, `contact_links`;
   stará `client_contacts` zůstává jako záloha).
+- **Výběr osoby z kontaktů s hledáním.** Místo dlouhého rozbalovacího
+  seznamu pole, které při psaní filtruje podle jména, e-mailu, telefonu
+  i firmy (bez ohledu na diakritiku), ovládá se i šipkami a Enterem;
+  křížek výběr zruší (= nová osoba).
+- **Telefony kontaktních osob v jednom tvaru** „+420 603 213 408“. Upravují
+  se při uložení: devět číslic bez předvolby dostane +420, 00420 → +420,
+  české a slovenské číslo se rozdělí po trojicích. Cizí předvolby a čísla
+  s poznámkou zůstávají, jak jsou. Migrace srovná i čísla uložená dřív.
 - **Barva aplikace.** V Nastavení → Základní nastavení jde zvolit barvu
   tlačítek, záložek, aktivní položky menu a odkazů: modrá (výchozí),
   zelená, tyrkysová, fialová, růžová nebo žlutá — každá i pro tmavý motiv.

@@ -80,9 +80,9 @@ $back = $client === null ? get_url('klienti') : get_url('klienti/' . (int) $clie
                     </div>
                     <?php if ($pickOptions !== []): ?>
                         <div class="form__row">
-                            <?= $form->select('contact_id', 'Osoba z kontaktů', $pickOptions, (string) $values['contact_id'], 'Nová osoba — vyplňte údaje níže', class: 'form__field--caps', span: 12,
-                                attributes: ['data-contact-pick' => 'edit', 'data-contacts' => $pickJson, 'data-contact-client' => $client !== null ? (string) (int) $client['id'] : ''],
-                                hint: 'Jedná osoba i za jinou firmu? Vyberte ji — nebude zapsaná dvakrát.') ?>
+                            <?= $this->partial('partials/contact-pick', ['form' => $form, 'mode' => 'edit', 'value' => (string) $values['contact_id'],
+                                'options' => $pickOptions, 'json' => $pickJson, 'clientId' => $client !== null ? (string) (int) $client['id'] : '',
+                                'hint' => 'Jedná osoba i za jinou firmu? Vyberte ji — nebude zapsaná dvakrát. Prázdné pole = nová osoba.']) ?>
                         </div>
                         <p class="contact-shared" data-contact-shared hidden></p>
                     <?php endif; ?>

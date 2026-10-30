@@ -128,8 +128,9 @@ $field = function (string $label, string $value, bool $optional = false, string 
                         <span class="caps">Přidat kontakt</span>
                         <?php if ($pickOptions !== []): ?>
                             <div class="form__row">
-                                <?= $contactForm->select('contact_id', 'Osoba z kontaktů', $pickOptions, '', 'Nová osoba — vyplňte údaje níže', class: 'form__field--caps', span: 12,
-                                    attributes: ['data-contact-pick' => 'link', 'data-contacts' => $pickJson, 'data-contact-client' => (string) (int) $client['id']]) ?>
+                                <?= $this->partial('partials/contact-pick', ['form' => $contactForm, 'mode' => 'link', 'value' => '',
+                                    'options' => $pickOptions, 'json' => $pickJson, 'clientId' => (string) (int) $client['id'],
+                                    'hint' => 'Prázdné pole = nová osoba, vyplňte ji níže.']) ?>
                             </div>
                             <p class="contact-shared" data-contact-shared hidden></p>
                         <?php endif; ?>

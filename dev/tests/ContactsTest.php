@@ -10,10 +10,39 @@ declare(strict_types=1);
 
 use App\Core\Clients\ClientRepository;
 use App\Core\Clients\ContactRepository;
+use App\Core\Clients\Phone;
 
 require_once __DIR__ . '/fixtures/logged-in-kernel.php';
 
 return [
+    'telefon: české číslo po trojicích, devět číslic dostane +420, cizí zůstane' => function (): void {
+        assertSame('+420 777 762 375', Phone::normalize('777762375'));
+        assertSame('+420 603 213 408', Phone::normalize('603 213 408'));
+        assertSame('+420 605 888 890', Phone::normalize('+420605888890'));
+        assertSame('+420 605 888 890', Phone::normalize('00420 605-888-890'));
+        assertSame('+420 605 888 890', Phone::normalize('420605888890'));
+        assertSame('+421 905 123 456', Phone::normalize('+421905123456'));
+        assertSame('+420 603 213 408', Phone::normalize(' +420 603 213 408 '));
+        assertSame('+49 30 1234567', Phone::normalize('+49 30 1234567'), 'Cizí předvolba zůstane');
+        assertSame('603 213 408 (odpoledne)', Phone::normalize('603 213 408 (odpoledne)'), 'Poznámka u čísla zůstane');
+        assertSame('12345', Phone::normalize('12345'), 'Krátká linka zůstane');
+        assertSame('', Phone::normalize(''));
+    },
+
+    'telefon se srovná při uložení i migrací u starých kontaktů' => function (): void {
+        [$kernel, $token] = loggedInKernel();
+        $contacts = $kernel->contacts();
+
+        kernelRequest($kernel, 'POST', '/klienti/kontakty/pridat', ['_token' => $token, 'first_name' => 'Eva', 'last_name' => 'Nová', 'email' => 'eva@nova.cz', 'phone' => '777762375']);
+        assertSame('+420 777 762 375', $contacts->find((int) $kernel->db()->scalar("SELECT id FROM contacts WHERE email = 'eva@nova.cz'"))['phone']);
+
+        $old = $contacts->create(['first_name' => 'Jan', 'last_name' => 'Starý', 'email' => '', 'phone' => '+420605888890']);
+        $foreign = $contacts->create(['first_name' => 'Hans', 'last_name' => 'Müller', 'email' => '', 'phone' => '+49 30 1234567']);
+        (require WWW_ROOT . '/database/migrations/2026_10_30_000001_contact_phones.php')($kernel->db()->pdo());
+        assertSame('+420 605 888 890', $contacts->find($old)['phone']);
+        assertSame('+49 30 1234567', $contacts->find($foreign)['phone']);
+    },
+
     'jedna osoba u dvou firem: změna telefonu platí u obou, role zvlášť' => function (): void {
         $db = freshTestDb();
         $clients = new ClientRepository($db);
@@ -124,7 +153,7 @@ return [
 
         $form = kernelRequest($kernel, 'GET', '/klienti/pridat')->body();
         assertContainsString('data-contact-pick="edit"', $form);
-        assertContainsString('Dobrá Markéta · marketa@dobra.cz', $form);
+        assertContainsString('Markéta Dobrá · marketa@dobra.cz', $form, 'Osoba je v datech našeptávače');
 
         $second = ['_token' => $token, '_action' => 'save', 'name' => 'Pekárna Dobrá s.r.o.', 'contact_id' => (string) $marketa,
             'first_name' => 'Markéta', 'last_name' => 'Dobrá', 'role' => 'majitelka', 'email' => 'marketa@dobra.cz', 'phone' => '+420 222'];
@@ -136,6 +165,7 @@ return [
         assertSame('jednatelka', $contacts->primaryFor($kavarna)['role']);
         assertSame('majitelka', $contacts->primaryFor($pekarna)['role']);
 
+        assertContainsString('value="Markéta Dobrá · marketa@dobra.cz"', kernelRequest($kernel, 'GET', '/klienti/' . $pekarna . '/upravit')->body(), 'Vybraná osoba v poli hledání');
         $detail = kernelRequest($kernel, 'GET', '/klienti/' . $kavarna)->body();
         assertContainsString('Kontaktní osoba je i u:', $detail);
         assertContainsString('Pekárna Dobrá s.r.o.', $detail);
